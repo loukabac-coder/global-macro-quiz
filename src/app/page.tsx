@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const categories = [
   { code: "A", name: "Central banks", text: "BCE, Fed, BoE, BoJ, PBoC : mandats, instruments, QE et QT." },
   { code: "B", name: "Monetary policy", text: "Taux directeurs, courbe des taux, règle de Taylor, forward guidance." },
@@ -37,7 +39,8 @@ export default function Home() {
           <nav className="flex items-center gap-6 text-sm text-muted">
             <a href="#categories" className="hover:text-fg">Catégories</a>
             <a href="#modes" className="hover:text-fg">Modes</a>
-            <span className="border border-line px-3 py-1.5 text-fg">Connexion bientôt disponible</span>
+            <Link href="/connexion" className="hover:text-fg">Connexion</Link>
+            <Link href="/inscription" className="border border-line px-3 py-1.5 text-fg hover:border-muted">Créer un compte</Link>
           </nav>
         </div>
       </header>
