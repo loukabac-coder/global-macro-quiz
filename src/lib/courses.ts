@@ -589,6 +589,96 @@ export const CHAPTERS: Chapter[] = [
     ],
   },
 
+  // ------------------------------------------------------------------ INFLATION
+  {
+    slug: "inflation",
+    category: "macroeconomics",
+    code: "C2",
+    title: "Inflation",
+    level: "Débutant",
+    minutes: 15,
+    intro: "Ce qu’est l’inflation, comment on la mesure, d’où elle vient et pourquoi elle pilote les taux et les marchés.",
+    sections: [
+      {
+        title: "1. Définition et mesure",
+        bullets: [
+          "Inflation : hausse générale et durable du niveau des prix. Le pouvoir d’achat de la monnaie baisse.",
+          "On la mesure avec un indice des prix : on compare le prix d’un panier de biens et services d’une période à l’autre.",
+          "Glissement annuel : variation sur 12 mois (le chiffre le plus cité). Glissement mensuel : variation d’un mois sur l’autre.",
+          "Déflation : baisse générale des prix. Désinflation : l’inflation ralentit mais reste positive.",
+        ],
+        formulas: ["Inflation = (indice des prix aujourd’hui / indice il y a 12 mois) − 1", "Annualiser un mois : (1 + variation mensuelle)¹² − 1"],
+        example: "Panier à 100 € il y a un an, 103 € aujourd’hui : inflation de 3 %. Une hausse de 0,25 % par mois donne (1,0025)¹² − 1 ≈ 3,04 % sur un an.",
+      },
+      {
+        title: "2. Les principaux indices",
+        table: {
+          head: ["Indice", "Zone", "Détail"],
+          rows: [
+            ["IPC (CPI)", "États-Unis, Royaume-Uni, France (IPC national)", "Prix à la consommation d’un ménage moyen"],
+            ["IPCH (HICP)", "Union européenne", "Version harmonisée, cible de la BCE"],
+            ["PCE", "États-Unis", "Indicateur préféré de la Fed (cible 2 %)"],
+            ["Déflateur du PIB", "Tous pays", "Prix de tout ce qui est produit dans le pays"],
+            ["IPP (PPI)", "Tous pays", "Prix de production, en amont de la chaîne"],
+          ],
+        },
+        bullets: [
+          "Inflation sous-jacente (core) : hors énergie et alimentation, plus stable. Les banques centrales la regardent de près.",
+          "Inflation totale (headline) : tout inclus, elle bouge beaucoup avec le pétrole et le gaz.",
+        ],
+      },
+      {
+        title: "3. D’où vient l’inflation",
+        bullets: [
+          "Par la demande : trop de demande par rapport à ce que l’économie peut produire (économie en surchauffe, écart de production positif).",
+          "Par les coûts : hausse des coûts de production (énergie, matières premières, salaires) répercutée sur les prix.",
+          "Importée : hausse des prix à l’étranger ou baisse de la monnaie, qui renchérit les importations.",
+          "Spirale prix-salaires : les prix montent, les salaires suivent, les entreprises relèvent leurs prix.",
+          "Anticipations : si chacun s’attend à de l’inflation, elle s’installe. D’où l’importance de la crédibilité de la banque centrale.",
+          "Effet de base : le glissement annuel dépend aussi du niveau d’il y a un an. Un grand choc d’il y a 12 mois qui sort du calcul peut faire chuter l’inflation annuelle.",
+        ],
+      },
+      {
+        title: "4. Les cibles des banques centrales",
+        bullets: [
+          "BCE : 2 % à moyen terme (IPCH), symétrique. Fed : 2 % (PCE). Banque d’Angleterre : 2 % (IPC). Banque du Japon : 2 %.",
+          "Les banques centrales ne visent pas 0 % : une inflation un peu positive laisse de la marge pour baisser les taux réels et évite la déflation.",
+        ],
+      },
+      {
+        title: "5. Effets économiques",
+        bullets: [
+          "Pouvoir d’achat : à 3 % d’inflation, 100 € ne valent plus que 97 € de biens au bout d’un an. À 2 %, les prix doublent en 36 ans (72 / 2).",
+          "Gagnants : emprunteurs à taux fixe (la dette perd de la valeur en termes réels). Perdants : épargnants à taux fixe bas, créanciers.",
+          "Taux réel : taux nominal − inflation. L’inflation inattendue fait baisser le rendement réel des obligations.",
+          "Hyperinflation : plus de 50 % par mois, effondrement de la monnaie (Allemagne 1923, Zimbabwe, Venezuela).",
+        ],
+      },
+      {
+        title: "6. Inflation et marchés",
+        bullets: [
+          "Inflation plus forte que prévu → anticipations de hausse de taux → rendements obligataires qui montent, prix des obligations qui baissent.",
+          "Les actions de croissance souffrent quand les taux montent (valeurs actuelles plus faibles).",
+          "Le dollar a tendance à monter si la Fed relève ses taux plus que les autres.",
+          "Obligations indexées sur l’inflation (TIPS aux États-Unis, OATi en France) : le capital suit l’inflation.",
+          "Point mort d’inflation (breakeven) = taux nominal − taux réel : mesure l’inflation anticipée par le marché.",
+          "Matières premières et or : parfois vus comme une protection contre l’inflation.",
+        ],
+      },
+    ],
+    remember: [
+      "Inflation = hausse générale et durable des prix. Cible des grandes banques centrales : 2 %.",
+      "Core exclut énergie et alimentation. IPCH = BCE, PCE = Fed.",
+      "Taux réel = nominal − inflation. Breakeven = nominal − réel indexé.",
+      "Plus d’inflation que prévu → plus de hausses de taux anticipées → obligations en baisse.",
+    ],
+    interview: [
+      "« Pourquoi les banques centrales visent-elles 2 % et pas 0 % ? »",
+      "« Qu’est-ce que l’effet de base ? »",
+      "« Que se passe-t-il sur les marchés si l’inflation surprend à la hausse ? »",
+    ],
+  },
+
   // ------------------------------------------------------------------ CHANGE
   {
     slug: "change",
@@ -1066,7 +1156,7 @@ export const CHAPTERS: Chapter[] = [
     slug: "guesstimates",
     category: "macro-guesstimates",
     code: "G",
-    title: "Guesstimates macro",
+    title: "Ordres de grandeur clés",
     level: "Intermédiaire",
     minutes: 15,
     intro:
@@ -1120,6 +1210,35 @@ export const CHAPTERS: Chapter[] = [
           "Nombre de foyers en France : 68 M d’habitants / 2,3 personnes par foyer ≈ 30 M de foyers.",
           "Dette à 100 % du PIB, taux moyen de 2 % : charge d’intérêts ≈ 2 % du PIB. À 4 % : 4 % du PIB.",
           "Un pays de 10 M d’habitants avec un PIB par habitant de 30 000 $ → PIB de 300 Md$.",
+        ],
+      },
+      {
+        title: "5. Constantes à connaître par cœur",
+        table: {
+          head: ["Grandeur", "Valeur"],
+          rows: [
+            ["Jours de bourse par an", "environ 252"],
+            ["Jours de bourse par mois", "environ 21"],
+            ["Semaines par an", "52"],
+            ["Heures par an", "8 760 (365 × 24)"],
+            ["Secondes par an", "environ 31,5 millions (≈ 3 × 10⁷)"],
+            ["1 milliard de secondes", "environ 32 ans"],
+            ["1 baril de pétrole", "159 litres"],
+            ["1 once troy d’or", "31,1 grammes"],
+            ["1 point de base", "0,01 %"],
+            ["1 T$", "1 000 Md$ = 1 000 000 M$"],
+          ],
+        },
+      },
+      {
+        title: "6. Quelques raccourcis pour estimer",
+        bullets: [
+          "Un pays avec x habitants et un revenu moyen y : PIB ≈ x × y, à 20 % près.",
+          "Les dépenses publiques représentent en général 30 à 55 % du PIB dans les pays développés.",
+          "Une dette de 100 % du PIB à 3 % de taux moyen coûte 3 % du PIB par an en intérêts.",
+          "Une capitalisation de 1 T$ avec un PER de 25 correspond à 40 Md$ de bénéfices (1 000 / 25).",
+          "Une volatilité annuelle de 16 % équivaut à environ 1 % par jour (16 / √252 ≈ 1).",
+          "+1 % par jour pendant 252 jours multiplie par environ 12 : la composition grossit vite.",
         ],
       },
     ],

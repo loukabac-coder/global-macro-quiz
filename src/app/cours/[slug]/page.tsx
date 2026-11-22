@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import AppShell from "@/components/AppShell";
 import { CHAPTERS, getChapter } from "@/lib/courses";
 
 export function generateStaticParams() {
@@ -14,16 +15,8 @@ export default async function Chapitre({ params }: { params: Promise<{ slug: str
   const next = CHAPTERS[index + 1];
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-          <Link href="/" className="font-mono text-sm font-semibold tracking-tight">
-            global<span className="text-accent">/</span>macro<span className="text-accent">/</span>quiz
-          </Link>
-          <Link href="/cours" className="text-sm text-muted hover:text-fg">Tous les cours</Link>
-        </div>
-      </header>
-      <main className="mx-auto max-w-3xl px-5 py-12">
+    <AppShell width="max-w-3xl">
+      <main className="fade-in py-10">
         <p className="font-mono text-xs text-muted">
           <span className="text-accent">{chapter.code}</span> · {chapter.level} · {chapter.minutes} min de lecture
         </p>
@@ -133,6 +126,6 @@ export default async function Chapitre({ params }: { params: Promise<{ slug: str
           </p>
         )}
       </main>
-    </div>
+    </AppShell>
   );
 }

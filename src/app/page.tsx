@@ -1,161 +1,114 @@
 import Link from "next/link";
+import AppShell from "@/components/AppShell";
+import Cta from "@/components/Cta";
+import { STEPS } from "@/lib/path";
 
-const categories = [
-  { code: "A", name: "Central banks", text: "BCE, Fed, BoE, BoJ, PBoC : mandats, instruments, QE et QT." },
-  { code: "B", name: "Monetary policy", text: "Taux directeurs, courbe des taux, règle de Taylor, forward guidance." },
-  { code: "C", name: "Macroeconomics", text: "Inflation, croissance, chômage, dette publique, cycles économiques." },
-  { code: "D", name: "Foreign exchange", text: "Paires majeures, carry trade, parité des taux, interventions." },
-  { code: "E", name: "Commodities", text: "Pétrole, gaz, or, cuivre, OPEP+ et lien avec le dollar." },
-  { code: "F", name: "Financial markets", text: "Obligations, duration, volatilité, spreads de crédit, dérivés." },
-  { code: "G", name: "Macro guesstimates", text: "Estimer vite un PIB, une population, une dette, une grandeur de marché." },
-  { code: "H", name: "Calcul mental", text: "Pourcentages, produits, identités remarquables, P&L en tête." },
-  { code: "I", name: "Capitalisations", text: "Classements et poids des plus grandes capitalisations par indice." },
-];
-
-const modes = [
-  ["Quick Quiz", "10 questions, pour une session courte."],
-  ["Training", "Entraînement libre par catégorie, sans chrono."],
-  ["Challenge", "Questions difficiles, chronométrées."],
-  ["Daily Challenge", "Les mêmes questions pour tous, une fois par jour."],
-  ["Mixed", "Toutes les catégories mélangées."],
-  ["Weakness Training", "Les notions que tu rates reviennent plus souvent."],
-];
-
-const options = [
-  { id: "A", text: "Le plein emploi", correct: false },
-  { id: "B", text: "La stabilité des prix", correct: true },
-  { id: "C", text: "La croissance du PIB de la zone euro", correct: false },
-  { id: "D", text: "Le niveau du taux de change de l’euro", correct: false },
+const modes: [string, string][] = [
+  ["Finance Games", "Séries chronométrées de 10 questions rapides : calcul éclair, ordres de grandeur, culture marchés. Points selon ta vitesse."],
+  ["Calcul mental infini", "Pourcentages, variations, intérêts composés, devises, bps, règle de 72. Générés à la volée, niveaux 1 à 5."],
+  ["Daily Challenge", "Les mêmes 10 questions pour tout le monde, chaque jour. Une série à tenir."],
+  ["Weakness Training", "Les questions que tu rates reviennent au bon moment (répétition espacée)."],
+  ["Training par catégorie", "Banques centrales, taux, change, matières premières, capitalisations, marchés."],
 ];
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <span className="font-mono text-sm font-semibold tracking-tight">
-            global<span className="text-accent">/</span>macro<span className="text-accent">/</span>quiz
-          </span>
-          <nav className="flex items-center gap-6 text-sm text-muted">
-            <a href="#categories" className="hover:text-fg">Catégories</a>
-            <a href="#modes" className="hover:text-fg">Modes</a>
-            <Link href="/cours" className="hover:text-fg">Cours</Link>
-            <Link href="/capitalisations" className="hover:text-fg">Capitalisations</Link>
-            <Link href="/connexion" className="hover:text-fg">Connexion</Link>
-            <Link href="/inscription" className="border border-line px-3 py-1.5 text-fg hover:border-muted">Créer un compte</Link>
-          </nav>
-        </div>
-      </header>
-
+    <AppShell>
       <main>
-        <section className="mx-auto grid max-w-6xl gap-12 px-5 py-16 lg:grid-cols-[1fr_28rem] lg:py-24">
+        <section className="grid gap-10 py-12 lg:grid-cols-[1fr_26rem] lg:py-20">
           <div className="flex flex-col justify-center">
-            <h1 className="max-w-xl text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">
-              Construis ta culture macro, une question à la fois.
+            <p className="font-mono text-xs text-accent">préparation aux entretiens · finance de marché</p>
+            <h1 className="mt-3 max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
+              Prépare les questions techniques et les finance games de tes entretiens.
             </h1>
-            <p className="mt-6 max-w-lg text-base leading-relaxed text-muted">
-              Banques centrales, politique monétaire, change, matières premières, marchés. Chaque
-              réponse s’accompagne d’une correction détaillée, d’une source et, pour les données
-              qui bougent, d’une date de référence.
+            <p className="mt-5 max-w-lg text-base leading-relaxed text-muted">
+              Calcul mental, culture marchés, macro. Des questions rapides comme à l’oral, un parcours en six étapes, des cours courts et des chiffres du jour toujours à jour.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#categories" className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">
-                Parcourir les catégories
-              </a>
-              <a href="#modes" className="border border-line px-5 py-3 text-sm hover:border-muted">
-                Voir les modes de jeu
-              </a>
-            </div>
+            <Cta />
+            <p className="mt-4 font-mono text-xs text-muted">Gratuit · sans carte bancaire · du niveau L2 au niveau entretien</p>
           </div>
 
-          <div className="border border-line bg-panel" aria-label="Exemple de question avec sa correction">
+          <div className="self-start border border-line bg-panel" aria-label="Exemple de question avec sa correction">
             <div className="flex items-center justify-between border-b border-line px-4 py-3 font-mono text-xs text-muted">
-              <span>Q 07/10</span>
-              <span>Central banks, intermédiaire</span>
-              <span className="text-fg">00:24</span>
+              <span>Q 03/10</span>
+              <span>Calcul mental</span>
+              <span className="text-danger">00:09</span>
             </div>
+            <div className="h-0.5 bg-line"><div className="h-full w-[55%] bg-warn" /></div>
             <div className="px-4 py-5">
-              <p className="text-base font-medium leading-snug">
-                Selon les traités européens, quel est l’objectif principal de la BCE ?
-              </p>
-              <ul className="mt-5 space-y-2">
-                {options.map((o) => (
-                  <li
-                    key={o.id}
-                    className={`flex gap-3 border px-3 py-2.5 text-sm ${
-                      o.correct ? "border-accent text-fg" : "border-line text-muted"
-                    }`}
-                  >
-                    <span className={`font-mono ${o.correct ? "text-accent" : ""}`}>{o.id}</span>
-                    <span>{o.text}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-base font-medium leading-snug">Un actif perd 20 %. Quelle hausse, en %, le ramène à son niveau de départ ?</p>
+              <div className="mt-5 flex items-center gap-3">
+                <span className="border border-accent bg-ink px-3 py-2.5 font-mono text-sm caret">25</span>
+                <span className="text-sm text-muted">%</span>
+              </div>
               <div className="mt-5 border-l-2 border-accent bg-ink px-3 py-3 text-sm leading-relaxed text-muted">
-                <span className="font-semibold text-accent">Correct.</span> Le traité sur le
-                fonctionnement de l’Union européenne fixe la stabilité des prix comme objectif
-                principal. Sans préjudice de cet objectif, la BCE soutient les politiques
-                économiques générales de l’Union.
+                <span className="font-semibold text-accent">Correct.</span> 100 devient 80. Pour revenir à 100, il faut gagner 20 sur 80 : 20 / 80 = 25 %. Une baisse de x % exige x / (1 − x) pour revenir au départ.
               </div>
             </div>
-            <div className="border-t border-line px-4 py-2 font-mono text-xs text-muted">
-              Exemple d’affichage de la correction
+            <div className="border-t border-line px-4 py-2 font-mono text-xs text-muted">+7 XP · série 4 jours</div>
+          </div>
+        </section>
+
+        <section className="border-t border-line py-14">
+          <h2 className="text-2xl font-semibold tracking-tight">Comment ça marche</h2>
+          <ol className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-3">
+            {[
+              ["01", "Test de niveau", "12 questions, 2 minutes. Le site te place au bon endroit du parcours."],
+              ["02", "Parcours en 6 étapes", "Pour chaque étape : un cours court à lire, puis des questions pour valider."],
+              ["03", "Finance Games", "Des séries chronométrées pour t’entraîner à répondre vite, à l’oral comme en entretien."],
+            ].map(([n, t, d]) => (
+              <li key={n} className="bg-ink p-5">
+                <span className="font-mono text-sm text-accent">{n}</span>
+                <h3 className="mt-2 font-semibold">{t}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">{d}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="border-t border-line py-14">
+          <h2 className="text-2xl font-semibold tracking-tight">Le parcours, des bases à l’entretien</h2>
+          <ol className="mt-8 divide-y divide-line border-y border-line">
+            {STEPS.map((s) => (
+              <li key={s.id} className="grid gap-1 py-4 sm:grid-cols-[3rem_16rem_1fr]">
+                <span className="font-mono text-sm text-accent">{String(s.id).padStart(2, "0")}</span>
+                <span className="font-semibold">{s.title}</span>
+                <span className="text-sm text-muted">{s.goal}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="border-t border-line py-14">
+          <h2 className="text-2xl font-semibold tracking-tight">Des façons de s’entraîner</h2>
+          <dl className="mt-8 divide-y divide-line border-y border-line">
+            {modes.map(([name, text]) => (
+              <div key={name} className="grid gap-1 py-4 sm:grid-cols-[14rem_1fr]">
+                <dt className="font-semibold">{name}</dt>
+                <dd className="text-sm text-muted">{text}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section className="border-t border-line py-14">
+          <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight">Des chiffres du jour, avec leur date</h2>
+              <p className="mt-3 max-w-xl text-muted">
+                Capitalisations, taux directeurs, inflation, change, pétrole, or : mis à jour chaque jour. Chaque donnée affiche sa date de référence, et les questions qui en dépendent se désactivent quand elle devient trop ancienne.
+              </p>
             </div>
-          </div>
-        </section>
-
-        <section id="categories" className="border-t border-line">
-          <div className="mx-auto max-w-6xl px-5 py-16">
-            <h2 className="text-2xl font-semibold tracking-tight">Neuf catégories, quatre niveaux</h2>
-            <p className="mt-3 max-w-xl text-muted">
-              De débutant à expert, chaque catégorie monte en difficulté avec toi.
-            </p>
-            <div className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
-              {categories.map((c) => (
-                <div key={c.code} className="bg-ink p-5">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-sm text-accent">{c.code}</span>
-                    <h3 className="font-semibold">{c.name}</h3>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{c.text}</p>
-                </div>
-              ))}
+            <div className="flex gap-3 text-sm">
+              <Link href="/capitalisations" className="border border-line px-4 py-2.5 hover:border-muted">Capitalisations</Link>
+              <Link href="/donnees" className="border border-line px-4 py-2.5 hover:border-muted">Données macro</Link>
             </div>
-          </div>
-        </section>
-
-        <section id="modes" className="border-t border-line">
-          <div className="mx-auto max-w-6xl px-5 py-16">
-            <h2 className="text-2xl font-semibold tracking-tight">Six façons de t’entraîner</h2>
-            <dl className="mt-8 divide-y divide-line border-y border-line">
-              {modes.map(([name, text]) => (
-                <div key={name} className="grid gap-1 py-4 sm:grid-cols-[14rem_1fr]">
-                  <dt className="font-semibold">{name}</dt>
-                  <dd className="text-muted">{text}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-
-        <section className="border-t border-line">
-          <div className="mx-auto grid max-w-6xl gap-4 px-5 py-14 sm:grid-cols-[1fr_auto] sm:items-center">
-            <p className="max-w-xl text-muted">
-              Les questions sur des données actuelles affichent leur date de référence et
-              disparaissent quand elles deviennent trop anciennes.
-            </p>
-            <span className="border border-warn px-3 py-1.5 font-mono text-xs text-warn">
-              Donnée au jj/mm/aaaa
-            </span>
           </div>
         </section>
       </main>
-
-      <footer className="border-t border-line">
-        <div className="mx-auto max-w-6xl px-5 py-6 text-sm text-muted">
-          Global Macro Quiz, projet d’apprentissage. Contenu pédagogique, pas un conseil en investissement.
-        </div>
+      <footer className="border-t border-line py-6 text-sm text-muted">
+        Global Macro Quiz, projet d’apprentissage. Contenu pédagogique, pas un conseil en investissement.
       </footer>
-    </div>
+    </AppShell>
   );
 }

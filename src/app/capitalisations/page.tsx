@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import AppShell from "@/components/AppShell";
 import { ageHours, fetchMarketCaps, fmtCap, frDay, type Company, type MarketCaps } from "@/lib/marketcaps";
 
 type Tab = "monde" | "europe" | "pays";
@@ -64,16 +65,8 @@ export default function Capitalisations() {
   const nvidia = world.find((c) => c.ticker === "NVDA");
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4">
-          <Link href="/" className="font-mono text-sm font-semibold tracking-tight">
-            global<span className="text-accent">/</span>macro<span className="text-accent">/</span>quiz
-          </Link>
-          <Link href="/cours" className="text-sm text-muted hover:text-fg">Cours</Link>
-        </div>
-      </header>
-      <main className="mx-auto max-w-4xl px-5 py-12">
+    <AppShell width="max-w-4xl">
+      <main className="fade-in py-10">
         <h1 className="text-3xl font-semibold tracking-tight">Capitalisations boursières</h1>
         <p className="mt-3 max-w-xl text-muted">
           Le classement à connaître avant de s’entraîner. Les chiffres sont recalculés automatiquement chaque jour
@@ -153,6 +146,6 @@ export default function Capitalisations() {
           </Link>
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }
