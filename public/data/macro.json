@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-22T17:09:41+00:00",
+ "updated_at": "2026-11-22T17:20:34+00:00",
  "indicators": {
   "ecb_deposit_rate": {
    "label": "Taux de la facilité de dépôt de la BCE",
@@ -22,8 +22,8 @@
    "value": 2.0,
    "unit": "%",
    "ref_date": "2025-12-01",
-   "source": "Eurostat via BCE (ICP)",
-   "max_age_days": 75
+   "source": "Eurostat (IPCH, prc_hicp_manr)",
+   "max_age_days": 100
   },
   "us_unrate": {
    "label": "Taux de chômage américain",
@@ -31,7 +31,7 @@
    "unit": "%",
    "ref_date": "2026-10-01",
    "source": "BLS via FRED (UNRATE)",
-   "max_age_days": 75
+   "max_age_days": 100
   },
   "us_10y": {
    "label": "Rendement du Treasury américain à 10 ans",
@@ -79,7 +79,7 @@
    "unit": "%",
    "ref_date": "2026-09-01",
    "source": "BLS via FRED (CPIAUCSL)",
-   "max_age_days": 75
+   "max_age_days": 100
   }
  }
 }

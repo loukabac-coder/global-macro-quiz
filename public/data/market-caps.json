@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-22T17:09:37+00:00",
+ "updated_at": "2026-11-22T17:20:27+00:00",
  "source": "Yahoo Finance (via yfinance), conversion en USD au taux du jour",
  "failed": [
   "ROG.SW"
@@ -101,7 +101,7 @@
    "name": "Samsung Electronics",
    "country": "Corée du Sud",
    "region": "Asie",
-   "market_cap_usd": 885749476939
+   "market_cap_usd": 885808677671
   },
   {
    "ticker": "JPM",
