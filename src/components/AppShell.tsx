@@ -5,14 +5,33 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import { levelFromXp, levelName } from "@/lib/progress";
+import Crumbs from "@/components/Crumbs";
 
+// Quatre entrées seulement. Chaque page appartient à une rubrique : celle-ci est surlignée dans le menu.
 const NAV: [string, string][] = [
-  ["/dashboard", "Parcours"],
-  ["/jouer", "Jouer"],
+  ["/parcours", "Parcours"],
+  ["/entrainement", "Entraînement libre"],
   ["/cours", "Cours"],
-  ["/capitalisations", "Capitalisations"],
-  ["/donnees", "Données"],
+  ["/profil", "Profil"],
 ];
+
+const SECTION: [string, string][] = [
+  ["/parcours", "/parcours"],
+  ["/test-niveau", "/parcours"],
+  ["/entrainement", "/entrainement"],
+  ["/quiz", "/entrainement"],
+  ["/jeux", "/entrainement"],
+  ["/calcul-mental", "/entrainement"],
+  ["/invite", "/entrainement"],
+  ["/cours", "/cours"],
+  ["/donnees", "/cours"],
+  ["/capitalisations", "/cours"],
+  ["/profil", "/profil"],
+];
+
+function sectionOf(path: string): string {
+  return SECTION.find(([prefix]) => path.startsWith(prefix))?.[1] ?? "";
+}
 
 type Chip = { xp: number; streak: number };
 
@@ -44,25 +63,26 @@ export default function AppShell({ children, width = "max-w-5xl" }: { children: 
     };
   }, []);
 
-  const nav = logged === false ? NAV.filter(([h]) => !["/dashboard", "/jouer"].includes(h)) : NAV;
+  const nav = logged === false ? NAV.filter(([h]) => h !== "/profil") : NAV;
+  const here = sectionOf(path);
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-line bg-ink/95 backdrop-blur">
         <div className={`mx-auto flex ${width} items-center justify-between gap-4 px-4 py-3 sm:px-5`}>
-          <Link href={logged ? "/dashboard" : "/"} className="shrink-0 font-mono text-sm font-semibold tracking-tight">
+          <Link href={logged ? "/parcours" : "/"} className="shrink-0 font-mono text-sm font-semibold tracking-tight">
             global<span className="text-accent">/</span>macro<span className="text-accent">/</span>quiz
           </Link>
           <nav className="hidden items-center gap-5 text-sm sm:flex" aria-label="Navigation principale">
             {nav.map(([href, label]) => (
-              <Link key={href} href={href} className={path.startsWith(href) ? "text-fg" : "text-muted hover:text-fg"}>
+              <Link key={href} href={href} className={here === href ? "text-fg" : "text-muted hover:text-fg"}>
                 {label}
               </Link>
             ))}
           </nav>
           <div className="flex shrink-0 items-center gap-3 text-sm">
             {logged && chip && (
-              <Link href="/dashboard" className="hidden border border-line px-2.5 py-1 font-mono text-xs sm:block" title={levelName(levelFromXp(chip.xp))}>
+              <Link href="/profil" className="hidden border border-line px-2.5 py-1 font-mono text-xs sm:block" title={levelName(levelFromXp(chip.xp))}>
                 niv {levelFromXp(chip.xp)} · {chip.xp} xp · {chip.streak} j
               </Link>
             )}
@@ -90,14 +110,21 @@ export default function AppShell({ children, width = "max-w-5xl" }: { children: 
             <Link
               key={href}
               href={href}
-              className={`shrink-0 px-3 py-1.5 ${path.startsWith(href) ? "border border-accent text-fg" : "border border-transparent text-muted"}`}
+              className={`shrink-0 px-3 py-1.5 ${here === href ? "border border-accent text-fg" : "border border-transparent text-muted"}`}
             >
               {label}
             </Link>
           ))}
         </nav>
       </header>
-      <div className={`mx-auto ${width} px-4 sm:px-5`}>{children}</div>
+      <div className={`mx-auto ${width} px-4 sm:px-5`}>
+        {here === "/cours" && (path.startsWith("/donnees") || path.startsWith("/capitalisations")) && (
+          <div className="-mb-4 pt-6">
+            <Crumbs items={[["Cours", "/cours"], ["Chiffres du jour"]]} />
+          </div>
+        )}
+        {children}
+      </div>
     </div>
   );
 }

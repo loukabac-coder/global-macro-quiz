@@ -21,6 +21,7 @@ import {
 } from "@/lib/quiz";
 import { BADGES } from "@/lib/badges";
 import { levelFromXp, levelName } from "@/lib/progress";
+import { CAT_NAME } from "@/lib/categories";
 
 export type Result = { q: Question; ok: boolean; given: string; seconds: number; points: number };
 export type Mode = "quick" | "training" | "challenge" | "daily" | "mixed" | "weakness";
@@ -33,7 +34,11 @@ export type RunnerProps = {
   kicker?: string;
   mode: Mode;
   timePerQuestion?: number;
-  load: (ctx: { supabase: SupabaseClient; userId: string }) => Promise<Question[] | { questions: Question[]; note: string }>;
+  load?: (ctx: { supabase: SupabaseClient; userId: string }) => Promise<Question[] | { questions: Question[]; note: string }>;
+  /** Questions pour un visiteur sans compte (rien n'est sauvegardé). Sans cette fonction, un visiteur est renvoyé vers la connexion. */
+  guestLoad?: () => Promise<Question[]>;
+  /** Page réservée aux invités : aucune connexion à Supabase. */
+  guestOnly?: boolean;
   renderEnd?: (results: Result[]) => React.ReactNode;
   backHref?: string;
   backLabel?: string;
@@ -55,10 +60,10 @@ function frDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-const isStored = (id: string) => !/^(gen|live|macro):/.test(id);
+const isStored = (id: string) => !/^(gen|live|macro|guest):/.test(id);
 
 export default function QuizRunner(props: RunnerProps) {
-  const { title, kicker, mode, timePerQuestion, renderEnd, backHref = "/dashboard", backLabel = "Quitter", replayLabel = "Rejouer" } = props;
+  const { title, kicker, mode, timePerQuestion, renderEnd, backHref = "/parcours", backLabel = "Quitter", replayLabel = "Rejouer" } = props;
   const router = useRouter();
   const T = timePerQuestion ?? 0;
 
@@ -80,12 +85,15 @@ export default function QuizRunner(props: RunnerProps) {
   const [runId, setRunId] = useState(0);
   const [save, setSave] = useState<"saving" | "saved" | "error" | "nosql" | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [guest, setGuest] = useState(false);
 
   const loadRef = useRef(props.load);
+  const guestLoadRef = useRef(props.guestLoad);
   const submitRef = useRef<(timedOut: boolean) => void>(() => {});
 
   useEffect(() => {
     loadRef.current = props.load;
+    guestLoadRef.current = props.guestLoad;
   });
 
   // Chargement des questions
@@ -93,16 +101,23 @@ export default function QuizRunner(props: RunnerProps) {
     let active = true;
     async function run() {
       try {
-        const supabase = getSupabase();
-        const { data: s } = await supabase.auth.getSession();
-        if (!s.session) {
+        let userId: string | null = null;
+        let supabase: SupabaseClient | null = null;
+        if (!props.guestOnly) {
+          supabase = getSupabase();
+          const { data: s } = await supabase.auth.getSession();
+          userId = s.session?.user.id ?? null;
+        }
+        const isGuest = userId === null;
+        if (isGuest && !guestLoadRef.current) {
           router.replace("/connexion");
           return;
         }
-        const [res, cRes] = await Promise.all([
-          loadRef.current({ supabase, userId: s.session.user.id }),
-          supabase.from("categories").select("id, name"),
-        ]);
+        const catsPromise = !isGuest && supabase ? supabase.from("categories").select("id, name") : Promise.resolve({ data: [] });
+        const res = isGuest
+          ? await guestLoadRef.current!()
+          : await loadRef.current!({ supabase: supabase!, userId: userId! });
+        const cRes = await catsPromise;
         if (!active) return;
         const questions = Array.isArray(res) ? res : res.questions;
         setNote(Array.isArray(res) ? null : res.note || null);
@@ -110,9 +125,10 @@ export default function QuizRunner(props: RunnerProps) {
           setPhase("empty");
           return;
         }
-        const map: Record<string, string> = {};
+        const map: Record<string, string> = { ...CAT_NAME };
         for (const c of (cRes.data ?? []) as { id: string; name: string }[]) map[c.id] = c.name;
         setCats(map);
+        setGuest(isGuest);
         setItems(questions.map((q) => ({ q, order: shuffle(mcqOptions(q).map((_, i) => i)) })));
         setIdx(0);
         setChoice(null);
@@ -137,7 +153,7 @@ export default function QuizRunner(props: RunnerProps) {
     return () => {
       active = false;
     };
-  }, [router, runId]);
+  }, [router, runId, props.guestOnly]);
 
   // Horloge (et fin de temps automatique pour les séries chronométrées)
   useEffect(() => {
@@ -264,7 +280,7 @@ export default function QuizRunner(props: RunnerProps) {
       const t = Math.floor((nowMs() - startAt) / 1000);
       setTotal(t);
       setPhase("done");
-      void persist(results, t);
+      if (!guest) void persist(results, t);
     }
   }
 
@@ -308,7 +324,7 @@ export default function QuizRunner(props: RunnerProps) {
     <div className="min-h-screen">
       <header className="border-b border-line">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-5">
-          <Link href="/dashboard" className="font-mono text-sm font-semibold tracking-tight">
+          <Link href={guest || props.guestOnly ? "/" : "/parcours"} className="font-mono text-sm font-semibold tracking-tight">
             global<span className="text-accent">/</span>macro<span className="text-accent">/</span>quiz
           </Link>
           <Link href={backHref} className="text-sm text-muted hover:text-fg">
@@ -325,7 +341,7 @@ export default function QuizRunner(props: RunnerProps) {
     return shell(
       <div className="space-y-4">
         <p className="text-sm text-muted">Aucune question disponible pour ce choix pour le moment.</p>
-        <Link href="/jouer" className="inline-block border border-line px-5 py-3 text-sm hover:border-muted">
+        <Link href="/entrainement" className="inline-block border border-line px-5 py-3 text-sm hover:border-muted">
           Choisir un autre mode
         </Link>
       </div>,
@@ -362,6 +378,7 @@ export default function QuizRunner(props: RunnerProps) {
           ))}
         </div>
 
+        {!guest && (
         <div className="mt-4 border border-line bg-panel px-4 py-3 text-sm">
           {save === "saving" && <span className="text-muted">Enregistrement de ta progression…</span>}
           {save === "saved" && summary && (
@@ -388,6 +405,12 @@ export default function QuizRunner(props: RunnerProps) {
           )}
           {save === "error" && <span className="text-danger">Ta progression n’a pas pu être enregistrée.</span>}
         </div>
+        )}
+        {guest && (
+          <div className="mt-4 border border-line bg-panel px-4 py-3 text-sm text-muted">
+            Mode invité : rien n’est sauvegardé. <Link href="/inscription" className="text-fg underline underline-offset-4 hover:text-accent">Crée un compte</Link> pour sauvegarder ta progression et débloquer le parcours complet.
+          </div>
+        )}
 
         {renderEnd?.(results)}
 
@@ -425,11 +448,17 @@ export default function QuizRunner(props: RunnerProps) {
           <button onClick={replay} className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">
             {replayLabel}
           </button>
-          <Link href="/dashboard" className="border border-line px-5 py-3 text-sm hover:border-muted">
-            Mon parcours
-          </Link>
-          <Link href="/jouer" className="border border-line px-5 py-3 text-sm hover:border-muted">
-            Autres modes
+          {guest ? (
+            <Link href="/inscription" className="border border-line px-5 py-3 text-sm hover:border-muted">
+              Créer un compte
+            </Link>
+          ) : (
+            <Link href="/parcours" className="border border-line px-5 py-3 text-sm hover:border-muted">
+              Mon parcours
+            </Link>
+          )}
+          <Link href="/entrainement" className="border border-line px-5 py-3 text-sm hover:border-muted">
+            Entraînement libre
           </Link>
         </div>
       </div>,

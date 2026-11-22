@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import Crumbs from "@/components/Crumbs";
 import { CHAPTERS, getChapter } from "@/lib/courses";
 
 export function generateStaticParams() {
@@ -17,8 +18,9 @@ export default async function Chapitre({ params }: { params: Promise<{ slug: str
   return (
     <AppShell width="max-w-3xl">
       <main className="fade-in py-10">
+        <Crumbs items={[["Cours", "/cours"], [chapter.title]]} />
         <p className="font-mono text-xs text-muted">
-          <span className="text-accent">{chapter.code}</span> · {chapter.level} · {chapter.minutes} min de lecture
+          <span className="text-accent">{chapter.code}</span> · {chapter.level}
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">{chapter.title}</h1>
         <p className="mt-4 leading-relaxed text-muted">{chapter.intro}</p>

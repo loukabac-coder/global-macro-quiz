@@ -4,6 +4,7 @@ import QuizRunner, { type Mode } from "@/components/QuizRunner";
 import { useSearch } from "@/lib/useSearch";
 import { loadDaily, loadQuick, loadTraining, loadWeakness, parseList } from "@/lib/loaders";
 import { todayParis } from "@/lib/rng";
+import { guestDaily, guestQuick } from "@/lib/guest";
 
 const TITLES: Record<string, string> = {
   quick: "Quick Quiz",
@@ -41,8 +42,12 @@ export default function QuizPage() {
       key={search}
       title={title}
       mode={mode}
-      backHref="/jouer"
-      backLabel="Modes de jeu"
+      backHref="/entrainement"
+      backLabel="Entraînement libre"
+      guestLoad={
+        // Un invité peut faire le quiz rapide et le défi du jour. Les autres modes demandent un compte.
+        mode === "daily" ? () => guestDaily(todayParis()) : mode === "quick" ? () => guestQuick(10) : undefined
+      }
       load={async ({ supabase, userId }) => {
         if (mode === "daily") return loadDaily(supabase, todayParis());
         if (mode === "weakness") return loadWeakness(supabase, userId);
