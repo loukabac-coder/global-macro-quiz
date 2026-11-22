@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 
@@ -11,10 +12,13 @@ type Profile = {
   streak_days: number;
 };
 
+type Counts = { total: number; good: number };
+
 export default function Dashboard() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [counts, setCounts] = useState<Counts>({ total: 0, good: 0 });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,14 +34,19 @@ export default function Dashboard() {
         }
         if (!active) return;
         setEmail(user.email ?? null);
-        const { data: p, error: pErr } = await supabase
-          .from("profiles")
-          .select("display_name, xp, level, streak_days")
-          .eq("id", user.id)
-          .maybeSingle();
+        const [p, all, good] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("display_name, xp, level, streak_days")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase.from("attempts").select("id", { count: "exact", head: true }),
+          supabase.from("attempts").select("id", { count: "exact", head: true }).eq("is_correct", true),
+        ]);
         if (!active) return;
-        if (pErr) setError("Impossible de charger ton profil : " + pErr.message);
-        else setProfile(p as Profile | null);
+        if (p.error) setError("Impossible de charger ton profil : " + p.error.message);
+        else setProfile(p.data as Profile | null);
+        setCounts({ total: all.count ?? 0, good: good.count ?? 0 });
       } catch (e) {
         if (active) setError(e instanceof Error ? e.message : "Erreur inconnue.");
       }
@@ -53,11 +62,14 @@ export default function Dashboard() {
     router.push("/");
   }
 
+  const rate = counts.total > 0 ? `${Math.round((counts.good / counts.total) * 100)} %` : "–";
   const stats: [string, string][] = profile
     ? [
         ["Niveau", String(profile.level)],
         ["XP", String(profile.xp)],
         ["Série", `${profile.streak_days} j`],
+        ["Réponses", String(counts.total)],
+        ["Réussite", rate],
       ]
     : [];
 
@@ -85,7 +97,7 @@ export default function Dashboard() {
         {!email && !error && <p className="mt-8 text-sm text-muted">Chargement…</p>}
 
         {profile && (
-          <div className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-3">
+          <div className="mt-8 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-5">
             {stats.map(([label, value]) => (
               <div key={label} className="bg-ink p-5">
                 <div className="text-sm text-muted">{label}</div>
@@ -96,10 +108,19 @@ export default function Dashboard() {
         )}
 
         {email && (
-          <p className="mt-8 max-w-xl text-sm leading-relaxed text-muted">
-            Ton compte est créé et connecté. Les quiz, la progression par catégorie et l’historique
-            s’afficheront ici dès qu’ils seront prêts.
-          </p>
+          <div className="mt-10 border border-line bg-panel p-6">
+            <h2 className="text-lg font-semibold">Quick Quiz</h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+              Dix questions tirées au hasard dans toutes les catégories, avec correction détaillée à
+              chaque réponse.
+            </p>
+            <Link
+              href="/quiz"
+              className="mt-5 inline-block bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
+            >
+              Lancer un Quick Quiz
+            </Link>
+          </div>
         )}
       </main>
     </div>
