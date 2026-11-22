@@ -25,7 +25,7 @@ jobs:
         run: python scripts/update_macro.py
       - name: Enregistrer si les données ont changé
         run: |
-          git config user.name "data-bot"
-          git config user.email "bot@users.noreply.github.com"
+          git config user.name "loukabac-coder"
+          git config user.email "loukabac-coder@users.noreply.github.com"
           git add public/data/market-caps.json public/data/macro.json
           git diff --staged --quiet || (git commit -m "Données du jour" && git pull --rebase && git push)
