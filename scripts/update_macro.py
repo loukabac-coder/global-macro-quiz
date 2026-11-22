@@ -89,6 +89,33 @@ def eurostat_json(geo="EA"):
     return norm_date(pos[best]), float(vals[str(best)])
 
 
+def eurostat_v2(geo="EA", dataset="prc_hicp_minr"):
+    """Nouvelle base IPCH d'Eurostat (ECOICOP v2, depuis 2026). On lit toutes les catégories et on garde l'indice d'ensemble."""
+    url = (f"https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/{dataset}"
+           f"?format=JSON&lang=EN&unit=RCH_A&geo={geo}&sinceTimePeriod=2026-01")
+    d = json.loads(http_get(url))
+    ids, sizes = d["id"], d["size"]
+    cats = {}
+    for dim in ids:
+        idx = d["dimension"][dim]["category"]["index"]
+        if isinstance(idx, list):
+            idx = {c: i for i, c in enumerate(idx)}
+        cats[dim] = {i: c for c, i in idx.items()}
+    best = None
+    for key, val in d["value"].items():
+        k = int(key)
+        codes = {}
+        for dim, size in zip(reversed(ids), reversed(sizes)):
+            codes[dim] = cats[dim][k % size]
+            k //= size
+        total = any(dim.lower().startswith("coicop") and codes[dim] in ("TOTAL", "CP00") for dim in ids)
+        if total and (best is None or codes["time"] > best[0]):
+            best = (codes["time"], float(val))
+    if best is None:
+        raise ValueError("indice d'ensemble introuvable")
+    return norm_date(best[0]), best[1]
+
+
 def freshest(*fns):
     """Essaie toutes les sources et garde la donnée à la date la plus récente."""
     best, last = None, None
@@ -132,8 +159,10 @@ INDICATORS = {
     "fed_target_upper": ("Fed funds : borne haute de la fourchette cible", "%", "Réserve fédérale via FRED (DFEDTARU)", 120,
         lambda: fred_last("DFEDTARU")),
     "us_cpi_yoy": ("Inflation IPC américaine sur 12 mois", "%", "BLS via FRED (CPIAUCSL)", 100, fred_cpi_yoy),
-    "ez_hicp_yoy": ("Inflation IPCH de la zone euro sur 12 mois", "%", "Eurostat (IPCH, prc_hicp_manr)", 100,
-        lambda: freshest(eurostat_json, lambda: eurostat_json("EA21"), lambda: eurostat_json("EA20"), eurostat_hicp, lambda: eurostat_hicp("EA21"), lambda: ecb_last("ICP/M.U2.N.000000.4.ANR"))),
+    "ez_hicp_yoy": ("Inflation IPCH de la zone euro sur 12 mois", "%", "Eurostat / BCE (IPCH, base ECOICOP 2)", 100,
+        lambda: freshest(eurostat_v2, lambda: eurostat_v2("EA21"), lambda: eurostat_v2("EA20"),
+                         lambda: ecb_last("HICP/M.U2.N.000000.4.ANR"), lambda: ecb_last("HICP/M.U2.N.TOTAL.4.ANR"),
+                         eurostat_json, lambda: ecb_last("ICP/M.U2.N.000000.4.ANR"))),
     "us_unrate": ("Taux de chômage américain", "%", "BLS via FRED (UNRATE)", 100, lambda: fred_last("UNRATE")),
     "us_10y": ("Rendement du Treasury américain à 10 ans", "%", "Réserve fédérale via FRED (DGS10)", 7,
         lambda: fred_last("DGS10")),
