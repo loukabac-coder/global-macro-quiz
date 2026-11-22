@@ -68,13 +68,25 @@ def fred_cpi_yoy():
     raise ValueError("IPC il y a 12 mois introuvable")
 
 
-def eurostat_hicp():
-    txt = http_get("https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/prc_hicp_manr/M.RCH_A.CP00.EA?lastTimePeriod=1&format=SDMX-CSV")
+def eurostat_hicp(geo="EA"):
+    txt = http_get(f"https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/prc_hicp_manr/M.RCH_A.CP00.{geo}?lastTimePeriod=3&format=SDMX-CSV")
     rows = list(csv.DictReader(io.StringIO(txt)))
     if not rows:
         raise ValueError("Eurostat vide")
     r = sorted(rows, key=lambda x: x["TIME_PERIOD"])[-1]
     return norm_date(r["TIME_PERIOD"]), float(r["OBS_VALUE"])
+
+
+def eurostat_json(geo="EA"):
+    """API JSON d'Eurostat (inflation annuelle IPCH, toutes catégories)."""
+    url = ("https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_manr"
+           f"?format=JSON&lang=EN&unit=RCH_A&coicop=CP00&geo={geo}&lastTimePeriod=3")
+    d = json.loads(http_get(url))
+    times = d["dimension"]["time"]["category"]["index"]  # {"2026-09": 0, "2026-10": 1}
+    vals = d["value"]  # {"0": 3.8, "1": 4.0}
+    pos = {v: k for k, v in times.items()}
+    best = max((int(i) for i in vals), key=lambda i: pos[i])
+    return norm_date(pos[best]), float(vals[str(best)])
 
 
 def freshest(*fns):
@@ -83,9 +95,11 @@ def freshest(*fns):
     for f in fns:
         try:
             r = f()
+            print("   source", getattr(f, "__name__", "?"), "->", r)
             if best is None or r[0] > best[0]:
                 best = r
         except Exception as e:  # noqa: BLE001
+            print("   source en échec :", e)
             last = e
     if best is None:
         raise last
@@ -117,10 +131,10 @@ INDICATORS = {
         lambda: first_ok(lambda: ecb_last("FM/D.U2.EUR.4F.KR.DFR.LEV"), lambda: ecb_last("FM/B.U2.EUR.4F.KR.DFR.LEV"))),
     "fed_target_upper": ("Fed funds : borne haute de la fourchette cible", "%", "Réserve fédérale via FRED (DFEDTARU)", 120,
         lambda: fred_last("DFEDTARU")),
-    "us_cpi_yoy": ("Inflation IPC américaine sur 12 mois", "%", "BLS via FRED (CPIAUCSL)", 75, fred_cpi_yoy),
-    "ez_hicp_yoy": ("Inflation IPCH de la zone euro sur 12 mois", "%", "Eurostat via BCE (ICP)", 75,
-        lambda: freshest(eurostat_hicp, lambda: ecb_last("ICP/M.U2.N.000000.4.ANR"))),
-    "us_unrate": ("Taux de chômage américain", "%", "BLS via FRED (UNRATE)", 75, lambda: fred_last("UNRATE")),
+    "us_cpi_yoy": ("Inflation IPC américaine sur 12 mois", "%", "BLS via FRED (CPIAUCSL)", 100, fred_cpi_yoy),
+    "ez_hicp_yoy": ("Inflation IPCH de la zone euro sur 12 mois", "%", "Eurostat (IPCH, prc_hicp_manr)", 100,
+        lambda: freshest(eurostat_json, lambda: eurostat_json("EA21"), lambda: eurostat_json("EA20"), eurostat_hicp, lambda: eurostat_hicp("EA21"), lambda: ecb_last("ICP/M.U2.N.000000.4.ANR"))),
+    "us_unrate": ("Taux de chômage américain", "%", "BLS via FRED (UNRATE)", 100, lambda: fred_last("UNRATE")),
     "us_10y": ("Rendement du Treasury américain à 10 ans", "%", "Réserve fédérale via FRED (DGS10)", 7,
         lambda: fred_last("DGS10")),
     "eurusd": ("EUR/USD (taux de référence BCE)", "", "BCE (taux de référence)", 7,

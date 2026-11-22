@@ -18,6 +18,11 @@ export async function fetchMacro(): Promise<MacroData | null> {
     if (!res.ok) return null;
     const d = (await res.json()) as MacroData;
     if (!d.updated_at || !d.indicators) return null;
+    // Les séries mensuelles sortent avec 2 à 6 semaines de retard : on tolère au moins 100 jours.
+    for (const k of ["us_cpi_yoy", "ez_hicp_yoy", "us_unrate"]) {
+      const ind = d.indicators[k];
+      if (ind && ind.max_age_days < 100) ind.max_age_days = 100;
+    }
     return d;
   } catch {
     return null;
