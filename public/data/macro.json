@@ -1,11 +1,11 @@
 {
- "updated_at": "2026-11-22T16:54:41+00:00",
+ "updated_at": "2026-11-22T16:58:53+00:00",
  "indicators": {
   "ecb_deposit_rate": {
    "label": "Taux de la facilité de dépôt de la BCE",
    "value": 2.5,
    "unit": "%",
-   "ref_date": "2026-09-16",
+   "ref_date": "2026-11-22",
    "source": "BCE (Statistical Data Warehouse)",
    "max_age_days": 120
   },
@@ -19,7 +19,7 @@
   },
   "ez_hicp_yoy": {
    "label": "Inflation IPCH de la zone euro sur 12 mois",
-   "value": 1.9,
+   "value": 2.0,
    "unit": "%",
    "ref_date": "2025-12-01",
    "source": "Eurostat via BCE (ICP)",
@@ -72,6 +72,14 @@
    "ref_date": "2026-11-22",
    "source": "Yahoo Finance (GC=F)",
    "max_age_days": 7
+  },
+  "us_cpi_yoy": {
+   "label": "Inflation IPC américaine sur 12 mois",
+   "value": 3.72,
+   "unit": "%",
+   "ref_date": "2026-09-01",
+   "source": "BLS via FRED (CPIAUCSL)",
+   "max_age_days": 75
   }
  }
 }
