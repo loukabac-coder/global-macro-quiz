@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 import {
   DIFFICULTY_FR,
   LETTERS,
@@ -22,31 +21,31 @@ import {
 import { BADGES } from "@/lib/badges";
 import { levelFromXp, levelName } from "@/lib/progress";
 import { CAT_NAME } from "@/lib/categories";
+import type { Activity, Answer, Feedback, QuizSummary } from "@/lib/quizSession";
 
 export type Result = { q: Question; ok: boolean; given: string; seconds: number; points: number };
-export type Mode = "quick" | "training" | "challenge" | "daily" | "mixed" | "weakness";
 type Phase = "loading" | "empty" | "error" | "playing" | "done";
 type Item = { q: Question; order: number[] };
-type Summary = { xp_gained: number; xp: number; level: number; streak: number; unlocked: string[] };
 
 export type RunnerProps = {
   title: string;
   kicker?: string;
-  mode: Mode;
+  activity?: Activity;
   timePerQuestion?: number;
-  load?: (ctx: { supabase: SupabaseClient; userId: string }) => Promise<Question[] | { questions: Question[]; note: string }>;
+  practiceLoad?: () => Promise<Question[]>;
   /** Questions pour un visiteur sans compte (rien n'est sauvegardé). Sans cette fonction, un visiteur est renvoyé vers la connexion. */
   guestLoad?: () => Promise<Question[]>;
   /** Page réservée aux invités : aucune connexion à Supabase. */
   guestOnly?: boolean;
-  renderEnd?: (results: Result[]) => React.ReactNode;
+  renderEnd?: (results: Result[], summary: QuizSummary | null, guest: boolean) => React.ReactNode;
   backHref?: string;
   backLabel?: string;
   replayLabel?: string;
+  onBack?: () => void;
 };
 
 function nowMs(): number {
-  return Date.now();
+  return performance.now();
 }
 
 function clock(total: number): string {
@@ -60,18 +59,21 @@ function frDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-const isStored = (id: string) => !/^(gen|live|macro|guest):/.test(id);
+function answerLabel(q: Question, answer: Answer) {
+  if (answer === null) return "Pas de réponse";
+  if (q.type === "mcq") return mcqOptions(q)[Number(answer)] ?? "";
+  if (typeof answer === "boolean") return answer ? "Vrai" : "Faux";
+  return fmt(answer);
+}
 
 export default function QuizRunner(props: RunnerProps) {
-  const { title, kicker, mode, timePerQuestion, renderEnd, backHref = "/parcours", backLabel = "Quitter", replayLabel = "Rejouer" } = props;
+  const { title, kicker, renderEnd, backHref = "/parcours", backLabel = "Quitter", replayLabel = "Rejouer" } = props;
   const router = useRouter();
-  const T = timePerQuestion ?? 0;
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [message, setMessage] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
-  const [cats, setCats] = useState<Record<string, string>>({});
   const [idx, setIdx] = useState(0);
   const [choice, setChoice] = useState<number | boolean | null>(null);
   const [text, setText] = useState("");
@@ -83,17 +85,19 @@ export default function QuizRunner(props: RunnerProps) {
   const [total, setTotal] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
   const [runId, setRunId] = useState(0);
-  const [save, setSave] = useState<"saving" | "saved" | "error" | "nosql" | null>(null);
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [save, setSave] = useState<"saving" | "saved" | "error" | null>(null);
+  const [summary, setSummary] = useState<QuizSummary | null>(null);
   const [guest, setGuest] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [T, setTimer] = useState(0);
+  const [pending, setPending] = useState(false);
 
-  const loadRef = useRef(props.load);
-  const guestLoadRef = useRef(props.guestLoad);
+  const configRef = useRef(props);
+  const busy = useRef(false);
   const submitRef = useRef<(timedOut: boolean) => void>(() => {});
 
   useEffect(() => {
-    loadRef.current = props.load;
-    guestLoadRef.current = props.guestLoad;
+    configRef.current = props;
   });
 
   // Chargement des questions
@@ -101,33 +105,52 @@ export default function QuizRunner(props: RunnerProps) {
     let active = true;
     async function run() {
       try {
-        let userId: string | null = null;
-        let supabase: SupabaseClient | null = null;
-        if (!props.guestOnly) {
-          supabase = getSupabase();
-          const { data: s } = await supabase.auth.getSession();
-          userId = s.session?.user.id ?? null;
+        const { practiceLoad, guestOnly, guestLoad, activity, timePerQuestion } = configRef.current;
+        let questions: Question[];
+        let issuedId: string | null = null;
+        let quizNote: string | null = null;
+        let timer = timePerQuestion ?? 0;
+        let isGuest = false;
+        if (practiceLoad) {
+          questions = await practiceLoad();
+        } else {
+          const supabase = !guestOnly && supabaseConfigured() ? getSupabase() : null;
+          const sessionResult = supabase ? await supabase.auth.getSession() : null;
+          if (sessionResult?.error) throw new Error("Ta session n’a pas pu être vérifiée.");
+          const session = sessionResult?.data.session;
+          if (session && supabase && activity) {
+            const response = await fetch("/api/quiz", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+              body: JSON.stringify(activity),
+            });
+            const res = await response.json() as { id?: string; questions?: Question[]; note?: string; error?: string; timeLimit?: number };
+            if (!response.ok) throw new Error(res.error ?? "Le serveur de quiz est indisponible.");
+            questions = res.questions ?? [];
+            issuedId = res.id ?? null;
+            quizNote = res.note ?? null;
+            timer = res.timeLimit ?? 0;
+            if (issuedId && active) {
+              const { error } = await supabase.rpc("start_quiz_question", { p_run: issuedId, p_index: 0 });
+              if (error) throw new Error("La première question n’a pas pu démarrer.");
+            }
+          } else {
+            if (!guestLoad) {
+              if (active) router.replace(`/connexion?retour=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+              return;
+            }
+            isGuest = true;
+            questions = await guestLoad();
+          }
         }
-        const isGuest = userId === null;
-        if (isGuest && !guestLoadRef.current) {
-          router.replace("/connexion");
-          return;
-        }
-        const catsPromise = !isGuest && supabase ? supabase.from("categories").select("id, name") : Promise.resolve({ data: [] });
-        const res = isGuest
-          ? await guestLoadRef.current!()
-          : await loadRef.current!({ supabase: supabase!, userId: userId! });
-        const cRes = await catsPromise;
         if (!active) return;
-        const questions = Array.isArray(res) ? res : res.questions;
-        setNote(Array.isArray(res) ? null : res.note || null);
+        setNote(quizNote);
         if (questions.length === 0) {
           setPhase("empty");
           return;
         }
-        const map: Record<string, string> = { ...CAT_NAME };
-        for (const c of (cRes.data ?? []) as { id: string; name: string }[]) map[c.id] = c.name;
-        setCats(map);
+        setSessionId(issuedId);
+        setTimer(timer);
         setGuest(isGuest);
         setItems(questions.map((q) => ({ q, order: shuffle(mcqOptions(q).map((_, i) => i)) })));
         setIdx(0);
@@ -153,7 +176,7 @@ export default function QuizRunner(props: RunnerProps) {
     return () => {
       active = false;
     };
-  }, [router, runId, props.guestOnly]);
+  }, [router, runId]);
 
   // Horloge (et fin de temps automatique pour les séries chronométrées)
   useEffect(() => {
@@ -174,100 +197,76 @@ export default function QuizRunner(props: RunnerProps) {
     setRunId((n) => n + 1);
   }
 
-  function submit(timedOut: boolean) {
-    if (checked || phase !== "playing") return;
+  async function submit(timedOut: boolean) {
+    if (checked || busy.current || phase !== "playing") return;
     const { q } = items[idx];
-    let ok = false;
-    let given = "";
-    if (q.type === "mcq") {
-      if (choice === null && !timedOut) return;
-      ok = choice !== null && choice === Number(q.correct);
-      given = choice === null ? "Pas de réponse" : (mcqOptions(q)[choice as number] ?? "");
-    } else if (q.type === "true_false") {
-      if (choice === null && !timedOut) return;
-      ok = choice !== null && choice === q.correct;
-      given = choice === null ? "Pas de réponse" : choice ? "Vrai" : "Faux";
-    } else {
-      const v = parseNumber(text);
-      if (v === null) {
-        if (!timedOut) {
-          setFormError("Entre un nombre, par exemple 12 ou 4,75.");
-          return;
-        }
-        given = "Pas de réponse";
-      } else {
-        ok = checkNumeric(q, v);
-        given = fmt(v);
-      }
-    }
-    setFormError(null);
     const t = nowMs();
-    const seconds = Math.round((t - qStart) / 100) / 10;
-    const speed = T > 0 ? Math.max(0, 1 - seconds / T) : 0;
-    const points = T > 0 && ok ? Math.round(50 + 50 * speed) : 0;
-    setResults((r) => [...r, { q, ok, given: timedOut && given === "Pas de réponse" ? "Temps écoulé" : given, seconds, points }]);
-    setChecked(true);
-  }
-
-  async function persist(final: Result[], seconds: number) {
-    setSave("saving");
-    const supabase = getSupabase();
-    const { data: u } = await supabase.auth.getUser();
-    const user = u.user;
-    if (!user) {
-      setSave("error");
+    timedOut ||= T > 0 && t - qStart >= T * 1000;
+    const answer = timedOut ? null : isNumeric(q) ? parseNumber(text) : choice;
+    if (answer === null && !timedOut) {
+      if (isNumeric(q)) setFormError("Entre un nombre, par exemple 12 ou 4,75.");
       return;
     }
-    // 1) historique (tables existantes)
+    const seconds = Math.round((t - qStart) / 100) / 10;
+    const speed = T > 0 ? Math.max(0, 1 - seconds / T) : 0;
+    busy.current = true;
+    setPending(true);
+    setFormError(null);
     try {
-      const score = final.filter((r) => r.ok).length;
-      const { data: s, error: e1 } = await supabase
-        .from("quiz_sessions")
-        .insert({ user_id: user.id, mode, finished_at: new Date().toISOString(), score, total: final.length, seconds_spent: seconds })
-        .select("id")
-        .single();
-      if (!e1 && s) {
-        const stored = final.filter((r) => isStored(String(r.q.id)));
-        if (stored.length) {
-          await supabase.from("attempts").insert(
-            stored.map((r) => ({
-              user_id: user.id,
-              session_id: s.id,
-              question_id: r.q.id,
-              is_correct: r.ok,
-              answer: { given: r.given },
-              seconds_spent: Math.round(r.seconds),
-            })),
-          );
-        }
+      let feedback: Feedback;
+      if (sessionId) {
+        const { data, error } = await getSupabase().rpc("record_quiz_answer", { p_run: sessionId, p_index: idx, p_answer: answer });
+        if (error || !data) throw new Error("réponse");
+        feedback = data as Feedback;
+      } else {
+        const ok = answer !== null && (isNumeric(q) ? checkNumeric(q, Number(answer)) : answer === q.correct);
+        feedback = { question: q, ok, answer, seconds, points: T > 0 && ok ? Math.round(50 + 50 * speed) : 0, timedOut };
       }
+      const { question, ok, seconds: spent, points } = feedback;
+      setResults((r) => [...r, { q: question, ok, given: feedback.timedOut ? "Temps écoulé" : answerLabel(question, feedback.answer), seconds: spent, points }]);
+      setChoice(feedback.answer);
+      setChecked(true);
     } catch {
-      /* l'historique est secondaire : on continue pour les XP */
+      setFormError("La réponse n’a pas pu être vérifiée. Réessaie.");
+    } finally {
+      setPending(false);
+      busy.current = false;
     }
-    // 2) XP, série, répétition espacée, badges (calculés côté serveur)
+  }
+
+  async function persist(id: string) {
+    if (busy.current) return;
+    busy.current = true;
+    setSave("saving");
     try {
-      const answers = final.map((r) => ({
-        qid: isStored(String(r.q.id)) ? String(r.q.id) : null,
-        ok: r.ok,
-        seconds: r.seconds,
-        difficulty: r.q.difficulty,
-        category: r.q.category_id,
-      }));
-      const { data, error } = await supabase.rpc("submit_session", { p_mode: mode, p_answers: answers });
-      if (error) {
-        setSave(/submit_session|function|schema cache/i.test(error.message) ? "nosql" : "error");
-        return;
-      }
-      setSummary(data as Summary);
+      const { data, error } = await getSupabase().rpc("finish_quiz_run", { p_run: id });
+      if (error || !data) throw new Error("session");
+      setSummary(data as QuizSummary);
       setSave("saved");
     } catch {
       setSave("error");
+    } finally {
+      busy.current = false;
     }
   }
 
-  function next() {
-    if (!checked) return;
+  async function next() {
+    if (!checked || busy.current) return;
     if (idx + 1 < items.length) {
+      if (sessionId) {
+        busy.current = true;
+        setPending(true);
+        try {
+          const { error } = await getSupabase().rpc("start_quiz_question", { p_run: sessionId, p_index: idx + 1 });
+          if (error) throw new Error("question");
+        } catch {
+          setFormError("La question suivante n’a pas pu démarrer. Réessaie.");
+          return;
+        } finally {
+          setPending(false);
+          busy.current = false;
+        }
+      }
       setIdx(idx + 1);
       setChoice(null);
       setText("");
@@ -280,7 +279,7 @@ export default function QuizRunner(props: RunnerProps) {
       const t = Math.floor((nowMs() - startAt) / 1000);
       setTotal(t);
       setPhase("done");
-      if (!guest) void persist(results, t);
+      if (sessionId) void persist(sessionId);
     }
   }
 
@@ -289,7 +288,7 @@ export default function QuizRunner(props: RunnerProps) {
   });
 
   function handleKey(e: KeyboardEvent) {
-    if (phase !== "playing" || !items[idx]) return;
+    if (phase !== "playing" || !items[idx] || busy.current || e.repeat) return;
     const it = items[idx];
     const typing = e.target instanceof HTMLInputElement;
     const ready = isNumeric(it.q) ? text.trim() !== "" : choice !== null;
@@ -327,9 +326,9 @@ export default function QuizRunner(props: RunnerProps) {
           <Link href={guest || props.guestOnly ? "/" : "/parcours"} className="font-mono text-sm font-semibold tracking-tight">
             global<span className="text-accent">/</span>macro<span className="text-accent">/</span>quiz
           </Link>
-          <Link href={backHref} className="text-sm text-muted hover:text-fg">
-            {backLabel}
-          </Link>
+          {props.onBack
+            ? <button onClick={props.onBack} className="text-sm text-muted hover:text-fg">{backLabel}</button>
+            : <Link href={backHref} className="text-sm text-muted hover:text-fg">{backLabel}</Link>}
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-5 sm:py-10">{children}</main>
@@ -348,8 +347,9 @@ export default function QuizRunner(props: RunnerProps) {
     );
   if (phase === "error")
     return shell(
-      <div role="alert" className="border-l-2 border-danger bg-panel px-3 py-2.5 text-sm">
-        Impossible de charger le quiz : {message}
+      <div className="space-y-4">
+        <p role="alert" className="border-l-2 border-danger bg-panel px-3 py-2.5 text-sm">Impossible de charger le quiz : {message}</p>
+        <button onClick={replay} className="border border-line px-4 py-2 text-sm hover:border-muted">Réessayer</button>
       </div>,
     );
 
@@ -378,8 +378,8 @@ export default function QuizRunner(props: RunnerProps) {
           ))}
         </div>
 
-        {!guest && (
-        <div className="mt-4 border border-line bg-panel px-4 py-3 text-sm">
+        {sessionId && (
+        <div role="status" className="mt-4 border border-line bg-panel px-4 py-3 text-sm">
           {save === "saving" && <span className="text-muted">Enregistrement de ta progression…</span>}
           {save === "saved" && summary && (
             <div className="space-y-1">
@@ -398,12 +398,12 @@ export default function QuizRunner(props: RunnerProps) {
               ))}
             </div>
           )}
-          {save === "nosql" && (
-            <span className="text-warn">
-              XP non enregistrés : le script SQL du Lot 1 n’a pas encore été exécuté dans Supabase.
-            </span>
+          {save === "error" && (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-danger">Ta progression n’a pas pu être enregistrée.</span>
+              <button onClick={() => persist(sessionId)} className="underline underline-offset-4">Réessayer l’enregistrement</button>
+            </div>
           )}
-          {save === "error" && <span className="text-danger">Ta progression n’a pas pu être enregistrée.</span>}
         </div>
         )}
         {guest && (
@@ -412,7 +412,7 @@ export default function QuizRunner(props: RunnerProps) {
           </div>
         )}
 
-        {renderEnd?.(results)}
+        {renderEnd?.(results, summary, guest)}
 
         <h2 className="mt-10 text-lg font-semibold">Corrections</h2>
         <ul className="mt-4 divide-y divide-line border-y border-line">
@@ -445,7 +445,7 @@ export default function QuizRunner(props: RunnerProps) {
         </ul>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <button onClick={replay} className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">
+          <button onClick={replay} disabled={save === "saving"} className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:opacity-40">
             {replayLabel}
           </button>
           {guest ? (
@@ -467,14 +467,14 @@ export default function QuizRunner(props: RunnerProps) {
 
   // phase === "playing"
   const item = items[idx];
-  const q = item.q;
   const last = results[results.length - 1];
+  const q = checked && last ? last.q : item.q;
   const unit = unitOf(q);
   const wrongSelected = checked && q.type === "mcq" && !last?.ok && typeof choice === "number" ? wrongNote(q, choice) : null;
   const elapsedQ = Math.max(0, (now - qStart) / 1000);
   const remaining = T > 0 ? Math.max(0, T - elapsedQ) : 0;
   const barPct = T > 0 ? Math.round((remaining / T) * 100) : 0;
-  const readyToSubmit = isNumeric(q) ? text.trim() !== "" : choice !== null;
+  const readyToSubmit = (T > 0 && remaining === 0) || (isNumeric(q) ? text.trim() !== "" : choice !== null);
 
   function optionClass(optIdx: number): string {
     const base = "flex w-full gap-3 border px-3 py-3.5 text-left text-sm transition-colors";
@@ -498,7 +498,7 @@ export default function QuizRunner(props: RunnerProps) {
       {note && idx === 0 && !checked && <p className="mb-3 font-mono text-xs text-warn">{note}</p>}
       <div className="flex items-center justify-between font-mono text-xs text-muted">
         <span>Q {String(idx + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}</span>
-        <span className="truncate px-2">{cats[q.category_id] ?? q.category_id}, {DIFFICULTY_FR[q.difficulty] ?? q.difficulty}</span>
+        <span className="truncate px-2">{CAT_NAME[q.category_id] ?? q.category_id}, {DIFFICULTY_FR[q.difficulty] ?? q.difficulty}</span>
         <span className={T > 0 && remaining <= 5 && !checked ? "text-danger" : "text-fg"}>
           {T > 0 ? `${Math.ceil(remaining)} s` : clock(Math.floor((now - startAt) / 1000))}
         </span>
@@ -523,7 +523,7 @@ export default function QuizRunner(props: RunnerProps) {
         <div className="mt-6 space-y-2">
           {q.type === "mcq" &&
             item.order.map((optIdx, pos) => (
-              <button key={optIdx} type="button" disabled={checked} onClick={() => setChoice(optIdx)} className={optionClass(optIdx)}>
+              <button key={optIdx} type="button" disabled={checked || pending} aria-pressed={choice === optIdx} onClick={() => setChoice(optIdx)} className={optionClass(optIdx)}>
                 <span className="font-mono text-muted">{LETTERS[pos]}</span>
                 <span>{mcqOptions(q)[optIdx]}</span>
               </button>
@@ -531,7 +531,7 @@ export default function QuizRunner(props: RunnerProps) {
 
           {q.type === "true_false" &&
             [true, false].map((v) => (
-              <button key={String(v)} type="button" disabled={checked} onClick={() => setChoice(v)} className={tfClass(v)}>
+              <button key={String(v)} type="button" disabled={checked || pending} aria-pressed={choice === v} onClick={() => setChoice(v)} className={tfClass(v)}>
                 {v ? "Vrai" : "Faux"}
               </button>
             ))}
@@ -543,7 +543,7 @@ export default function QuizRunner(props: RunnerProps) {
                 inputMode="decimal"
                 autoComplete="off"
                 autoFocus
-                disabled={checked}
+                disabled={checked || pending}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Ta réponse"
@@ -558,7 +558,7 @@ export default function QuizRunner(props: RunnerProps) {
         {formError && <p role="alert" className="mt-3 text-sm text-danger">{formError}</p>}
 
         {checked && last && (
-          <div className={`fade-in mt-6 border-l-2 bg-panel px-4 py-4 text-sm leading-relaxed ${last.ok ? "border-accent" : "border-danger"}`}>
+          <div role="status" className={`fade-in mt-6 border-l-2 bg-panel px-4 py-4 text-sm leading-relaxed ${last.ok ? "border-accent" : "border-danger"}`}>
             <p className={`font-semibold ${last.ok ? "text-accent" : "text-danger"}`}>
               {last.ok ? "Correct." : last.given === "Temps écoulé" ? "Temps écoulé." : "Incorrect."}
               {T > 0 && last.ok && <span className="ml-2 font-mono text-xs font-normal text-muted">+{last.points} pts · {last.seconds.toFixed(1).replace(".", ",")} s</span>}
@@ -582,12 +582,12 @@ export default function QuizRunner(props: RunnerProps) {
 
         <div className="mt-6 flex items-center gap-4">
           {!checked ? (
-            <button type="button" disabled={!readyToSubmit} onClick={() => submit(false)} className="bg-accent px-6 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:opacity-40">
-              Valider
+            <button type="button" disabled={!readyToSubmit || pending} onClick={() => submit(false)} className="bg-accent px-6 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:opacity-40">
+              {pending ? "Validation…" : "Valider"}
             </button>
           ) : (
-            <button type="button" onClick={next} className="bg-accent px-6 py-3 text-sm font-semibold text-ink hover:brightness-110">
-              {idx + 1 < items.length ? "Question suivante" : "Voir les résultats"}
+            <button type="button" onClick={next} disabled={pending} className="bg-accent px-6 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:opacity-40">
+              {pending ? "Chargement…" : idx + 1 < items.length ? "Question suivante" : "Voir les résultats"}
             </button>
           )}
           <span className="hidden font-mono text-xs text-muted sm:inline">Entrée pour valider · 1 à 4 pour choisir</span>

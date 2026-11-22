@@ -3,16 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import { ageDays, fetchMacro, fmtValue, isFresh, type MacroData } from "@/lib/macro";
+import { fetchMacro, fmtValue, isDatedObservation, isFresh, referenceLabel, type MacroData } from "@/lib/macro";
 
 function nowMs(): number {
   return Date.now();
 }
 
-function dayFr(iso: string): string {
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
+const timestamp = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" });
 
 export default function Donnees() {
   const [data, setData] = useState<MacroData | null>(null);
@@ -39,15 +36,15 @@ export default function Donnees() {
   return (
     <AppShell width="max-w-4xl">
       <main className="fade-in py-10">
-        <h1 className="text-3xl font-semibold tracking-tight">Données du jour</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Données macroéconomiques</h1>
         <p className="mt-3 max-w-xl text-muted">
-          Taux directeurs, inflation, change, pétrole, or. Un robot les met à jour chaque jour à partir de sources publiques. Chaque chiffre affiche sa date de référence : quand il devient trop ancien, les questions qui s’appuient dessus disparaissent automatiquement.
+          Dernières observations disponibles. La date de collecte et la période économique sont indiquées séparément lorsqu’elles sont connues.
         </p>
 
         {state === "loading" && <p className="mt-8 text-sm text-muted">Chargement…</p>}
         {state === "none" && (
           <p className="mt-8 border-l-2 border-warn bg-panel px-4 py-3 text-sm">
-            Pas encore de données : le robot de mise à jour n’a pas encore tourné.
+            Les données macroéconomiques ne sont pas disponibles pour le moment.
           </p>
         )}
 
@@ -64,17 +61,22 @@ export default function Donnees() {
               </thead>
               <tbody>
                 {rows.map(([key, ind]) => {
-                  const fresh = isFresh(ind, now);
-                  const age = Math.round(ageDays(ind, now));
+                  const dated = isDatedObservation(key, ind);
+                  const fresh = dated && isFresh(ind, now);
                   return (
                     <tr key={key} className="border-b border-line last:border-0">
-                      <td className="px-3 py-2.5">{ind.label}</td>
+                      <td className="px-3 py-2.5">
+                        {ind.label}
+                        <p className="mt-1 text-xs text-muted sm:hidden">{ind.source}</p>
+                      </td>
                       <td className={`px-3 py-2.5 text-right font-mono ${fresh ? "" : "text-muted line-through"}`}>{fmtValue(ind)}</td>
                       <td className="px-3 py-2.5 font-mono text-xs">
-                        {dayFr(ind.ref_date)}
-                        <span className={`ml-2 ${fresh ? "text-muted" : "text-danger"}`}>
-                          {fresh ? `(il y a ${age} j)` : "périmée : questions désactivées"}
-                        </span>
+                        {dated ? referenceLabel(key, ind) : "Date de séance indisponible"}
+                        {ind.retrieved_at && <p className="mt-1 text-muted">Collectée le {timestamp.format(new Date(ind.retrieved_at))}</p>}
+                        {ind.published_at && <p className="mt-1 text-muted">Publiée le {timestamp.format(new Date(ind.published_at))}</p>}
+                        {ind.status && <p className="mt-1 text-muted">Code fournisseur : {ind.status}</p>}
+                        {data.failed?.includes(key) && <p className="mt-1 text-warn">Observation conservée après un échec de collecte</p>}
+                        {!fresh && <p className="mt-1 text-danger">Question désactivée</p>}
                       </td>
                       <td className="hidden px-3 py-2.5 text-xs text-muted sm:table-cell">{ind.source}</td>
                     </tr>

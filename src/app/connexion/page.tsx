@@ -24,7 +24,9 @@ export default function Connexion() {
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
+      const retour = new URLSearchParams(window.location.search).get("retour") ?? "";
+      const path = retour.split("?")[0];
+      router.replace(["/quiz", "/jeux", "/test-niveau", "/profil"].includes(path) ? retour : "/parcours");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue.");
       setLoading(false);

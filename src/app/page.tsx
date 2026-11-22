@@ -1,7 +1,7 @@
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Cta from "@/components/Cta";
-import { STEPS } from "@/lib/path";
+import { LEVELS, MODULES } from "@/lib/modules";
 
 const modes: [string, string][] = [
   ["Finance Games", "Séries chronométrées de 10 questions rapides : calcul éclair, ordres de grandeur, culture marchés. Points selon ta vitesse."],
@@ -22,7 +22,7 @@ export default function Home() {
               Prépare les questions techniques et les finance games de tes entretiens.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-muted">
-              Calcul mental, culture marchés, macro. Des questions rapides comme à l’oral, un parcours en six étapes, des cours courts et des chiffres du jour toujours à jour.
+              Calcul mental, culture marchés, macro. Des questions rapides comme à l’oral, {MODULES.length} modules progressifs et des chiffres de marché datés.
             </p>
             <Cta />
             <p className="mt-4 font-mono text-xs text-muted">Gratuit · sans carte bancaire · du niveau L2 au niveau entretien</p>
@@ -53,8 +53,8 @@ export default function Home() {
           <h2 className="text-2xl font-semibold tracking-tight">Comment ça marche</h2>
           <ol className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-3">
             {[
-              ["01", "Test de niveau", "12 questions, 2 minutes. Le site te place au bon endroit du parcours."],
-              ["02", "Parcours en 6 étapes", "Pour chaque étape : un cours court à lire, puis des questions pour valider."],
+              ["01", "Test de niveau", "12 questions pour trouver ton point de départ dans le parcours."],
+              ["02", "Parcours en 4 niveaux", "Chaque module propose un cours court, un mini-check et un quiz de validation."],
               ["03", "Finance Games", "Des séries chronométrées pour t’entraîner à répondre vite, à l’oral comme en entretien."],
             ].map(([n, t, d]) => (
               <li key={n} className="bg-ink p-5">
@@ -69,11 +69,10 @@ export default function Home() {
         <section className="border-t border-line py-14">
           <h2 className="text-2xl font-semibold tracking-tight">Le parcours, des bases à l’entretien</h2>
           <ol className="mt-8 divide-y divide-line border-y border-line">
-            {STEPS.map((s) => (
-              <li key={s.id} className="grid gap-1 py-4 sm:grid-cols-[3rem_16rem_1fr]">
-                <span className="font-mono text-sm text-accent">{String(s.id).padStart(2, "0")}</span>
-                <span className="font-semibold">{s.title}</span>
-                <span className="text-sm text-muted">{s.goal}</span>
+            {LEVELS.map((level) => (
+              <li key={level.id} className="grid gap-1 py-4 sm:grid-cols-[10rem_1fr]">
+                <span className="font-semibold">{level.name}</span>
+                <span className="text-sm text-muted">{level.tagline}</span>
               </li>
             ))}
           </ol>

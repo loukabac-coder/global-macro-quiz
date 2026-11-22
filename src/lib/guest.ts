@@ -25,12 +25,17 @@ export async function guestQuick(n = 5): Promise<Question[]> {
   return shuffle(easy).concat(calc, mid).slice(0, n);
 }
 
-// Défi du jour (invité) : les mêmes questions pour tous les invités un jour donné.
-export async function guestDaily(day: string): Promise<Question[]> {
-  const pool = await fetchGuestPool();
-  const rng = mulberry32(hashString("guest-daily:" + day));
+// Le défi du jour partage le même jeu de questions en invité et avec un compte.
+export function dailyQuestions(pool: Question[], day: string): Question[] {
+  const rng = mulberry32(hashString("daily:" + day));
   const sorted = [...pool].sort((a, b) => a.id.localeCompare(b.id));
   const picked = seededShuffle(sorted, rng).slice(0, 7);
-  const mental = [mentalQuestion(2, rng), mentalQuestion(3, rng), mentalQuestion(2, rng)];
+  const mental = [2, 3, 2].map((level, index) => ({
+    ...mentalQuestion(level, rng), id: `gen:daily:${day}:${index}`,
+  }));
   return seededShuffle([...picked, ...mental], rng).slice(0, 10);
+}
+
+export async function guestDaily(day: string): Promise<Question[]> {
+  return dailyQuestions(await fetchGuestPool(), day);
 }

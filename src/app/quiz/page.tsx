@@ -1,8 +1,10 @@
 "use client";
 
-import QuizRunner, { type Mode } from "@/components/QuizRunner";
+import { Suspense } from "react";
+import QuizRunner from "@/components/QuizRunner";
 import { useSearch } from "@/lib/useSearch";
-import { loadDaily, loadQuick, loadTraining, loadWeakness, parseList } from "@/lib/loaders";
+import { parseList } from "@/lib/loaders";
+import type { Activity } from "@/lib/quizSession";
 import { todayParis } from "@/lib/rng";
 import { guestDaily, guestQuick } from "@/lib/guest";
 
@@ -14,6 +16,10 @@ const TITLES: Record<string, string> = {
 };
 
 export default function QuizPage() {
+  return <Suspense fallback={<p className="p-6 text-sm text-muted">Chargement du quiz…</p>}><Quiz /></Suspense>;
+}
+
+function Quiz() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const m = params.get("mode") ?? "";
@@ -21,19 +27,19 @@ export default function QuizPage() {
   const levels = parseList(params.get("niveau"));
   const training = categories.length > 0 || levels.length > 0;
 
-  let mode: Mode = "quick";
+  let activity: Activity = { type: "quick" };
   let title = TITLES.quick;
   if (m === "daily") {
-    mode = "daily";
+    activity = { type: "daily" };
     title = TITLES.daily;
   } else if (m === "weakness") {
-    mode = "weakness";
+    activity = { type: "weakness" };
     title = TITLES.weakness;
   } else if (m === "mixed") {
-    mode = "mixed";
+    activity = { type: "mixed" };
     title = TITLES.mixed;
   } else if (training) {
-    mode = "training";
+    activity = { type: "training", categories, levels };
     title = "Training : " + [categories.join(", "), levels.join(", ")].filter(Boolean).join(" · ");
   }
 
@@ -41,19 +47,13 @@ export default function QuizPage() {
     <QuizRunner
       key={search}
       title={title}
-      mode={mode}
+      activity={activity}
       backHref="/entrainement"
       backLabel="Entraînement libre"
       guestLoad={
         // Un invité peut faire le quiz rapide et le défi du jour. Les autres modes demandent un compte.
-        mode === "daily" ? () => guestDaily(todayParis()) : mode === "quick" ? () => guestQuick(10) : undefined
+        activity.type === "daily" ? () => guestDaily(todayParis()) : activity.type === "quick" ? () => guestQuick(10) : undefined
       }
-      load={async ({ supabase, userId }) => {
-        if (mode === "daily") return loadDaily(supabase, todayParis());
-        if (mode === "weakness") return loadWeakness(supabase, userId);
-        if (mode === "training") return loadTraining(supabase, categories, levels);
-        return loadQuick(supabase, mode === "mixed");
-      }}
     />
   );
 }

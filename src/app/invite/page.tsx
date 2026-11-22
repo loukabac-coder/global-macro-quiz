@@ -9,7 +9,6 @@ export default function Invite() {
     <QuizRunner
       title="Quiz rapide"
       kicker="Mode invité · rien n’est sauvegardé"
-      mode="quick"
       guestOnly
       backHref="/"
       backLabel="Accueil"

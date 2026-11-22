@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { getSupabase } from "@/lib/supabase";
 import { BADGES } from "@/lib/badges";
-import { levelName, levelProgress } from "@/lib/progress";
+import { levelName, levelProgress, type StatRow } from "@/lib/progress";
 import { CAT_NAME } from "@/lib/categories";
-import type { StatRow } from "@/lib/path";
 
 type Profile = { display_name: string | null; xp: number; streak_days: number };
+type Session = { id: string; mode: string; finished_at: string; score: number; total: number };
+const MODES: Record<string, string> = {
+  quick: "Quiz rapide ou test de niveau", training: "Entraînement ou module", challenge: "Finance Games",
+  daily: "Défi du jour", mixed: "Quiz mixte", weakness: "Révision",
+};
+const sessionDate = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" });
 
 export default function Profil() {
   const router = useRouter();
@@ -17,6 +22,7 @@ export default function Profil() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<StatRow[]>([]);
   const [badges, setBadges] = useState<string[]>([]);
+  const [history, setHistory] = useState<Session[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,20 +33,23 @@ export default function Profil() {
         const { data } = await supabase.auth.getSession();
         const user = data.session?.user;
         if (!user) {
-          router.replace("/connexion");
+          router.replace("/connexion?retour=%2Fprofil");
           return;
         }
-        const [p, st, bd] = await Promise.all([
+        const [p, st, bd, sessions] = await Promise.all([
           supabase.from("profiles").select("display_name, xp, streak_days").eq("id", user.id).maybeSingle(),
-          supabase.from("category_stats").select("category_id, difficulty, answered, correct"),
-          supabase.from("user_badges").select("code"),
+          supabase.from("category_stats").select("category_id, difficulty, answered, correct").eq("user_id", user.id),
+          supabase.from("user_badges").select("code").eq("user_id", user.id),
+          supabase.from("quiz_sessions").select("id, mode, finished_at, score, total").eq("user_id", user.id).order("finished_at", { ascending: false }).limit(15),
         ]);
         if (!active) return;
         setEmail(user.email ?? null);
-        if (p.error) setError("Impossible de charger ton profil : " + p.error.message);
+        if (p.error) setError("Impossible de charger ton profil.");
         else setProfile((p.data as Profile | null) ?? { display_name: null, xp: 0, streak_days: 0 });
+        if (st.error || bd.error || sessions.error) setError("Une partie de la progression n’a pas pu être chargée.");
         setStats((st.data ?? []) as StatRow[]);
         setBadges(((bd.data ?? []) as { code: string }[]).map((b) => b.code));
+        setHistory((sessions.data ?? []) as Session[]);
       } catch (e) {
         if (active) setError(e instanceof Error ? e.message : "Erreur inconnue.");
       }
@@ -139,6 +148,23 @@ export default function Profil() {
               </ul>
             </section>
 
+            <section className="mt-8">
+              <h2 className="text-lg font-semibold">Parties récentes</h2>
+              {history.length === 0 && !error && <p className="mt-2 text-sm text-muted">Aucune partie enregistrée.</p>}
+              {history.length > 0 && (
+                <ul className="mt-3 divide-y divide-line border-y border-line text-sm">
+                  {history.map((run) => (
+                    <li key={run.id} className="flex items-center justify-between gap-3 py-3">
+                      <div>
+                        <p>{MODES[run.mode] ?? run.mode}</p>
+                        <time dateTime={run.finished_at} className="text-xs text-muted">{sessionDate.format(new Date(run.finished_at))}</time>
+                      </div>
+                      <span className="font-mono text-accent">{run.score}/{run.total}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
             <button onClick={signOut} className="mt-10 border border-line px-4 py-2.5 text-sm text-muted hover:border-muted hover:text-fg">
               Se déconnecter
             </button>

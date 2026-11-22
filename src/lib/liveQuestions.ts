@@ -30,7 +30,7 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
     explanation,
     tolerance_pct: null as number | null,
     wrong_explanations: null,
-    source: "Yahoo Finance (données mises à jour chaque jour)",
+    source: "Yahoo Finance, estimations du panel à la collecte",
     kind: "conjunctural",
     reference_date: day,
   });
@@ -47,20 +47,20 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
   if (world.length >= 8) {
     mcq(
       "beginner",
-      "Quelle entreprise a la plus grande capitalisation boursière du monde ?",
+      "Quelle entreprise a la plus grande capitalisation boursière parmi les grandes valeurs suivies ?",
       world[0],
       shuffle(world.slice(1, 8)).slice(0, 3),
-      `Classement du jour : ${top(world, 5)}.`,
+      `Classement du panel : ${top(world, 5)}.`,
     );
     // Intrus : une entreprise qui n'est PAS dans le top 5
     const intruder = shuffle(world.slice(8, 20))[0];
     if (intruder) {
       mcq(
         "intermediate",
-        "Laquelle de ces entreprises ne fait PAS partie des 5 plus grandes capitalisations mondiales ?",
+        "Laquelle de ces entreprises ne fait pas partie des cinq premières capitalisations du panel suivi ?",
         intruder,
         shuffle(world.slice(0, 5)).slice(0, 3),
-        `Top 5 du jour : ${top(world, 5)}. ${intruder.name} est n°${world.indexOf(intruder) + 1} (${fmtCap(intruder.market_cap_usd)}).`,
+        `Top 5 du panel : ${top(world, 5)}. ${intruder.name} est n°${world.indexOf(intruder) + 1} (${fmtCap(intruder.market_cap_usd)}).`,
       );
     }
     // Capitalisation d'une grande valeur, en Md$
@@ -101,7 +101,7 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
     if (intruder) {
       mcq(
         "intermediate",
-        "Laquelle de ces entreprises ne fait PAS partie des 3 plus grandes capitalisations européennes ?",
+        "Laquelle de ces entreprises ne fait pas partie des trois premières capitalisations européennes du panel ?",
         intruder,
         top3,
         `Top 3 Europe du jour : ${top(europe, 3)}. ${intruder.name} est n°${europe.indexOf(intruder) + 1} en Europe.`,

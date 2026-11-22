@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: daily-data-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -16,11 +20,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install yfinance
+      - run: python -m pip install yfinance==1.8.0
       - name: Capitalisations
+        id: caps
         continue-on-error: true
         run: python scripts/update_market_caps.py
       - name: Indicateurs macro
+        id: macro
         continue-on-error: true
         run: python scripts/update_macro.py
       - name: Enregistrer si les données ont changé
@@ -29,3 +35,6 @@ jobs:
           git config user.email "loukabac-coder@users.noreply.github.com"
           git add public/data/market-caps.json public/data/macro.json
           git diff --staged --quiet || (git commit -m "Données du jour" && git pull --rebase && git push)
+      - name: Signaler les collectes en échec
+        if: steps.caps.outcome == 'failure' || steps.macro.outcome == 'failure'
+        run: exit 1

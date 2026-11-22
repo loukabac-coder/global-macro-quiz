@@ -62,12 +62,12 @@ export function wrongNote(q: Question, optionIndex: number): string | null {
 // Accepte « 1 234,5 », « 4,75 % », « −4 »…
 export function parseNumber(input: string): number | null {
   const s = input
-    .replace(/[\s\u00a0\u202f]/g, "")
+    .trim()
     .replace(/[−–]/g, "-")
-    .replace(",", ".")
-    .replace(/%$/, "");
-  if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
-  return Number(s);
+    .replace(/[ \u00a0\u202f]*%$/, "");
+  if (!/^[+-]?(?:\d+|\d{1,3}(?:[ \u00a0\u202f]\d{3})+)(?:[.,]\d+)?$/.test(s)) return null;
+  const value = Number(s.replace(/[ \u00a0\u202f]/g, "").replace(",", "."));
+  return Number.isFinite(value) ? value : null;
 }
 
 export function checkNumeric(q: Question, value: number): boolean {

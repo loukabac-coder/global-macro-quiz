@@ -1,4 +1,5 @@
 // XP, niveaux. Les mêmes formules sont utilisées dans le SQL (fonction submit_session).
+export type StatRow = { category_id: string; difficulty: string; answered: number; correct: number };
 
 export function levelFromXp(xp: number): number {
   return Math.floor(Math.sqrt(Math.max(0, xp) / 60)) + 1;

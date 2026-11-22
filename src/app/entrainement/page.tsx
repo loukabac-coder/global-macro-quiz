@@ -5,7 +5,7 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { getSupabase } from "@/lib/supabase";
 import { CATS } from "@/lib/categories";
-import type { StatRow } from "@/lib/path";
+import type { StatRow } from "@/lib/progress";
 
 const LEVELS: [string, string][] = [
   ["", "Tous niveaux"],
@@ -102,7 +102,7 @@ export default function Entrainement() {
 
         <h2 className="mt-8 font-mono text-xs text-accent">CHRONOMÉTRÉ · FINANCE GAMES</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <Card locked={lock} href="/jeux?mode=calcul" title="Calcul éclair" tag="20 s" text="Calcul mental sous pression." />
+          <Card locked={lock} href="/jeux?mode=calcul" title="Calcul éclair" tag="20–30 s" text="Calcul mental sous pression." />
           <Card locked={lock} href="/jeux?mode=ordres" title="Ordres de grandeur" tag="30 s" text="PIB, capitalisations, ratios." />
           <Card locked={lock} href="/jeux?mode=culture" title="Culture marchés" tag="15 s" text="QCM et vrai/faux rapides." />
         </div>

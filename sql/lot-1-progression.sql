@@ -249,8 +249,17 @@ $$;
 
 revoke all on function public.submit_session(text, jsonb) from public, anon;
 revoke all on function public.set_placement(text) from public, anon;
-grant execute on function public.submit_session(text, jsonb) to authenticated;
-grant execute on function public.set_placement(text) to authenticated;
+do $$
+begin
+  if to_regprocedure('quiz_private.apply_quiz_progress(text,jsonb)') is null then
+    grant execute on function public.submit_session(text, jsonb) to authenticated;
+    grant execute on function public.set_placement(text) to authenticated;
+  else
+    revoke execute on function public.submit_session(text, jsonb) from authenticated;
+    revoke execute on function public.set_placement(text) from authenticated;
+  end if;
+end;
+$$;
 
 -- Vérification : doit afficher 2 lignes
 select proname from pg_proc where proname in ('submit_session','set_placement');

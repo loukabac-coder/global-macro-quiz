@@ -1,10 +1,10 @@
 """
 Robot quotidien : récupère les capitalisations boursières et écrit public/data/market-caps.json.
-Lancé chaque jour par GitHub Actions (voir .github/workflows/market-caps.yml).
+Lancé chaque jour par GitHub Actions (voir .github/workflows/donnees-du-jour.yml).
 Source : Yahoo Finance via la bibliothèque yfinance (donnée de marché gratuite, non officielle).
 Sécurité : si trop de valeurs manquent, l'ancien fichier est conservé (on n'écrase jamais avec des données cassées).
 """
-import json, sys, datetime, os
+import json, sys, datetime, math, os
 import yfinance as yf
 
 # (symbole Yahoo, nom affiché, pays, région)
@@ -49,35 +49,47 @@ COMPANIES = [
     ("CFR.SW","Richemont","Suisse","Europe"),
 ]
 
+def latest_close(ticker):
+    close = ticker.history(period="5d", interval="1d", auto_adjust=False)["Close"].dropna()
+    if close.empty:
+        raise ValueError("séance introuvable")
+    price = float(close.iloc[-1])
+    if not math.isfinite(price) or price <= 0:
+        raise ValueError("prix indisponible")
+    return price, close.index[-1].date().isoformat()
+
+
 def usd_rate(cur, cache):
-    """Taux de conversion devise -> USD."""
-    if cur == "USD": return 1.0
-    if cur in cache: return cache[cur]
-    rate = None
-    try:
-        rate = float(yf.Ticker(f"{cur}USD=X").fast_info["last_price"])
-        if not (rate > 0): rate = None
-    except Exception as e:
-        print("FX KO", cur, e)
-    cache[cur] = rate
-    return rate
+    """Taux de conversion devise -> USD et date de la cotation utilisée."""
+    if cur == "USD":
+        return 1.0, None
+    if cur not in cache:
+        cache[cur] = latest_close(yf.Ticker(f"{cur}USD=X"))
+    return cache[cur]
 
 def main():
     out_path = os.path.join(os.path.dirname(__file__), "..", "public", "data", "market-caps.json")
     items, fx, failed = [], {}, []
+    collected = datetime.datetime.now(datetime.timezone.utc)
     for sym, name, country, region in COMPANIES:
         try:
-            fi = yf.Ticker(sym).fast_info
-            cap = fi["market_cap"]
+            ticker = yf.Ticker(sym)
+            fi = ticker.fast_info
+            cap = float(fi["market_cap"])
             cur = str(fi["currency"])
-            if cap is None or cap <= 0: raise ValueError("capitalisation absente")
+            if not math.isfinite(cap) or cap <= 0:
+                raise ValueError("capitalisation absente")
             # Pence britanniques : 100 pence = 1 livre
             if cur == "GBp": cap, cur = cap / 100.0, "GBP"
             if cur == "ZAc": cap, cur = cap / 100.0, "ZAR"
-            r = usd_rate(cur, fx)
-            if r is None: raise ValueError(f"taux {cur} indisponible")
+            r, fx_date = usd_rate(cur, fx)
+            _, price_date = latest_close(ticker)
+            for ref_date in (price_date, fx_date):
+                if ref_date and not 0 <= (collected.date() - datetime.date.fromisoformat(ref_date)).days <= 7:
+                    raise ValueError("séance absente ou ancienne")
             items.append({"ticker": sym, "name": name, "country": country, "region": region,
-                          "market_cap_usd": round(cap * r)})
+                          "market_cap_usd": round(cap * r), "price_date": price_date,
+                          "fx_date": fx_date, "currency": cur})
         except Exception as e:
             failed.append(sym); print("KO", sym, e)
 
@@ -86,17 +98,20 @@ def main():
     # Garde-fous : assez de valeurs, et les grandes valeurs de référence présentes
     names = {i["ticker"] for i in items}
     if ok_ratio < 0.8 or not {"AAPL", "MSFT", "NVDA"} <= names:
-        print("Données insuffisantes : fichier existant conservé."); sys.exit(1)
+        print("::warning::Capitalisations insuffisantes, instantané précédent conservé.")
+        sys.exit(1)
 
     items.sort(key=lambda i: i["market_cap_usd"], reverse=True)
     data = {
-        "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
-        "source": "Yahoo Finance (via yfinance), conversion en USD au taux du jour",
+        "updated_at": collected.isoformat(timespec="seconds"),
+        "source": "Yahoo Finance (via yfinance), conversion au dernier cours de change daté",
         "failed": failed,
         "items": items,
     }
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
+    if failed:
+        print("::warning::Valeurs non récupérées : " + ", ".join(failed))
 
 if __name__ == "__main__":
     main()

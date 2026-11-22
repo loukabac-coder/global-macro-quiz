@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import QuizRunner from "@/components/QuizRunner";
 import { useSearch } from "@/lib/useSearch";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
+import { mentalSeconds } from "@/lib/quizSession";
 
 const LEVELS = [
   ["1", "Niveau 1", "10 %, 50 %, ×5, ×11, bps simples"],
@@ -16,6 +17,10 @@ const LEVELS = [
 ];
 
 export default function CalculMental() {
+  return <Suspense fallback={<p className="p-6 text-sm text-muted">Chargement…</p>}><CalculMentalContent /></Suspense>;
+}
+
+function CalculMentalContent() {
   const search = useSearch();
   const fromUrl = new URLSearchParams(search).get("niveau");
   const [level, setLevel] = useState<number | null>(null);
@@ -30,12 +35,13 @@ export default function CalculMental() {
       <QuizRunner
         key={started}
         title={`Calcul mental · niveau ${lv}${topic ? " · " + TOPICS.find((t) => t.id === topic)?.label : ""}`}
-        mode="training"
-        timePerQuestion={timed ? (lv >= 4 ? 30 : 20) : undefined}
+        activity={{ type: "mental", level: lv, topic, timed }}
+        timePerQuestion={timed ? mentalSeconds(lv) : undefined}
         backHref="/calcul-mental"
         backLabel="Réglages"
         replayLabel="Série suivante"
-        load={async () => mentalSession(12, lv, Math.random, topic)}
+        onBack={() => setStarted(0)}
+        guestLoad={async () => mentalSession(12, lv, Math.random, topic)}
       />
     );
   }
@@ -56,6 +62,7 @@ export default function CalculMental() {
             <button
               key={v}
               onClick={() => setLevel(Number(v))}
+              aria-pressed={lv === Number(v)}
               className={`p-3 text-left ${lv === Number(v) ? "bg-panel outline outline-1 -outline-offset-1 outline-accent" : "bg-ink hover:bg-panel"}`}
             >
               <div className="font-mono text-sm">{name}</div>
@@ -66,11 +73,11 @@ export default function CalculMental() {
 
         <h2 className="mt-8 text-sm font-semibold">Thème</h2>
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
-          <button onClick={() => setTopic(null)} className={`border px-3 py-2 ${topic === null ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"}`}>
+          <button onClick={() => setTopic(null)} aria-pressed={topic === null} className={`border px-3 py-2 ${topic === null ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"}`}>
             Tous
           </button>
           {TOPICS.map((t) => (
-            <button key={t.id} onClick={() => setTopic(t.id)} className={`border px-3 py-2 ${topic === t.id ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"}`}>
+            <button key={t.id} onClick={() => setTopic(t.id)} aria-pressed={topic === t.id} className={`border px-3 py-2 ${topic === t.id ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"}`}>
               {t.label}
             </button>
           ))}
@@ -78,7 +85,7 @@ export default function CalculMental() {
 
         <label className="mt-8 flex cursor-pointer items-center gap-3 text-sm">
           <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} className="size-4 accent-[#c6ff3d]" />
-          <span>Mode chronométré ({lv >= 4 ? 30 : 20} secondes par question)</span>
+          <span>Mode chronométré ({mentalSeconds(lv)} secondes par question)</span>
         </label>
 
         <button onClick={() => setStarted((n) => n + 1)} className="mt-8 w-full bg-accent px-6 py-4 text-sm font-semibold text-ink hover:brightness-110 sm:w-auto">

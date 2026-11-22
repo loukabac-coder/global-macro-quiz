@@ -545,7 +545,7 @@ export const CHAPTERS: Chapter[] = [
         title: "5. Finances publiques",
         bullets: [
           "Déficit public : dépenses − recettes de l’État sur l’année. La dette est l’accumulation des déficits.",
-          "Ratio dette / PIB : mesure la soutenabilité. Critères de Maastricht : déficit sous 3 % du PIB, dette sous 60 %.",
+          "Le ratio dette/PIB est l’un des indicateurs de soutenabilité. Le protocole de Maastricht fixe deux valeurs de référence : déficit de 3 % du PIB et dette de 60 %.",
           "Multiplicateur keynésien : un euro de dépense publique génère plus d’un euro de PIB. Version simple : 1 / (1 − propension à consommer). Si 80 % des revenus sont consommés, multiplicateur théorique = 5.",
           "Stabilisateurs automatiques : impôts et prestations qui amortissent les chocs sans décision nouvelle.",
           "Effet d’éviction : l’emprunt public peut pousser les taux à la hausse et réduire l’investissement privé.",
@@ -580,7 +580,7 @@ export const CHAPTERS: Chapter[] = [
       "PIB = C + I + G + (X − M).",
       "Inflation = hausse générale des prix. IPC mesure, core exclut énergie et alimentation.",
       "Le chômage est retardé ; les PMI et la courbe des taux sont avancés.",
-      "Maastricht : déficit sous 3 %, dette sous 60 % du PIB.",
+      "Maastricht : valeurs de référence de 3 % du PIB pour le déficit et 60 % pour la dette.",
     ],
     interview: [
       "« Pourquoi les marchés regardent-ils autant le NFP ? »",
@@ -905,9 +905,9 @@ export const CHAPTERS: Chapter[] = [
         title: "3. Duration et convexité",
         bullets: [
           "Duration de Macaulay : durée moyenne pondérée des flux. Pour un zéro coupon, elle vaut l’échéance.",
-          "Duration modifiée = Macaulay / (1 + y) : sensibilité du prix à une variation du taux.",
+          "Avec une capitalisation annuelle du rendement y, duration modifiée = duration de Macaulay / (1 + y). Elle mesure la sensibilité relative du prix au rendement.",
           "DV01 (ou PVBP) : variation de prix en valeur pour 1 pb de variation du rendement.",
-          "Convexité : la relation prix-rendement est courbe. La convexité corrige l’approximation linéaire et joue en faveur de l’investisseur.",
+          "La convexité corrige l’approximation linéaire de la duration. Elle est généralement positive pour une obligation à flux fixes sans option et dépend des flux et des options incorporées.",
         ],
         formulas: [
           "Variation du prix ≈ − duration modifiée × variation du rendement",
@@ -954,13 +954,13 @@ export const CHAPTERS: Chapter[] = [
     ],
     remember: [
       "Taux qui montent = prix des obligations qui baissent.",
-      "Variation du prix ≈ − duration × variation du taux.",
+      "Variation relative du prix ≈ − duration modifiée × variation du rendement exprimée en décimal.",
       "Spread = prime de risque. Il s’élargit quand le marché a peur.",
       "Notation : BBB− est la limite de l’investment grade.",
     ],
     interview: [
-      "« Quelle est la duration d’un zéro coupon à 5 ans ? » → 5.",
-      "« Quel est l’effet d’une hausse de 1 point des taux sur une obligation de duration 8 ? » → environ −8 %.",
+      "« Quelle est la duration de Macaulay d’un zéro-coupon à 5 ans ? » → 5 ans.",
+      "« Effet de +100 pb de rendement avec une duration modifiée de 8, au premier ordre ? » → environ −8 %.",
       "« Qu’est-ce qu’un repo ? »",
     ],
   },

@@ -1,11 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { shuffle, type Question } from "@/lib/quiz";
-import { fetchMarketCaps, ageHours } from "@/lib/marketcaps";
-import { buildLiveQuestions } from "@/lib/liveQuestions";
-import { fetchMacro } from "@/lib/macro";
-import { buildMacroQuestions } from "@/lib/macroQuestions";
 import { mentalQuestion, mentalSession } from "@/lib/mental";
-import { hashString, mulberry32, seededShuffle } from "@/lib/rng";
+import type { Game } from "@/lib/quizSession";
 
 export const Q_COLS =
   "id, category_id, type, difficulty, prompt, options, correct, tolerance_pct, explanation, wrong_explanations, source, kind, reference_date";
@@ -20,10 +16,6 @@ export function parseList(v: string | null): string[] {
   return v ? v.split(",").map((s) => s.trim()).filter(Boolean) : [];
 }
 
-export function queryParams(): URLSearchParams {
-  return new URLSearchParams(window.location.search);
-}
-
 // Questions actives de la base (les règles de sécurité excluent déjà les questions périmées).
 export async function fetchQuestions(
   supabase: SupabaseClient,
@@ -34,19 +26,20 @@ export async function fetchQuestions(
   if (opts.levels?.length) q = q.in("difficulty", opts.levels);
   if (opts.types?.length) q = q.in("type", opts.types);
   if (opts.ids?.length) q = q.in("id", opts.ids);
-  const { data, error } = await q.limit(1000);
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Question[];
+  const questions: Question[] = [];
+  const pageSize = 500;
+  q = q.order("id");
+  for (let offset = 0; ;) {
+    const { data, error } = await q.range(offset, offset + pageSize - 1);
+    if (error) throw new Error(error.message);
+    const page = (data ?? []) as Question[];
+    if (page.length === 0) return questions;
+    questions.push(...page);
+    offset += page.length;
+  }
 }
 
-// Questions du jour (capitalisations + indicateurs macro) : uniquement si les données sont fraîches.
-export async function fetchLive(): Promise<Question[]> {
-  const out: Question[] = [];
-  const [caps, macro] = await Promise.all([fetchMarketCaps(), fetchMacro()]);
-  if (caps && caps.updated_at && ageHours(caps.updated_at, nowMs()) <= 72) out.push(...buildLiveQuestions(caps));
-  if (macro) out.push(...buildMacroQuestions(macro, nowMs()));
-  return out;
-}
+type LiveQuestions = () => Promise<Question[]>;
 
 const RANK: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3, expert: 4 };
 
@@ -67,12 +60,30 @@ export function balanced(pool: Question[], n: number): Question[] {
 }
 
 // Quick Quiz : 10 questions au hasard (+ 1 question du jour) ; Mixed : 15 questions équilibrées par catégorie.
-export async function loadQuick(supabase: SupabaseClient, mixed: boolean): Promise<Question[]> {
-  const [all, live] = await Promise.all([fetchQuestions(supabase), fetchLive()]);
+export async function loadQuick(supabase: SupabaseClient, mixed: boolean, liveQuestions: LiveQuestions): Promise<Question[]> {
+  const [all, live] = await Promise.all([fetchQuestions(supabase), liveQuestions()]);
   const size = mixed ? 15 : SIZE;
   const nLive = Math.min(live.length, mixed ? 2 : 1);
   const db = mixed ? balanced(all, size - nLive) : shuffle(all).slice(0, size - nLive);
   return shuffle([...db, ...shuffle(live).slice(0, nLive)]);
+}
+
+export async function loadGame(
+  supabase: SupabaseClient, game: Game, level: number, liveQuestions: LiveQuestions,
+): Promise<Question[]> {
+  if (game === "calcul") return mentalSession(SIZE, level, Math.random, null, 2);
+
+  const opts = game === "ordres"
+    ? { types: ["numeric", "guesstimate"] }
+    : { categories: ["financial-markets", "central-banks", "fx", "commodities", "market-caps", "monetary-policy", "macroeconomics"], types: ["mcq", "true_false"] };
+  const [db, live] = await Promise.all([fetchQuestions(supabase, opts), liveQuestions()]);
+  if (game === "ordres") {
+    const picked = [...shuffle(db).slice(0, 4), ...shuffle(live.filter((q) => q.type === "numeric")).slice(0, 3)];
+    picked.push(...Array.from({ length: SIZE - picked.length }, (_, i) => mentalQuestion(2 + (i % 3), Math.random, "ordres")));
+    return shuffle(picked);
+  }
+  const livePick = shuffle(live.filter((q) => opts.types.includes(q.type))).slice(0, 2);
+  return shuffle([...balanced(db, SIZE - livePick.length), ...livePick]);
 }
 
 // Training : filtré par catégories et niveaux.
@@ -80,11 +91,12 @@ export async function loadTraining(
   supabase: SupabaseClient,
   categories: string[],
   levels: string[],
+  liveQuestions: LiveQuestions,
 ): Promise<Question[]> {
   const [all, live] = await Promise.all([
     fetchQuestions(supabase, { categories, levels }),
     categories.length === 0 || categories.some((c) => ["market-caps", "monetary-policy", "macroeconomics", "fx", "commodities"].includes(c))
-      ? fetchLive()
+      ? liveQuestions()
       : Promise.resolve([] as Question[]),
   ]);
   const liveFiltered = live.filter(
@@ -95,23 +107,10 @@ export async function loadTraining(
   let picked = [...db, ...shuffle(liveFiltered).slice(0, nLive)];
   // Catégorie entièrement générée (calcul mental) : on complète avec des questions générées.
   if (picked.length < SIZE && (categories.length === 0 || categories.includes("mental-math"))) {
-    const lv = levels.includes("advanced") ? 4 : levels.includes("intermediate") ? 3 : 1;
-    picked = [...picked, ...mentalSession(SIZE - picked.length, lv, Math.random)];
+    const lv = levels.includes("expert") ? 5 : levels.includes("advanced") ? 4 : levels.includes("intermediate") ? 3 : 1;
+    picked = [...picked, ...Array.from({ length: SIZE - picked.length }, () => mentalQuestion(lv, Math.random))];
   }
   return shuffle(picked);
-}
-
-// Daily Challenge : les mêmes 10 questions pour tout le monde, pour une date donnée.
-export async function loadDaily(supabase: SupabaseClient, day: string): Promise<Question[]> {
-  const [all, live] = await Promise.all([fetchQuestions(supabase), fetchLive()]);
-  const rng = mulberry32(hashString("daily:" + day));
-  const sorted = [...all].sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  const sortedLive = [...live].sort((a, b) => a.id.localeCompare(b.id));
-  const db = seededShuffle(sorted, rng).slice(0, 6);
-  const lv = seededShuffle(sortedLive, rng).slice(0, 1);
-  const mental = [mentalQuestion(2, rng), mentalQuestion(3, rng), mentalQuestion(4, rng)];
-  const mix = [...db, ...lv, ...mental];
-  return seededShuffle(mix, rng).slice(0, SIZE);
 }
 
 // Weakness Training : questions à revoir (répétition espacée) + catégories où le taux de réussite est le plus bas.
@@ -130,6 +129,7 @@ export async function loadWeakness(
       .limit(40),
     supabase.from("category_stats").select("category_id, answered, correct").eq("user_id", userId),
   ]);
+  if (dueRes.error || statsRes.error) throw new Error("La liste des révisions n’a pas pu être chargée.");
   const dueIds = (dueRes.data ?? []).map((r: { question_id: string }) => r.question_id);
   const acc = new Map<string, { a: number; c: number }>();
   for (const r of (statsRes.data ?? []) as { category_id: string; answered: number; correct: number }[]) {
@@ -148,7 +148,8 @@ export async function loadWeakness(
   let note = "";
   if (picked.length) note += `${picked.length} question(s) à revoir. `;
   if (weakCats.length) {
-    const extra = await fetchQuestions(supabase, { categories: weakCats.filter((c) => c !== "mental-math") });
+    const weakDbCategories = weakCats.filter((c) => c !== "mental-math");
+    const extra = weakDbCategories.length ? await fetchQuestions(supabase, { categories: weakDbCategories }) : [];
     for (const q of shuffle(extra)) {
       if (picked.length >= SIZE - (weakCats.includes("mental-math") ? 3 : 0)) break;
       if (!seen.has(q.id)) {
@@ -179,8 +180,6 @@ export async function loadPlacement(supabase: SupabaseClient): Promise<Question[
   const all = await fetchQuestions(supabase);
   const pickLevel = (lvl: string, n: number) => balanced(all.filter((q) => q.difficulty === lvl), n);
   const db = [...pickLevel("beginner", 3), ...pickLevel("intermediate", 3), ...pickLevel("advanced", 2)];
-  const mental = [1, 2, 3, 4].map((lv) => mentalQuestion(lv, Math.random));
+  const mental = Array.from({ length: 12 - db.length }, (_, i) => mentalQuestion(1 + (i % 4), Math.random));
   return [...db, ...mental].sort((a, b) => (RANK[a.difficulty] ?? 1) - (RANK[b.difficulty] ?? 1));
 }
-
-export { RANK };

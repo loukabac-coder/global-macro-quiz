@@ -4,6 +4,8 @@ export type Company = {
   country: string;
   region: string;
   market_cap_usd: number;
+  price_date?: string;
+  fx_date?: string | null;
 };
 
 export type MarketCaps = {
@@ -29,6 +31,12 @@ export async function fetchMarketCaps(): Promise<MarketCaps | null> {
 // Âge des données en heures (nowMs est passé par l'appelant pour rester propre côté React).
 export function ageHours(updatedAt: string, nowMs: number): number {
   return (nowMs - new Date(updatedAt).getTime()) / 3_600_000;
+}
+
+export function hasFreshMarketCaps(data: MarketCaps, nowMs: number): boolean {
+  if (!data.updated_at) return false;
+  const age = ageHours(data.updated_at, nowMs);
+  return age >= 0 && age <= 72;
 }
 
 // 5 120 Md$ -> "5,12 T$" ; 842 Md$ -> "842 Md$"
