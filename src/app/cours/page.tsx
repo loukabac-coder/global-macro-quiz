@@ -9,10 +9,6 @@ export default function CoursIndex() {
     <AppShell width="max-w-4xl">
       <main className="fade-in py-10">
         <h1 className="text-3xl font-semibold tracking-tight">Cours</h1>
-        <p className="mt-3 max-w-xl text-muted">
-          Une fiche par notion, écrite pour un étudiant de L2 : l’essentiel, les formules, des exemples chiffrés et les questions d’entretien classiques.
-          Chaque fiche renvoie vers les questions liées. Conseil : commence par le calcul mental.
-        </p>
         <ul className="mt-8 divide-y divide-line border-y border-line">
           {CHAPTERS.map((c) => (
             <li key={c.slug}>
