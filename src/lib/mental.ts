@@ -1,7 +1,7 @@
 // Générateur infini de calcul mental. Chaque question est calculée par le code
 // (jamais écrite à la main) et vient avec une explication de la méthode rapide.
 
-import type { Question } from "@/lib/quiz";
+import { NUMERIC_TOLERANCE, type Question } from "@/lib/quiz";
 
 export type Topic =
   | "pourcentages"
@@ -43,7 +43,7 @@ function pourcentages(level: number, r: Rng): Gen {
     return {
       prompt: `${nf(part)} représente quel pourcentage de ${nf(total)} ?`,
       answer: pct,
-      tol: 1,
+      tol: NUMERIC_TOLERANCE.rounding,
       unit: "%",
       explanation: `${nf(part)} / ${nf(total)} = ${nf(pct / 100)}, soit ${nf(pct)} %. Astuce : 1 % de ${nf(total)} = ${nf(total / 100)}, puis on divise ${nf(part)} par ${nf(total / 100)}.`,
     };
@@ -52,7 +52,7 @@ function pourcentages(level: number, r: Rng): Gen {
     { p: [10, 50, 25, 20, 1, 5], bases: [40, 60, 80, 120, 160, 200, 240, 360, 400, 480, 600, 800, 900], tol: 0 },
     { p: [15, 30, 75, 12.5, 40, 60, 2, 3], bases: [40, 80, 120, 160, 200, 240, 320, 400, 800], tol: 0 },
     { p: [7, 35, 45, 18, 22, 6, 9], bases: [100, 200, 250, 300, 400, 500, 600, 800], tol: 0 },
-    { p: [8.5, 17.5, 37.5, 62.5, 6.25, 12, 14], bases: [80, 160, 240, 320, 400, 800, 1200], tol: 1 },
+    { p: [8.5, 17.5, 37.5, 62.5, 6.25, 12, 14], bases: [80, 160, 240, 320, 400, 800, 1200], tol: NUMERIC_TOLERANCE.rounding },
   ];
   const s = sets[Math.min(level, 4) - 1];
   const p = pick(r, s.p);
@@ -81,7 +81,7 @@ function variations(level: number, r: Rng): Gen {
     return {
       prompt: `Après une variation de ${sign(pct)} %, un prix vaut ${nf(end)}. Quel était le prix de départ ?`,
       answer: start,
-      tol: 1,
+      tol: NUMERIC_TOLERANCE.rounding,
       unit: "",
       explanation: `Prix de départ = prix final / (1 + variation) = ${nf(end)} / ${nf(1 + pct / 100)} = ${nf(start)}.`,
     };
@@ -112,7 +112,7 @@ function variations(level: number, r: Rng): Gen {
   return {
     prompt: `Un titre passe de ${nf(a)} à ${nf(b)}. Quelle est la variation, en % ?`,
     answer: pct,
-    tol: level >= 3 ? 1 : 0,
+    tol: level >= 3 ? NUMERIC_TOLERANCE.rounding : 0,
     unit: "%",
     explanation: `Variation = (${nf(b)} − ${nf(a)}) / ${nf(a)} = ${nf(b - a)} / ${nf(a)} = ${sign(pct)} %.`,
   };
@@ -138,7 +138,7 @@ function interets(level: number, r: Rng): Gen {
       return {
         prompt: `Règle de 72 : à ${rate} % par an, en combien d’années un capital double-t-il environ ?`,
         answer: r4(72 / rate),
-        tol: 8,
+        tol: 10,
         unit: "ans",
         explanation: `72 / ${rate} = ${nf(72 / rate)} ans.`,
       };
@@ -161,7 +161,7 @@ function interets(level: number, r: Rng): Gen {
       return {
         prompt: `Un capital double en ${years} ans. Quel est le taux annuel approximatif (règle de 72) ?`,
         answer: r4(72 / years),
-        tol: 8,
+        tol: 10,
         unit: "%",
         explanation: `72 / ${years} = ${nf(72 / years)} % par an.`,
       };
@@ -186,7 +186,7 @@ function interets(level: number, r: Rng): Gen {
     return {
       prompt: `Intérêts simples sur ${nf(cap)} € à ${nf(rate)} % par an pendant ${months} mois ?`,
       answer: ans,
-      tol: 0,
+      tol: NUMERIC_TOLERANCE.rounding,
       unit: "€",
       explanation: `Intérêt annuel = ${nf((cap * rate) / 100)} €. Pour ${months} mois : × ${months}/12 = ${nf(ans)} €.`,
     };
@@ -197,9 +197,9 @@ function interets(level: number, r: Rng): Gen {
   return {
     prompt: `100 € à ${rate} % par an, intérêts composés, pendant ${n} ans : quelle valeur à peu près ?`,
     answer: ans,
-    tol: 4,
+    tol: NUMERIC_TOLERANCE.estimate,
     unit: "€",
-    explanation: `${rate} % double un capital en environ ${nf(72 / rate)} ans (règle de 72), donc sur ${n} ans on obtient un peu moins de ×2,2 : exact ${nf(ans)} €.`,
+    explanation: `La règle de 72 estime le temps de doublement à ${nf(72 / rate)} ans. Le calcul 100 × ${nf(1 + rate / 100)}^${n} donne ${nf(ans)} €.`,
   };
 }
 
@@ -236,7 +236,7 @@ function devises(level: number, r: Rng): Gen {
     return {
       prompt: `USD/JPY = ${rate}. Combien de dollars pour ${nf(jpy)} yens ?`,
       answer: ans,
-      tol: 1,
+      tol: NUMERIC_TOLERANCE.rounding,
       unit: "$",
       explanation: `On divise les yens par ${rate} : ${nf(jpy)} / ${rate} = ${nf(ans)} $.`,
     };
@@ -247,7 +247,7 @@ function devises(level: number, r: Rng): Gen {
     return {
       prompt: `EUR/USD = ${fx2(eu)} et GBP/USD = ${fx2(gb)}. Quel est le cours EUR/GBP ?`,
       answer: ans,
-      tol: 0.5,
+      tol: NUMERIC_TOLERANCE.rounding,
       unit: "",
       explanation: `Cours croisé : EUR/GBP = (EUR/USD) / (GBP/USD) = ${nf(eu)} / ${nf(gb)} = ${nf(ans)}.`,
     };
@@ -259,7 +259,7 @@ function devises(level: number, r: Rng): Gen {
   return {
     prompt: `EUR/USD passe de ${fx2(start)} à ${fx2(end)}. Le dollar perd combien contre l’euro, en % ?`,
     answer: drop,
-    tol: 3,
+    tol: NUMERIC_TOLERANCE.estimate,
     unit: "%",
     explanation: `L’euro prend ${rise} %. Le dollar perd x / (1 + x) = ${rise / 100} / ${nf(1 + rise / 100)} = ${nf(drop)} %. Une hausse de x % d’une devise est une baisse inférieure à x % de l’autre.`,
   };
@@ -296,12 +296,12 @@ function bps(level: number, r: Rng): Gen {
       const dur = pick(r, [3, 4, 5, 6, 7, 8, 10]);
       const move = pick(r, [25, 50, 100]);
       const ans = r4(-dur * (move / 100));
-      return { prompt: `Obligation de duration ${dur}. Les taux montent de ${move} pb. Variation approximative du prix, en % ?`, answer: ans, tol: 0, unit: "%", explanation: `Variation du prix ≈ − duration × variation du taux = −${dur} × ${nf(move / 100)} % = ${nf(ans)} %.` };
+      return { prompt: `Obligation de duration modifiée ${dur}. Le rendement monte de ${move} pb. Variation approximative du prix, en % ?`, answer: ans, tol: NUMERIC_TOLERANCE.estimate, unit: "%", explanation: `Variation du prix ≈ − duration modifiée × variation du rendement = −${dur} × ${nf(move / 100)} % = ${nf(ans)} %.` };
     }
     const notional = pick(r, [2, 5, 10, 20]);
     const dur = pick(r, [2, 4, 5, 10]);
     const ans = r4(notional * 1_000_000 * dur * 0.0001);
-    return { prompt: `Obligation de ${notional} M€ et de duration ${dur}. Quel est le DV01 approximatif (perte pour +1 pb), en € ?`, answer: ans, tol: 0, unit: "€", explanation: `DV01 ≈ valeur × duration × 0,0001 = ${nf(notional * 1_000_000)} × ${dur} × 0,0001 = ${nf(ans)} €.` };
+    return { prompt: `Obligation de ${notional} M€ et de duration modifiée ${dur}. Quel est le DV01 approximatif (perte pour +1 pb), en € ?`, answer: ans, tol: NUMERIC_TOLERANCE.estimate, unit: "€", explanation: `DV01 ≈ valeur × duration modifiée × 0,0001 = ${nf(notional * 1_000_000)} × ${dur} × 0,0001 = ${nf(ans)} €.` };
   }
   const a = pick(r, [2, 3, 4, 5]);
   const b = a + pick(r, [1, 1, 2]);
@@ -309,7 +309,7 @@ function bps(level: number, r: Rng): Gen {
   return {
     prompt: `Le taux passe de ${a} % à ${b} %. Quelle est la hausse relative du taux, en % ? (attention : ce n’est pas la hausse en points de pourcentage)`,
     answer: rel,
-    tol: 1,
+    tol: NUMERIC_TOLERANCE.rounding,
     unit: "%",
     explanation: `En points de pourcentage : +${b - a} point(s). En relatif : (${b} − ${a}) / ${a} = ${nf(rel)} %. Ne pas confondre points de % et %.`,
   };
@@ -409,7 +409,7 @@ function ratios(level: number, r: Rng): Gen {
     const debt = pick(r, [20, 40, 60]);
     const ebitda = pick(r, [10, 20, 30]);
     const ev = cap + debt;
-    return { prompt: `Capitalisation ${cap} Md$, dette nette ${debt} Md$, EBITDA ${ebitda} Md$. Quel est le multiple EV / EBITDA ?`, answer: r4(ev / ebitda), tol: 1, unit: "", explanation: `EV = capitalisation + dette nette = ${cap} + ${debt} = ${ev}. EV / EBITDA = ${ev} / ${ebitda} = ${nf(ev / ebitda)}.` };
+    return { prompt: `Capitalisation ${cap} Md$, dette nette ${debt} Md$, EBITDA ${ebitda} Md$. Estime le multiple EV / EBITDA.`, answer: r4(ev / ebitda), tol: NUMERIC_TOLERANCE.estimate, unit: "", explanation: `EV = capitalisation + dette nette = ${cap} + ${debt} = ${ev}. EV / EBITDA = ${ev} / ${ebitda} = ${nf(ev / ebitda)}.` };
   }
   const earnings = pick(r, [6, 10, 12, 15, 20, 30]);
   const per = pick(r, [10, 15, 20, 25]);
@@ -438,17 +438,17 @@ function ordres(level: number, r: Rng): Gen {
   if (level === 3) {
     const gdp = pick(r, [3, 4, 5, 20, 30]);
     const ratio = pick(r, [60, 100, 120, 250]);
-    return { prompt: `PIB de ${gdp} T$ et dette publique à ${ratio} % du PIB. Quelle est la dette, en T$ ?`, answer: r4((gdp * ratio) / 100), tol: 1, unit: "T$", explanation: `${gdp} T$ × ${ratio} % = ${nf((gdp * ratio) / 100)} T$.` };
+    return { prompt: `PIB de ${gdp} T$ et dette publique à ${ratio} % du PIB. Quelle est la dette, en T$ ?`, answer: r4((gdp * ratio) / 100), tol: NUMERIC_TOLERANCE.rounding, unit: "T$", explanation: `${gdp} T$ × ${ratio} % = ${nf((gdp * ratio) / 100)} T$.` };
   }
   if (level === 4) {
     const pop = pick(r, [60, 68, 80, 340]);
     const inc = pick(r, [30000, 40000, 50000, 80000]);
     const ans = (pop * 1e6 * inc) / 1e12;
-    return { prompt: `${pop} millions d’habitants avec un PIB par habitant de ${nf(inc)} $. Quel PIB total, en T$ ?`, answer: r4(ans), tol: 2, unit: "T$", explanation: `${pop} M × ${nf(inc)} $ = ${nf(pop * inc)} M$ = ${nf(ans)} T$ (1 T$ = 1 000 000 M$).` };
+    return { prompt: `${pop} millions d’habitants avec un PIB par habitant de ${nf(inc)} $. Estime le PIB total en T$.`, answer: r4(ans), tol: NUMERIC_TOLERANCE.estimate, unit: "T$", explanation: `${pop} M × ${nf(inc)} $ = ${nf(pop * inc)} M$ = ${nf(ans)} T$ (1 T$ = 1 000 000 M$).` };
   }
   const total = pick(r, [10, 20, 30]);
   const part = pick(r, [5, 8, 12, 20]);
-  return { prompt: `Dans un indice de ${total} T$ de capitalisation, une entreprise vaut ${nf(part * 100)} Md$. Quel est son poids, en % ?`, answer: r4(((part * 100) / (total * 1000)) * 100), tol: 1, unit: "%", explanation: `${nf(total)} T$ = ${nf(total * 1000)} Md$. Poids = ${part * 100} / ${nf(total * 1000)} = ${nf(((part * 100) / (total * 1000)) * 100)} %.` };
+  return { prompt: `Dans un indice de ${total} T$ de capitalisation, une entreprise vaut ${nf(part * 100)} Md$. Estime son poids en %.`, answer: r4(((part * 100) / (total * 1000)) * 100), tol: NUMERIC_TOLERANCE.weight, unit: "%", explanation: `${nf(total)} T$ = ${nf(total * 1000)} Md$. Poids = ${part * 100} / ${nf(total * 1000)} = ${nf(((part * 100) / (total * 1000)) * 100)} %.` };
 }
 
 const GENERATORS: Record<Topic, (level: number, r: Rng) => Gen> = {

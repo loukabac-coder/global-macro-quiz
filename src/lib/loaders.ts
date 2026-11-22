@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { shuffle, type Question } from "@/lib/quiz";
+import { shuffle, withBankTolerance, type Question } from "@/lib/quiz";
 import { mentalQuestion, mentalSession } from "@/lib/mental";
 import type { Game } from "@/lib/quizSession";
 
@@ -34,7 +34,7 @@ export async function fetchQuestions(
     if (error) throw new Error(error.message);
     const page = (data ?? []) as Question[];
     if (page.length === 0) return questions;
-    questions.push(...page);
+    questions.push(...page.map(withBankTolerance));
     offset += page.length;
   }
 }

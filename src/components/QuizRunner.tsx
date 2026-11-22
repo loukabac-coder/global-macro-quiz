@@ -469,6 +469,7 @@ export default function QuizRunner(props: RunnerProps) {
   const item = items[idx];
   const last = results[results.length - 1];
   const q = checked && last ? last.q : item.q;
+  const allowsEstimate = isNumeric(q) && (q.tolerance_pct ?? 0) > 0;
   const unit = unitOf(q);
   const wrongSelected = checked && q.type === "mcq" && !last?.ok && typeof choice === "number" ? wrongNote(q, choice) : null;
   const elapsedQ = Math.max(0, (now - qStart) / 1000);
@@ -553,6 +554,7 @@ export default function QuizRunner(props: RunnerProps) {
               {unit && <span className="text-sm text-muted">{unit}</span>}
             </div>
           )}
+          {allowsEstimate && !checked && <p className="text-xs text-muted">Réponse approchée acceptée</p>}
         </div>
 
         {formError && <p role="alert" className="mt-3 text-sm text-danger">{formError}</p>}
@@ -563,9 +565,9 @@ export default function QuizRunner(props: RunnerProps) {
               {last.ok ? "Correct." : last.given === "Temps écoulé" ? "Temps écoulé." : "Incorrect."}
               {T > 0 && last.ok && <span className="ml-2 font-mono text-xs font-normal text-muted">+{last.points} pts · {last.seconds.toFixed(1).replace(".", ",")} s</span>}
             </p>
-            {!last.ok && (
+            {(!last.ok || allowsEstimate) && (
               <p className="mt-1">
-                Bonne réponse : <span className="font-medium">{correctLabel(q)}</span>
+                {allowsEstimate ? "Valeur de référence" : "Bonne réponse"} · <span className="font-medium">{correctLabel(q)}</span>
                 {isNumeric(q) && last.given !== "Temps écoulé" && <span className="text-muted"> (ta réponse : {last.given})</span>}
               </p>
             )}

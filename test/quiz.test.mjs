@@ -11,7 +11,8 @@ registerHooks({
     return nextResolve(specifier, context);
   },
 });
-const { parseNumber, checkNumeric } = await import("../src/lib/quiz.ts");
+const { parseNumber, checkNumeric, correctLabel, withBankTolerance } = await import("../src/lib/quiz.ts");
+const { mentalQuestion } = await import("../src/lib/mental.ts");
 const { dailyQuestions } = await import("../src/lib/guest.ts");
 const { MODULES, computeStatuses } = await import("../src/lib/modules.ts");
 const { moduleQuestions } = await import("../src/lib/moduleQuestions.ts");
@@ -32,6 +33,44 @@ test("saisie numérique française, finie et correctement groupée", () => {
   assert.equal(parseNumber("9".repeat(400)), null);
   assert.equal(checkNumeric({ correct: -100, tolerance_pct: 5 }, -105), true);
   assert.equal(checkNumeric({ correct: 0, tolerance_pct: 10 }, 0.01), false);
+});
+
+test("calculs approchés plus souples et conversions exactes", () => {
+  const weight = mentalQuestion(5, () => 0, "ordres");
+  assert.equal(weight.correct, 5);
+  assert.equal(weight.tolerance_pct, 8);
+  for (const rounded of [4.6, 4.7, 5.4]) assert.equal(checkNumeric(weight, rounded), true);
+  for (const wrong of [4.59, 5.41, -5]) assert.equal(checkNumeric(weight, wrong), false);
+  assert.match(correctLabel(weight), /accepté de 4,6 à 5,4 %/);
+  assert.equal(checkNumeric(guestPool.find((q) => q.id === "guest:003"), 4.7), true);
+
+  const precise = mentalQuestion(1, () => 0, "bps");
+  assert.equal(precise.tolerance_pct, 0);
+  assert.equal(checkNumeric(precise, precise.correct + 0.01), false);
+  const multiplication = mentalQuestion(1, () => 0, "multiplications");
+  assert.equal(checkNumeric(multiplication, multiplication.correct + 1), false);
+
+  const duration = mentalQuestion(4, () => 0, "bps");
+  assert.equal(duration.correct, -0.75);
+  assert.equal(checkNumeric(duration, -0.78), true);
+  assert.equal(checkNumeric(duration, 0.75), false);
+});
+
+test("les modules et l’ancienne banque utilisent des marges adaptées à la consigne", () => {
+  const exercises = moduleQuestions(MODULES.find((m) => m.id === "d2"), 24);
+  const weight = exercises.find((q) => q.prompt.includes("Estime son poids") && q.correct === 5);
+  assert.equal(checkNumeric(weight, 5.3), true);
+  const cap = exercises.find((q) => q.prompt.includes("Quelle est la capitalisation"));
+  assert.equal(cap.tolerance_pct, 0);
+
+  const previous = { ...weight, prompt: "Quel est le poids de la société dans la capitalisation totale ?", tolerance_pct: 1 };
+  assert.equal(withBankTolerance(previous).tolerance_pct, 8);
+  assert.equal(withBankTolerance(withBankTolerance(previous)).tolerance_pct, 8);
+  const estimate = { ...previous, type: "guesstimate", prompt: "Dépense annuelle totale ?", tolerance_pct: null };
+  assert.equal(withBankTolerance(estimate).tolerance_pct, 15);
+  assert.equal(withBankTolerance({ ...estimate, tolerance_pct: 20 }).tolerance_pct, 20);
+  assert.equal(withBankTolerance({ ...estimate, prompt: "Calcule la dépense totale. Arrondis au centime.", tolerance_pct: 0 }).tolerance_pct, 0);
+  assert.equal(withBankTolerance({ ...previous, kind: "conjunctural" }).tolerance_pct, 1);
 });
 
 test("le défi du jour partage une série stable de dix questions", () => {

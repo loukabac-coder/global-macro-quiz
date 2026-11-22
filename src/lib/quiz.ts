@@ -23,6 +23,9 @@ export const DIFFICULTY_FR: Record<string, string> = {
 
 export const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
+// Marges relatives à la valeur attendue, en pourcentage.
+export const NUMERIC_TOLERANCE = { rounding: 3, estimate: 5, weight: 8, orderOfMagnitude: 15 } as const;
+
 // Mélange de Fisher-Yates
 export function shuffle<T>(input: T[]): T[] {
   const a = [...input];
@@ -35,6 +38,26 @@ export function shuffle<T>(input: T[]): T[] {
 
 export function isNumeric(q: Question): boolean {
   return q.type === "numeric" || q.type === "guesstimate";
+}
+
+export function withBankTolerance(question: Question): Question {
+  if (!isNumeric(question) || question.kind === "conjunctural") return question;
+  const { prompt, tolerance_pct, type, category_id } = question;
+  const precise = /\bexact(?:e|ement)?\b|sans arrondir|\barrondi\w*\s+(?:à|au|aux)|(?:centime|décimale|unité)s? près|\b\d+\s+décimales\b/i;
+  if (precise.test(prompt)) return question;
+
+  const current = Number(tolerance_pct) || 0;
+  let minimum = 0;
+  if (type === "guesstimate" || /ordre de grandeur/i.test(prompt)) {
+    minimum = NUMERIC_TOLERANCE.orderOfMagnitude;
+  } else if (/\b(?:poids|part)\b/i.test(prompt) && /capitalisation|indice/i.test(prompt)) {
+    minimum = NUMERIC_TOLERANCE.weight;
+  } else if (/approxim|approch[ée]|\bestim(?:e|ez|er|ation)\b|\benviron\b|à peu près/i.test(prompt)) {
+    minimum = NUMERIC_TOLERANCE.estimate;
+  } else if (category_id === "mental-math" && current > 0) {
+    minimum = NUMERIC_TOLERANCE.rounding;
+  }
+  return minimum > current ? { ...question, tolerance_pct: minimum } : question;
 }
 
 export function mcqOptions(q: Question): string[] {
@@ -72,8 +95,11 @@ export function parseNumber(input: string): number | null {
 
 export function checkNumeric(q: Question, value: number): boolean {
   const target = Number(q.correct);
-  const allowed = Math.abs(target) * ((q.tolerance_pct ?? 0) / 100);
-  return Math.abs(value - target) <= allowed + 1e-9;
+  return Math.abs(value - target) <= numericAllowance(q, target) + 1e-9;
+}
+
+function numericAllowance(q: Question, target: number): number {
+  return Math.abs(target) * ((q.tolerance_pct ?? 0) / 100);
 }
 
 export function fmt(n: number): string {
@@ -85,10 +111,10 @@ export function correctLabel(q: Question): string {
   if (q.type === "mcq") return mcqOptions(q)[Number(q.correct)] ?? "";
   if (q.type === "true_false") return q.correct === true ? "Vrai" : "Faux";
   const unit = unitOf(q);
-  const tol = q.tolerance_pct ?? 0;
-  return (
-    fmt(Number(q.correct)) +
-    (unit ? " " + unit : "") +
-    (tol > 0 ? ` (tolérance de ± ${fmt(tol)} %)` : "")
-  );
+  const target = Number(q.correct);
+  const allowed = numericAllowance(q, target);
+  const expected = fmt(target) + (unit ? " " + unit : "");
+  if (!(allowed > 0)) return expected;
+  const bound = (value: number) => value.toLocaleString("fr-FR", { maximumFractionDigits: 6 });
+  return `${expected} (accepté de ${bound(target - allowed)} à ${bound(target + allowed)}${unit ? " " + unit : ""})`;
 }

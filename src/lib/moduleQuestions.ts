@@ -1,13 +1,13 @@
 import { mentalQuestion, type Topic } from "@/lib/mental";
 import type { Module } from "@/lib/modules";
-import { fmt, shuffle, type Question } from "@/lib/quiz";
+import { fmt, NUMERIC_TOLERANCE, shuffle, type Question } from "@/lib/quiz";
 
-type Exercise = Pick<Question, "prompt" | "type" | "correct" | "options" | "explanation">;
+type Exercise = Pick<Question, "prompt" | "type" | "correct" | "options" | "explanation" | "tolerance_pct">;
 type Scenario = (n: number) => Exercise;
 
-function numeric(prompt: string, value: number, unit: string, method: string): Exercise {
+function numeric(prompt: string, value: number, unit: string, method: string, tolerance = 0): Exercise {
   const correct = Number(value.toFixed(2));
-  return { prompt, correct, type: "numeric", options: { unit }, explanation: `${method} Résultat : ${fmt(correct)} ${unit}.` };
+  return { prompt, correct, type: "numeric", options: { unit }, tolerance_pct: tolerance, explanation: `${method} Résultat : ${fmt(correct)} ${unit}.` };
 }
 
 const cap: Scenario = (n) => numeric(
@@ -15,8 +15,9 @@ const cap: Scenario = (n) => numeric(
   (10 + n) * 2, "Md$", "Multiplie le cours par le nombre d’actions en milliards.",
 );
 const weight: Scenario = (n) => numeric(
-  `Une société vaut ${10 * n} Md$ dans un indice pondéré par capitalisation de 1 000 Md$, sans ajustement du flottant. Quel est son poids en % ?`,
+  `Une société vaut ${10 * n} Md$ dans un indice pondéré par capitalisation de 1 000 Md$, sans ajustement du flottant. Estime son poids en %.`,
   n, "%", "Divise la capitalisation de la société par celle de l’indice, puis multiplie par 100.",
+  NUMERIC_TOLERANCE.weight,
 );
 const enterprise: Scenario = (n) => numeric(
   `Une entreprise vaut ${20 + n} Md$ en Bourse et a 4 Md$ de dette nette. Quelle est son EV simplifiée en Md$ ?`,
@@ -41,14 +42,17 @@ const corridor: Scenario = (n) => numeric(
 const realRate: Scenario = (n) => numeric(
   `Pour un emprunt d’un an, le taux nominal est ${n + 3} % et l’inflation attendue 2 %. Quel est le taux réel ex ante approximatif en % ?`,
   n + 1, "%", "L’approximation de Fisher soustrait l’inflation anticipée du taux nominal.",
+  NUMERIC_TOLERANCE.estimate,
 );
 const realGrowth: Scenario = (n) => numeric(
   `Le PIB nominal augmente de ${n + 2} % et son déflateur de 2 %. Donne la croissance réelle en % par soustraction approchée.`,
   n, "%", "Soustrais la hausse du déflateur du PIB à la croissance nominale.",
+  NUMERIC_TOLERANCE.estimate,
 );
 const debt: Scenario = (n) => numeric(
   `La dette publique brute est de ${500 + 100 * n} Md€ et le PIB nominal de 2 000 Md€. Quel est le ratio de dette publique en % ?`,
   25 + 5 * n, "%", "Divise la dette brute par le PIB nominal, puis multiplie par 100.",
+  NUMERIC_TOLERANCE.estimate,
 );
 const fx: Scenario = (n) => numeric(
   `Une entreprise doit régler ${(10 + n) * 120} USD. EUR/USD = 1,20. Quel est le montant en euros, hors frais ?`,
@@ -73,13 +77,15 @@ const slope: Scenario = (n) => numeric(
 const dur: Scenario = (n) => numeric(
   `À duration modifiée ${n + 2}, quel changement relatif de prix en % approxime-t-on pour une baisse de rendement de 25 pb, hors convexité ?`,
   (n + 2) * 0.25, "%", "Applique −duration modifiée × variation du rendement. La baisse du rendement donne une hausse de prix.",
+  NUMERIC_TOLERANCE.estimate,
 );
 const dv01: Scenario = (n) => numeric(
-  `Une obligation vaut ${n + 2} millions d’euros et sa duration modifiée vaut 4. Quel est son DV01 en euros, exprimé en valeur absolue ?`,
+  `Une obligation vaut ${n + 2} millions d’euros et sa duration modifiée vaut 4. Estime son DV01 en euros, en valeur absolue.`,
   (n + 2) * 400, "€", "Multiplie la valeur de marché, la duration modifiée et 0,0001.",
+  NUMERIC_TOLERANCE.estimate,
 );
 const convexity: Scenario = (n) => numeric(
-  `Une obligation a une duration modifiée de 5 et une convexité de ${20 * n}. Rendement +100 pb. Estime la variation relative du prix en %, au second ordre.`,
+  `Une obligation a une duration modifiée de 5 et une convexité de ${20 * n}. Rendement +100 pb. Calcule la variation du prix au second ordre, en %, au dixième de point près.`,
   -5 + 0.1 * n, "%", "Additionne −5 × 0,01 et ½ × convexité × 0,01², puis multiplie par 100.",
 );
 const forward: Scenario = (n) => numeric(
@@ -99,8 +105,9 @@ const surprise: Scenario = (n) => numeric(
   10 * n - 50, "pb", "Calcule publication moins consensus, puis multiplie l’écart en points de pourcentage par 100.",
 );
 const estimate: Scenario = (n) => numeric(
-  `Une économie compte ${n + 2} millions de ménages. Ils dépensent en moyenne 500 € par mois sur un poste. Quelle est la dépense annuelle en Md€ ?`,
+  `Une économie compte ${n + 2} millions de ménages. Ils dépensent en moyenne 500 € par mois sur un poste. Estime la dépense annuelle en Md€.`,
   6 * (n + 2), "Md€", "Multiplie par 500 € et douze mois, puis convertis les millions d’euros en milliards.",
+  NUMERIC_TOLERANCE.orderOfMagnitude,
 );
 const call: Scenario = (n) => numeric(
   `Tu achètes un call de strike 100 € et paies 5 € de prime. Le sous-jacent finit à ${97 + 2 * n} €. Quel est le résultat net en euros par option sur une action ?`,
@@ -117,10 +124,12 @@ const straddle: Scenario = (n) => numeric(
 const gamma: Scenario = (n) => numeric(
   `Une option a un delta de 0,40 et un gamma de 0,02 par euro. Pour une hausse du sous-jacent de ${n} €, quel delta approxime-t-on avec un gamma constant ?`,
   0.4 + 0.02 * n, "", "Ajoute au delta initial le gamma multiplié par le mouvement du sous-jacent.",
+  NUMERIC_TOLERANCE.rounding,
 );
 const vega: Scenario = (n) => numeric(
   `Le vega d’une option est de 0,50 € par point de volatilité. La volatilité implicite baisse de ${n} points. Quelle variation de valeur en euros approxime-t-on, toutes choses égales par ailleurs ?`,
   -0.5 * n, "€", "Multiplie le vega par la baisse signée du nombre de points de volatilité.",
+  NUMERIC_TOLERANCE.estimate,
 );
 const leverage: Scenario = (n) => numeric(
   `Un fonds de 10 M€ détient ${10 + 2 * n} M€ de positions longues et 5 M€ de positions courtes en valeur absolue. Quel est le levier brut en multiples ?`,
@@ -159,7 +168,6 @@ export function moduleQuestions(module: Module, count: number): Question[] {
   );
   const distinct = new Map(candidates.map((item) => [item.prompt, item]));
   return [...distinct.values()].slice(0, count).map((exercise, i) => ({
-    tolerance_pct: 0,
     wrong_explanations: null,
     source: null,
     kind: "structural",

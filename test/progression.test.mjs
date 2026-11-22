@@ -63,9 +63,16 @@ test("migration en mémoire, correction, historique et modules", async () => {
     `)).rows[0];
     assert.deepEqual(row, { issue: false, write_history: false, set_level: false });
     const base = { type: "numeric", category_id: "mental-math", difficulty: "intermediate", correct: -100, tolerance_pct: 5 };
+    const guestPool = JSON.parse(readFileSync(new URL("../public/data/guest-questions.json", import.meta.url), "utf8"));
+    const weight = guestPool.find((q) => q.id === "guest:003");
+    const exactConversion = guestPool.find((q) => q.id === "guest:004");
     const questions = Array.from({ length: 10 }, (_, i) => ({ ...base, id: i === 0 ? "1" : i === 1 ? "2" : `module:d1:${i}` }));
+    questions[0] = { ...weight, id: "1" };
+    questions[7] = weight;
+    questions[8] = exactConversion;
     const id = await session(db, first, "training", "module", questions, 0, "d1");
-    for (let i = 0; i < 10; i++) assert.equal((await answer(db, id, i, i < 7 ? -105 : 0)).ok, i < 7);
+    const answers = [4.7, -105, -105, -105, -105, -105, -105, 4.59, 1.49, 0];
+    for (let i = 0; i < answers.length; i++) assert.equal((await answer(db, id, i, answers[i])).ok, i < 7);
     const finalized = (await db.query("select finish_quiz_run($1) as result", [id])).rows[0].result;
     assert.equal(finalized.score, 7);
     assert.equal(finalized.total, 10);
