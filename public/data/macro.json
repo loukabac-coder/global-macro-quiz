@@ -1,13 +1,18 @@
 {
- "updated_at": "2026-11-22T17:28:35+00:00",
+ "updated_at": "2026-11-22T20:42:55+00:00",
+ "checked_at": "2026-11-22T20:42:55+00:00",
+ "failed": [],
  "indicators": {
   "ecb_deposit_rate": {
    "label": "Taux de la facilité de dépôt de la BCE",
    "value": 2.5,
    "unit": "%",
    "ref_date": "2026-11-22",
-   "source": "BCE (Statistical Data Warehouse)",
-   "max_age_days": 120
+   "source": "BCE (FM/D.U2.EUR.4F.KR.DFR.LEV)",
+   "max_age_days": 120,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-22T20:42:19+00:00",
+   "status": "A"
   },
   "fed_target_upper": {
    "label": "Fed funds : borne haute de la fourchette cible",
@@ -15,15 +20,21 @@
    "unit": "%",
    "ref_date": "2026-11-22",
    "source": "Réserve fédérale via FRED (DFEDTARU)",
-   "max_age_days": 120
+   "max_age_days": 120,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-22T20:42:19+00:00",
+   "status": null
   },
   "ez_hicp_yoy": {
    "label": "Inflation IPCH de la zone euro sur 12 mois",
    "value": 4.0,
    "unit": "%",
    "ref_date": "2026-10-01",
-   "source": "Eurostat / BCE (IPCH, base ECOICOP 2)",
-   "max_age_days": 100
+   "source": "Eurostat (prc_hicp_minr, EA)",
+   "max_age_days": 100,
+   "frequency": "monthly",
+   "retrieved_at": "2026-11-22T20:42:30+00:00",
+   "status": null
   },
   "us_unrate": {
    "label": "Taux de chômage américain",
@@ -31,7 +42,10 @@
    "unit": "%",
    "ref_date": "2026-10-01",
    "source": "BLS via FRED (UNRATE)",
-   "max_age_days": 100
+   "max_age_days": 100,
+   "frequency": "monthly",
+   "retrieved_at": "2026-11-22T20:42:30+00:00",
+   "status": null
   },
   "us_10y": {
    "label": "Rendement du Treasury américain à 10 ans",
@@ -39,47 +53,65 @@
    "unit": "%",
    "ref_date": "2026-11-19",
    "source": "Réserve fédérale via FRED (DGS10)",
-   "max_age_days": 7
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "status": null
   },
   "eurusd": {
    "label": "EUR/USD (taux de référence BCE)",
    "value": 1.099,
    "unit": "",
    "ref_date": "2026-11-20",
-   "source": "BCE (taux de référence)",
-   "max_age_days": 7
+   "source": "BCE (EXR/D.USD.EUR.SP00.A)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "status": "A"
   },
   "brent": {
-   "label": "Brent",
+   "label": "Brent, prix au comptant",
    "value": 92.94,
    "unit": "$/baril",
    "ref_date": "2026-11-17",
    "source": "EIA via FRED (DCOILBRENTEU)",
-   "max_age_days": 7
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "status": null
   },
   "wti": {
-   "label": "WTI",
+   "label": "WTI, prix au comptant",
    "value": 89.53,
    "unit": "$/baril",
    "ref_date": "2026-11-17",
    "source": "EIA via FRED (DCOILWTICO)",
-   "max_age_days": 7
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "status": null
   },
   "gold": {
    "label": "Or (once troy, contrat à terme)",
    "value": 3515.4,
    "unit": "$/once",
-   "ref_date": "2026-11-22",
-   "source": "Yahoo Finance (GC=F)",
-   "max_age_days": 7
+   "ref_date": "2026-11-20",
+   "source": "Yahoo Finance (GC=F, contrat à terme)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "status": null
   },
   "us_cpi_yoy": {
-   "label": "Inflation IPC américaine sur 12 mois",
-   "value": 3.72,
+   "label": "Inflation IPC-U américaine sur 12 mois, non désaisonnalisée",
+   "value": 3.7,
    "unit": "%",
    "ref_date": "2026-09-01",
-   "source": "BLS via FRED (CPIAUCSL)",
-   "max_age_days": 100
+   "source": "BLS via FRED (CPIAUCNS, non désaisonnalisé)",
+   "max_age_days": 100,
+   "frequency": "monthly",
+   "retrieved_at": "2026-11-22T20:42:19+00:00",
+   "status": null
   }
  }
 }
