@@ -1,10 +1,13 @@
 """
-Robot quotidien : récupère les capitalisations boursières et écrit public/data/market-caps.json.
-Lancé chaque jour par GitHub Actions (voir .github/workflows/donnees-du-jour.yml).
+Collecte automatique des capitalisations boursières dans public/data/market-caps.json.
+Lancée par GitHub Actions (voir .github/workflows/donnees-du-jour.yml).
 Source : Yahoo Finance via la bibliothèque yfinance (donnée de marché gratuite, non officielle).
 Sécurité : si trop de valeurs manquent, l'ancien fichier est conservé (on n'écrase jamais avec des données cassées).
 """
 import json, sys, datetime, math, os
+import urllib.request
+import xml.etree.ElementTree as ET
+from functools import lru_cache
 import yfinance as yf
 
 # (symbole Yahoo, nom affiché, pays, région)
@@ -50,7 +53,7 @@ COMPANIES = [
 ]
 
 def latest_close(ticker):
-    close = ticker.history(period="5d", interval="1d", auto_adjust=False)["Close"].dropna()
+    close = ticker.history(period="5d", interval="1d", auto_adjust=False, timeout=10)["Close"].dropna()
     if close.empty:
         raise ValueError("séance introuvable")
     price = float(close.iloc[-1])
@@ -59,13 +62,49 @@ def latest_close(ticker):
     return price, close.index[-1].date().isoformat()
 
 
-def usd_rate(cur, cache):
-    """Taux de conversion devise -> USD et date de la cotation utilisée."""
+@lru_cache(maxsize=1)
+def ecb_reference_rates():
+    url = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
+    with urllib.request.urlopen(url, timeout=15) as response:
+        root = ET.fromstring(response.read())
+    session = root.find(".//{*}Cube[@time]")
+    if session is None:
+        raise ValueError("référence de change BCE absente")
+    rates = {child.attrib["currency"]: float(child.attrib["rate"]) for child in session}
+    return session.attrib["time"], {"EUR": 1.0, **rates}
+
+
+def recent(date, as_of):
+    return 0 <= (as_of - datetime.date.fromisoformat(date)).days <= 7
+
+
+def usd_rate(cur, cache, as_of):
+    """Taux devise -> USD, date et fournisseur du taux utilisé."""
     if cur == "USD":
-        return 1.0, None
+        return 1.0, None, None
     if cur not in cache:
-        cache[cur] = latest_close(yf.Ticker(f"{cur}USD=X"))
+        try:
+            rate, day = latest_close(yf.Ticker(f"{cur}USD=X"))
+            if not recent(day, as_of):
+                raise ValueError("taux Yahoo Finance expiré")
+            cache[cur] = rate, day, "Yahoo Finance"
+        except Exception:  # noqa: BLE001
+            try:
+                day, rates = ecb_reference_rates()
+                rate = rates["USD"] / rates[cur]
+                if not recent(day, as_of) or not math.isfinite(rate) or rate <= 0:
+                    raise ValueError("taux BCE expiré ou invalide")
+                cache[cur] = rate, day, "BCE"
+            except Exception:  # noqa: BLE001
+                cache[cur] = None
     return cache[cur]
+
+
+def publish(data, path):
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+    os.replace(path + ".tmp", path)
+
 
 def main():
     out_path = os.path.join(os.path.dirname(__file__), "..", "public", "data", "market-caps.json")
@@ -82,14 +121,16 @@ def main():
             # Pence britanniques : 100 pence = 1 livre
             if cur == "GBp": cap, cur = cap / 100.0, "GBP"
             if cur == "ZAc": cap, cur = cap / 100.0, "ZAR"
-            r, fx_date = usd_rate(cur, fx)
+            conversion = usd_rate(cur, fx, collected.date())
+            if conversion is None:
+                raise ValueError(f"conversion {cur} vers USD indisponible")
+            r, fx_date, fx_source = conversion
             _, price_date = latest_close(ticker)
-            for ref_date in (price_date, fx_date):
-                if ref_date and not 0 <= (collected.date() - datetime.date.fromisoformat(ref_date)).days <= 7:
-                    raise ValueError("séance absente ou ancienne")
+            if not recent(price_date, collected.date()):
+                raise ValueError("séance absente ou ancienne")
             items.append({"ticker": sym, "name": name, "country": country, "region": region,
                           "market_cap_usd": round(cap * r), "price_date": price_date,
-                          "fx_date": fx_date, "currency": cur})
+                          "fx_date": fx_date, "fx_source": fx_source, "currency": cur})
         except Exception as e:
             failed.append(sym); print("KO", sym, e)
 
@@ -97,19 +138,27 @@ def main():
     print(f"{len(items)}/{len(COMPANIES)} valeurs récupérées")
     # Garde-fous : assez de valeurs, et les grandes valeurs de référence présentes
     names = {i["ticker"] for i in items}
+    checked_at = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     if ok_ratio < 0.8 or not {"AAPL", "MSFT", "NVDA"} <= names:
+        try:
+            with open(out_path, encoding="utf-8") as f:
+                previous = json.load(f)
+        except (OSError, ValueError):
+            previous = {"updated_at": None, "source": "Yahoo Finance", "items": []}
+        publish({**previous, "checked_at": checked_at, "refresh_failed": True, "failed": failed}, out_path)
         print("::warning::Capitalisations insuffisantes, instantané précédent conservé.")
         sys.exit(1)
 
     items.sort(key=lambda i: i["market_cap_usd"], reverse=True)
     data = {
-        "updated_at": collected.isoformat(timespec="seconds"),
-        "source": "Yahoo Finance (via yfinance), conversion au dernier cours de change daté",
+        "updated_at": checked_at,
+        "checked_at": checked_at,
+        "refresh_failed": False,
+        "source": "Estimations Yahoo Finance, taux de conversion Yahoo Finance ou BCE",
         "failed": failed,
         "items": items,
     }
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=1)
+    publish(data, out_path)
     if failed:
         print("::warning::Valeurs non récupérées : " + ", ".join(failed))
 

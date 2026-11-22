@@ -16,12 +16,12 @@ export function parseList(v: string | null): string[] {
   return v ? v.split(",").map((s) => s.trim()).filter(Boolean) : [];
 }
 
-// Questions actives de la base (les règles de sécurité excluent déjà les questions périmées).
+// Les données d’actualité sont générées depuis les observations vérifiées à l’ouverture du quiz.
 export async function fetchQuestions(
   supabase: SupabaseClient,
   opts: { categories?: string[]; levels?: string[]; types?: string[]; ids?: string[] } = {},
 ): Promise<Question[]> {
-  let q = supabase.from("questions").select(Q_COLS);
+  let q = supabase.from("questions").select(Q_COLS).or("kind.is.null,kind.neq.conjunctural");
   if (opts.categories?.length) q = q.in("category_id", opts.categories);
   if (opts.levels?.length) q = q.in("difficulty", opts.levels);
   if (opts.types?.length) q = q.in("type", opts.types);

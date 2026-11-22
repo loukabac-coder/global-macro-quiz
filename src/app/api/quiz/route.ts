@@ -1,9 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import caps from "../../../../public/data/market-caps.json";
-import macro from "../../../../public/data/macro.json";
 import guest from "../../../../public/data/guest-questions.json";
 import { CAT_NAME } from "@/lib/categories";
 import { MODULE_QUIZ_SIZE, PASS_THRESHOLD } from "@/lib/config";
+import { readMacroSnapshot, readMarketCapsSnapshot } from "@/lib/dataSnapshots";
 import { dailyQuestions } from "@/lib/guest";
 import { buildLiveQuestions } from "@/lib/liveQuestions";
 import { loadGame, loadPlacement, loadQuick, loadTraining, loadWeakness } from "@/lib/loaders";
@@ -63,6 +62,7 @@ function normalizeQuestion(q: Question): Question | null {
 }
 
 async function liveQuestions(): Promise<Question[]> {
+  const [caps, macro] = await Promise.all([readMarketCapsSnapshot(), readMacroSnapshot()]);
   const now = Date.now();
   return [...(hasFreshMarketCaps(caps, now) ? buildLiveQuestions(caps) : []), ...buildMacroQuestions(macro, now)];
 }

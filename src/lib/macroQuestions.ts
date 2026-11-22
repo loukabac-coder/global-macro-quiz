@@ -1,5 +1,5 @@
 import type { Question } from "@/lib/quiz";
-import { fmtValue, isDatedObservation, isFresh, referenceLabel, type Indicator, type MacroData } from "@/lib/macro";
+import { fmtValue, isVerifiedMacro, referenceLabel, type Indicator, type MacroData } from "@/lib/macro";
 
 // Questions générées à partir des indicateurs du jour. Une question n'existe que si sa donnée
 // est assez récente : sinon elle disparaît toute seule.
@@ -35,7 +35,7 @@ export function buildMacroQuestions(data: MacroData, nowMs: number): Question[] 
   const out: Question[] = [];
   const get = (k: string): Indicator | null => {
     const i = data.indicators[k];
-    return i && isDatedObservation(k, i) && isFresh(i, nowMs) ? i : null;
+    return i && isVerifiedMacro(data, k, nowMs) ? i : null;
   };
 
   for (const [key, meta] of Object.entries(META)) {

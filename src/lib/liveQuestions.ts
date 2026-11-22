@@ -1,5 +1,6 @@
 import { shuffle, type Question } from "@/lib/quiz";
 import { fmtCap, type Company, type MarketCaps } from "@/lib/marketcaps";
+import { dataTimestamp } from "@/lib/dataFreshness";
 
 // Questions générées à partir des capitalisations du jour : leurs réponses
 // se mettent à jour toutes seules chaque fois que le robot actualise les données.
@@ -16,7 +17,9 @@ function top(list: Company[], n: number): string {
 }
 
 export function buildLiveQuestions(data: MarketCaps): Question[] {
-  const day = data.updated_at ? data.updated_at.slice(0, 10) : null;
+  const collectedAt = data.updated_at ? new Date(data.updated_at) : null;
+  const day = collectedAt ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Paris" }).format(collectedAt) : null;
+  const collection = collectedAt ? dataTimestamp.format(collectedAt) : null;
   const world = [...data.items].sort((a, b) => b.market_cap_usd - a.market_cap_usd);
   const europe = world.filter((c) => c.region === "Europe");
   const out: Question[] = [];
@@ -26,7 +29,7 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
     id: `live:${day}:${n++}`,
     category_id: "market-caps",
     difficulty: diff,
-    prompt,
+    prompt: collection ? `${prompt} (collecte du ${collection}, heure de Paris)` : prompt,
     explanation,
     tolerance_pct: null as number | null,
     wrong_explanations: null,

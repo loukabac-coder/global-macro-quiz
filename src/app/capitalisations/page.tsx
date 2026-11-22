@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import { fetchMarketCaps, fmtCap, frDay, hasFreshMarketCaps, type Company, type MarketCaps } from "@/lib/marketcaps";
+import { fetchMarketCaps, fmtCap, hasFreshMarketCaps, type Company } from "@/lib/marketcaps";
+import { dataTimestamp } from "@/lib/dataFreshness";
+import { useDataSnapshot } from "@/lib/useDataSnapshot";
 
 type Tab = "monde" | "europe" | "pays";
-
-function nowMs(): number {
-  return Date.now();
-}
 
 function Table({ rows }: { rows: Company[] }) {
   return (
@@ -31,7 +29,7 @@ function Table({ rows }: { rows: Company[] }) {
             <td className="py-2.5 text-right font-mono">
               {fmtCap(c.market_cap_usd)}
               {c.price_date && <span className="block text-xs text-muted">Séance {c.price_date}</span>}
-              {c.fx_date && <span className="block text-xs text-muted">Change {c.fx_date}</span>}
+              {c.fx_date && <span className="block text-xs text-muted">Change {c.fx_date}{c.fx_source && ` · ${c.fx_source}`}</span>}
             </td>
           </tr>
         ))}
@@ -41,26 +39,10 @@ function Table({ rows }: { rows: Company[] }) {
 }
 
 export default function Capitalisations() {
-  const [data, setData] = useState<MarketCaps | null>(null);
-  const [state, setState] = useState<"loading" | "ok" | "none">("loading");
+  const { data, loading, unreachable, now } = useDataSnapshot(fetchMarketCaps);
   const [tab, setTab] = useState<Tab>("monde");
   const [country, setCountry] = useState("France");
-  const [fresh, setFresh] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    fetchMarketCaps().then((d) => {
-      if (!active) return;
-      if (d) {
-        setData(d);
-        setFresh(hasFreshMarketCaps(d, nowMs()));
-        setState("ok");
-      } else setState("none");
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const fresh = !!data && !unreachable && hasFreshMarketCaps(data, now);
 
   const world = data ? [...data.items].sort((a, b) => b.market_cap_usd - a.market_cap_usd) : [];
   const europe = world.filter((c) => c.region === "Europe");
@@ -74,28 +56,28 @@ export default function Capitalisations() {
       <main className="fade-in py-10">
         <h1 className="text-3xl font-semibold tracking-tight">Capitalisations boursières</h1>
         <p className="mt-3 max-w-xl text-muted">
-          Estimations des capitalisations des entreprises suivies. Les dates de séance et de conversion sont affichées lorsqu’elles sont connues.
+          Estimations des capitalisations du panel, actualisées automatiquement. Chaque séance et chaque taux de conversion sont datés lorsqu’ils sont connus.
         </p>
 
-        {state === "loading" && <p className="mt-8 text-sm text-muted">Chargement…</p>}
-        {state === "none" && (
+        {loading && <p className="mt-8 text-sm text-muted">Chargement…</p>}
+        {!loading && world.length === 0 && (
           <p className="mt-8 border-l-2 border-warn bg-panel px-4 py-3 text-sm">
             Le classement n’est pas disponible pour le moment.
           </p>
         )}
 
-        {state === "ok" && data && (
+        {data?.updated_at && world.length > 0 && (
           <>
             <p className={`mt-6 font-mono text-xs ${fresh ? "text-muted" : "text-danger"}`}>
-              Collecte du {frDay(data.updated_at as string)} · {data.source.replace("au taux du jour", "avec les taux disponibles")}
-              {!fresh && " · Questions sur cet instantané désactivées"}
+              {fresh ? "Collecte" : "Dernier classement connu, collecté"} le {dataTimestamp.format(new Date(data.updated_at))} · {data.source.replace("au taux du jour", "avec les taux disponibles")}
+              {!fresh && " · Fraîcheur non vérifiée, questions désactivées"}
               {data.failed.length > 0 && ` · ${data.failed.length} valeur(s) indisponible(s)`}
             </p>
 
             {nvidia && (
               <p className="mt-6 border border-line bg-panel px-4 py-3 text-sm">
-                Repère : <span className="font-semibold">Nvidia</span> vaut {fmtCap(nvidia.market_cap_usd)}, soit le n°
-                {world.indexOf(nvidia) + 1} du panel.
+                Dans ce classement, <span className="font-semibold">Nvidia</span> est n°{world.indexOf(nvidia) + 1} du panel
+                avec une capitalisation estimée de {fmtCap(nvidia.market_cap_usd)}.
               </p>
             )}
 

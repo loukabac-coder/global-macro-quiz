@@ -95,7 +95,7 @@ export default function Home() {
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">Des chiffres du jour, avec leur date</h2>
               <p className="mt-3 max-w-xl text-muted">
-                Capitalisations, taux directeurs, inflation, change, pétrole, or : mis à jour chaque jour. Chaque donnée affiche sa date de référence, et les questions qui en dépendent se désactivent quand elle devient trop ancienne.
+                Capitalisations, taux directeurs, inflation, change, pétrole et or. Les dernières observations publiées sont vérifiées régulièrement et affichées avec leur date de référence.
               </p>
             </div>
             <div className="flex gap-3 text-sm">

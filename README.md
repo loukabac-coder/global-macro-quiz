@@ -39,7 +39,7 @@ Les tests Node exécutent les migrations dans PostgreSQL en mémoire avec un sch
 
 ```powershell
 git status --short
-git add .github README.md package.json package-lock.json public/data/guest-questions.json scripts sql src test
+git add .github README.md package.json package-lock.json public/data/guest-questions.json scripts sql src test vercel.json
 git diff --cached --stat
 git commit -m "Fiabilise les quiz, le parcours et les données"
 git pull --rebase origin main
@@ -47,12 +47,13 @@ git push origin main
 ```
 
 5. Dans **Deployments**, attends que le nouveau commit soit marqué **Ready** pour **Production**. Ouvre [le site](https://global-macro-quiz.vercel.app/) et actualise avec **Ctrl+F5**. Vérifie `/module?id=d1` sans compte, puis termine une partie connecté et vérifie **Profil → Parties récentes**.
-6. Lance **GitHub → Actions → Données du jour → Run workflow** sur la branche Production pour régénérer les instantanés avec les dates de séance et de collecte. Une fois le commit du robot déployé, vérifie `/donnees` et `/capitalisations`. Une actualisation navigateur seule conserve la version de données du dernier déploiement.
+6. Lance une première collecte dans **GitHub → Actions → Données du jour → Run workflow** sur la branche par défaut. Le robot crée la branche `data-live` et y publie les instantanés. Vérifie `/donnees` et `/capitalisations` après le passage. Cette mise à jour se lit sans nouveau déploiement.
 
 [Vercel et les déploiements Git](https://vercel.com/docs/git) · [Variables d’environnement Vercel](https://vercel.com/docs/environment-variables) · [Clés Supabase](https://supabase.com/docs/guides/getting-started/api-keys)
 
 ## Données et progression
 
 - Le défi quotidien utilise la date de Paris et le même jeu de questions pour les visiteurs et les comptes. Les cours, les mini-checks et les corrections immédiates restent accessibles selon le niveau du parcours.
-- Les chiffres macro conservent leur période de référence et le dernier succès de collecte. Les dates de publication et les codes de statut sont affichés quand le fournisseur les transmet.
-- Les classements couvrent un panel de sociétés. Les nouveaux instantanés distinguent la date de collecte, la séance du titre et la date du taux de conversion.
+- GitHub Actions contrôle la macro et l’or toutes les 30 minutes. Le panel de capitalisations est contrôlé chaque heure en semaine. Le calendrier GitHub et les délais de publication des fournisseurs peuvent décaler la disponibilité.
+- Les tableaux et les quiz lisent la même publication via `data-live`. Vercel ne redéploie pas sur cette branche. Les tableaux ouverts vérifient toutes les deux minutes s’il y a une nouvelle publication.
+- Un échec conserve l’ancienne observation et sa date. Le site identifie les valeurs dont la fraîcheur n’a pas pu être établie et les retire des nouveaux quiz. Les capitalisations converties en dollars indiquent la séance boursière et le taux de change Yahoo Finance ou BCE réellement utilisé.

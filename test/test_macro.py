@@ -1,5 +1,8 @@
 import datetime
+import json
+from pathlib import Path
 import sys
+import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -26,6 +29,49 @@ class MacroTests(unittest.TestCase):
             quote = update_macro.yahoo_last("GC=F")
         self.assertEqual(quote.date, "2026-11-20")
         self.assertEqual(quote.value, 3515.40)
+
+    def test_treasury_uses_latest_observation_with_a_ten_year_rate(self):
+        xml = """<feed xmlns="http://www.w3.org/2005/Atom" xmlns:m="urn:meta" xmlns:d="urn:data">
+          <entry><content><m:properties><d:NEW_DATE>2026-11-20T00:00:00</d:NEW_DATE>
+          <d:BC_10YEAR>5.03</d:BC_10YEAR></m:properties></content></entry>
+          <entry><content><m:properties><d:NEW_DATE>2026-11-21T00:00:00</d:NEW_DATE>
+          <d:BC_10YEAR/></m:properties></content></entry>
+          <entry><content><m:properties><d:NEW_DATE>2026-11-19T00:00:00</d:NEW_DATE>
+          <d:BC_10YEAR>5.04</d:BC_10YEAR></m:properties></content></entry>
+        </feed>"""
+        with patch.object(update_macro, "http_get", return_value=xml):
+            quote = update_macro.treasury_10y()
+        self.assertEqual((quote.date, quote.value), ("2026-11-20", 5.03))
+
+    def test_failed_refresh_keeps_previous_observation_and_timestamp(self):
+        def unavailable():
+            raise TimeoutError("provider unavailable")
+
+        previous = {
+            "updated_at": "2026-11-22T10:00:00Z",
+            "indicators": {"eurusd": {"value": 1.099, "ref_date": "2026-11-20", "retrieved_at": "2026-11-22T10:00:00Z"}},
+        }
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "macro.json"
+            path.write_text(json.dumps(previous), encoding="utf-8")
+            with patch.object(update_macro, "OUT", str(path)), patch.object(
+                update_macro, "INDICATORS", {"eurusd": ("EUR/USD", "", "daily", 7, unavailable)}
+            ), self.assertRaises(SystemExit) as exit_code:
+                update_macro.main()
+            recorded = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(exit_code.exception.code, 1)
+        self.assertEqual(recorded["updated_at"], previous["updated_at"])
+        self.assertEqual(recorded["indicators"], previous["indicators"])
+        self.assertEqual(recorded["failed"], ["eurusd"])
+        self.assertIn("checked_at", recorded)
+
+    def test_currency_fallback_uses_ecb_cross_rate_and_date(self):
+        with patch.dict(sys.modules, {"yfinance": SimpleNamespace(Ticker=None)}):
+            from scripts import update_market_caps
+        rates = ("2026-11-20", {"EUR": 1.0, "USD": 1.10, "GBP": 0.88})
+        with patch.object(update_market_caps, "ecb_reference_rates", return_value=rates):
+            result = update_market_caps.usd_rate("GBP", {}, datetime.date(2026, 11, 22))
+        self.assertEqual(result, (1.25, "2026-11-20", "BCE"))
 
 
 if __name__ == "__main__":

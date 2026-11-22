@@ -2,39 +2,63 @@ name: Données du jour (capitalisations + macro)
 
 on:
   schedule:
-    - cron: "20 6 * * *"   # tous les jours à 06h20 UTC
-  workflow_dispatch:        # lancement manuel possible
+    - cron: "17,47 * * * *"  # macro et or toutes les 30 minutes
+    - cron: "32 * * * 1-5"  # capitalisations toutes les heures, du lundi au vendredi (UTC)
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: daily-data-${{ github.ref }}
+  group: market-data-publication
   cancel-in-progress: false
 
 jobs:
   update:
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: python -m pip install yfinance==1.8.0
+      - name: Charger les dernières observations publiées
+        run: |
+          if git ls-remote --exit-code origin refs/heads/data-live > /dev/null; then
+            git fetch --no-tags --depth=1 origin refs/heads/data-live:refs/remotes/origin/data-live
+            for file in public/data/macro.json public/data/market-caps.json; do
+              git show "origin/data-live:$file" > "$file"
+            done
+          elif [ "$?" -ne 2 ]; then
+            exit 1
+          fi
       - name: Capitalisations
         id: caps
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '32 * * * 1-5'
         continue-on-error: true
         run: python scripts/update_market_caps.py
       - name: Indicateurs macro
         id: macro
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17,47 * * * *'
         continue-on-error: true
         run: python scripts/update_macro.py
-      - name: Enregistrer si les données ont changé
+      - name: Publier les fichiers sur la branche data-live
         run: |
-          git config user.name "loukabac-coder"
-          git config user.email "loukabac-coder@users.noreply.github.com"
-          git add public/data/market-caps.json public/data/macro.json
-          git diff --staged --quiet || (git commit -m "Données du jour" && git pull --rebase && git push)
+          target="$RUNNER_TEMP/data-live"
+          if git show-ref --verify --quiet refs/remotes/origin/data-live; then
+            git worktree add --detach "$target" origin/data-live
+          else
+            git worktree add --detach "$target" HEAD
+          fi
+          cp public/data/macro.json public/data/market-caps.json "$target/public/data/"
+          cp vercel.json "$target/"
+          git -C "$target" add public/data/macro.json public/data/market-caps.json vercel.json
+          if ! git -C "$target" diff --cached --quiet; then
+            git -C "$target" -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m "Actualisation des données de marché"
+          fi
+          git -C "$target" push origin HEAD:refs/heads/data-live
       - name: Signaler les collectes en échec
         if: steps.caps.outcome == 'failure' || steps.macro.outcome == 'failure'
         run: exit 1
