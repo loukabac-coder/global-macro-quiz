@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-22T15:49:29+00:00",
+ "updated_at": "2026-11-22T16:43:47+00:00",
  "source": "Yahoo Finance (via yfinance), conversion en USD au taux du jour",
  "failed": [
   "ROG.SW"
@@ -206,7 +206,7 @@
    "name": "Kweichow Moutai",
    "country": "Chine",
    "region": "Asie",
-   "market_cap_usd": 278185996654
+   "market_cap_usd": 278778900821
   },
   {
    "ticker": "HSBA.L",
