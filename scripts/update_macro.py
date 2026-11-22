@@ -58,14 +58,38 @@ def fred_last(series):
 
 
 def fred_cpi_yoy():
+    """Inflation sur 12 mois : dernier mois dont le mois d'il y a un an existe (certains mois manquent, ex. oct. 2025)."""
     rows = fred_rows("CPIAUCSL")
-    d, v = rows[-1]
-    y, m = int(d[:4]), d[5:7]
-    prev = f"{y-1}-{m}-01"
-    base = dict(rows).get(prev)
-    if base is None:
-        raise ValueError("IPC il y a 12 mois introuvable")
-    return d, round((v / base - 1) * 100, 2)
+    table = dict(rows)
+    for d, v in reversed(rows):
+        base = table.get(f"{int(d[:4]) - 1}{d[4:]}")
+        if base:
+            return d, round((v / base - 1) * 100, 2)
+    raise ValueError("IPC il y a 12 mois introuvable")
+
+
+def eurostat_hicp():
+    txt = http_get("https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/prc_hicp_manr/M.RCH_A.CP00.EA?lastTimePeriod=1&format=SDMX-CSV")
+    rows = list(csv.DictReader(io.StringIO(txt)))
+    if not rows:
+        raise ValueError("Eurostat vide")
+    r = sorted(rows, key=lambda x: x["TIME_PERIOD"])[-1]
+    return norm_date(r["TIME_PERIOD"]), float(r["OBS_VALUE"])
+
+
+def freshest(*fns):
+    """Essaie toutes les sources et garde la donnée à la date la plus récente."""
+    best, last = None, None
+    for f in fns:
+        try:
+            r = f()
+            if best is None or r[0] > best[0]:
+                best = r
+        except Exception as e:  # noqa: BLE001
+            last = e
+    if best is None:
+        raise last
+    return best
 
 
 # ---------- Yahoo ----------
@@ -90,12 +114,12 @@ def first_ok(*fns):
 # clé : (libellé, unité, source, max_age_days, fonction de récupération)
 INDICATORS = {
     "ecb_deposit_rate": ("Taux de la facilité de dépôt de la BCE", "%", "BCE (Statistical Data Warehouse)", 120,
-        lambda: first_ok(lambda: ecb_last("FM/B.U2.EUR.4F.KR.DFR.LEV"), lambda: ecb_last("FM/D.U2.EUR.4F.KR.DFR.LEV"))),
+        lambda: first_ok(lambda: ecb_last("FM/D.U2.EUR.4F.KR.DFR.LEV"), lambda: ecb_last("FM/B.U2.EUR.4F.KR.DFR.LEV"))),
     "fed_target_upper": ("Fed funds : borne haute de la fourchette cible", "%", "Réserve fédérale via FRED (DFEDTARU)", 120,
         lambda: fred_last("DFEDTARU")),
     "us_cpi_yoy": ("Inflation IPC américaine sur 12 mois", "%", "BLS via FRED (CPIAUCSL)", 75, fred_cpi_yoy),
     "ez_hicp_yoy": ("Inflation IPCH de la zone euro sur 12 mois", "%", "Eurostat via BCE (ICP)", 75,
-        lambda: ecb_last("ICP/M.U2.N.000000.4.ANR")),
+        lambda: freshest(eurostat_hicp, lambda: ecb_last("ICP/M.U2.N.000000.4.ANR"))),
     "us_unrate": ("Taux de chômage américain", "%", "BLS via FRED (UNRATE)", 75, lambda: fred_last("UNRATE")),
     "us_10y": ("Rendement du Treasury américain à 10 ans", "%", "Réserve fédérale via FRED (DGS10)", 7,
         lambda: fred_last("DGS10")),
@@ -145,3 +169,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
