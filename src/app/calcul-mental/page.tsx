@@ -77,7 +77,7 @@ export default function CalculMental() {
         </div>
 
         <label className="mt-8 flex cursor-pointer items-center gap-3 text-sm">
-          <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} className="size-4 accent-[#2fbf71]" />
+          <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} className="size-4 accent-[#c6ff3d]" />
           <span>Mode chronométré ({lv >= 4 ? 30 : 20} secondes par question)</span>
         </label>
 

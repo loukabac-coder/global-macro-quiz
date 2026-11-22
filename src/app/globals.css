@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #0a0c0e;
-  --panel: #14181c;
-  --line: #252b31;
-  --fg: #e6e4df;
-  --muted: #8a9099;
-  --accent: #2fbf71;
-  --danger: #c8504a;
-  --warn: #d9a441;
+  --ink: #16161d;
+  --panel: #1f1f29;
+  --line: #2d2d3a;
+  --fg: #f4f3ee;
+  --muted: #a09fae;
+  --accent: #c6ff3d;
+  --danger: #ff5a5f;
+  --warn: #ff8a4c;
 }
 
 @theme inline {
@@ -20,8 +20,8 @@
   --color-accent: var(--accent);
   --color-danger: var(--danger);
   --color-warn: var(--warn);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-sans: var(--font-grotesk), system-ui, sans-serif;
+  --font-mono: var(--font-spacemono), ui-monospace, monospace;
 }
 
 html {
@@ -73,3 +73,41 @@ body {
 
 /* Pas de défilement horizontal parasite sur mobile */
 html, body { max-width: 100%; overflow-x: hidden; }
+
+/* ===== Style « Arcade » : formes arrondies, titres gras, accent vert acide ===== */
+h1, h2 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+h1 { line-height: 1.05; }
+
+/* Cartes et blocs bordurés */
+[class~="border"] {
+  border-radius: 18px;
+}
+[class~="border"][class~="gap-px"] {
+  overflow: hidden;
+}
+input[class~="border"], select[class~="border"] {
+  border-radius: 14px;
+}
+/* Boutons d'action : pastilles */
+a[class~="bg-accent"], button[class~="bg-accent"] {
+  border-radius: 999px;
+  font-weight: 700;
+}
+a[class~="bg-accent"][class~="block"] {
+  border-radius: 22px;
+}
+/* Petites étiquettes et puces du menu */
+nav a[class~="border"], nav button[class~="border"] {
+  border-radius: 999px;
+}
+details > summary { cursor: pointer; }
+/* Boutons : léger effet au clic */
+a[class~="bg-accent"], button[class~="bg-accent"], a[class~="border"], button[class~="border"] {
+  transition: transform 120ms ease, filter 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+a[class~="bg-accent"]:active, button[class~="bg-accent"]:active {
+  transform: scale(0.98);
+}
