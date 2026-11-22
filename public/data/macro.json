@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-22T17:20:34+00:00",
+ "updated_at": "2026-11-22T17:28:35+00:00",
  "indicators": {
   "ecb_deposit_rate": {
    "label": "Taux de la facilité de dépôt de la BCE",
@@ -19,10 +19,10 @@
   },
   "ez_hicp_yoy": {
    "label": "Inflation IPCH de la zone euro sur 12 mois",
-   "value": 2.0,
+   "value": 4.0,
    "unit": "%",
-   "ref_date": "2025-12-01",
-   "source": "Eurostat (IPCH, prc_hicp_manr)",
+   "ref_date": "2026-10-01",
+   "source": "Eurostat / BCE (IPCH, base ECOICOP 2)",
    "max_age_days": 100
   },
   "us_unrate": {

@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-22T17:20:27+00:00",
+ "updated_at": "2026-11-22T17:28:19+00:00",
  "source": "Yahoo Finance (via yfinance), conversion en USD au taux du jour",
  "failed": [
   "ROG.SW"
@@ -339,7 +339,7 @@
    "name": "Novo Nordisk",
    "country": "Danemark",
    "region": "Europe",
-   "market_cap_usd": 171075897594
+   "market_cap_usd": 171073378805
   },
   {
    "ticker": "IBE.MC",
