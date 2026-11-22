@@ -39,6 +39,8 @@ export default function Home() {
           <nav className="flex items-center gap-6 text-sm text-muted">
             <a href="#categories" className="hover:text-fg">Catégories</a>
             <a href="#modes" className="hover:text-fg">Modes</a>
+            <Link href="/cours" className="hover:text-fg">Cours</Link>
+            <Link href="/capitalisations" className="hover:text-fg">Capitalisations</Link>
             <Link href="/connexion" className="hover:text-fg">Connexion</Link>
             <Link href="/inscription" className="border border-line px-3 py-1.5 text-fg hover:border-muted">Créer un compte</Link>
           </nav>

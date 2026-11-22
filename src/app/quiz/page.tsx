@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
+import { fetchMarketCaps, ageHours } from "@/lib/marketcaps";
+import { buildLiveQuestions } from "@/lib/liveQuestions";
 import {
   DIFFICULTY_FR,
   LETTERS,
@@ -24,6 +26,7 @@ type Result = { q: Question; ok: boolean; given: string; seconds: number };
 type Phase = "loading" | "empty" | "error" | "playing" | "done";
 
 const QUIZ_SIZE = 10;
+const LEVELS = ["beginner", "intermediate", "advanced", "expert"];
 
 function nowMs(): number {
   return Date.now();
@@ -54,6 +57,8 @@ export default function QuickQuiz() {
   const [elapsed, setElapsed] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
   const [runId, setRunId] = useState(0);
+  const [filterLabel, setFilterLabel] = useState<string | null>(null);
+  const filterRef = useRef<{ cat: string | null; level: string | null }>({ cat: null, level: null });
   const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "error" | null>(null);
   const startRef = useRef(0);
   const qStartRef = useRef(0);
@@ -68,28 +73,55 @@ export default function QuickQuiz() {
           router.replace("/connexion");
           return;
         }
+        const params = new URLSearchParams(window.location.search);
+        const catParam = params.get("categorie");
+        const lvlParam = params.get("niveau");
+        const level = lvlParam && LEVELS.includes(lvlParam) ? lvlParam : null;
+        filterRef.current = { cat: catParam, level };
+        let query = supabase
+          .from("questions")
+          .select(
+            "id, category_id, type, difficulty, prompt, options, correct, tolerance_pct, explanation, wrong_explanations, source, kind, reference_date",
+          );
+        if (catParam) query = query.eq("category_id", catParam);
+        if (level) query = query.eq("difficulty", level);
         const [qRes, cRes] = await Promise.all([
-          supabase
-            .from("questions")
-            .select(
-              "id, category_id, type, difficulty, prompt, options, correct, tolerance_pct, explanation, wrong_explanations, source, kind, reference_date",
-            )
-            .limit(1000),
+          query.limit(1000),
           supabase.from("categories").select("id, name"),
         ]);
         if (!active) return;
         if (qRes.error) throw new Error(qRes.error.message);
         const all = (qRes.data ?? []) as Question[];
-        if (all.length === 0) {
+        // Questions « du jour » générées depuis les capitalisations (si les données sont fraîches)
+        let live: Question[] = [];
+        if (!catParam || catParam === "market-caps") {
+          const caps = await fetchMarketCaps();
+          if (caps && caps.updated_at && ageHours(caps.updated_at, nowMs()) <= 72) {
+            live = buildLiveQuestions(caps).filter((q) => !level || q.difficulty === level);
+          }
+        }
+        if (!active) return;
+        if (all.length === 0 && live.length === 0) {
           setPhase("empty");
           return;
         }
         const map: Record<string, string> = {};
         for (const c of (cRes.data ?? []) as { id: string; name: string }[]) map[c.id] = c.name;
-        const picked = shuffle(all)
-          .slice(0, QUIZ_SIZE)
+        const nLive = Math.min(live.length, catParam === "market-caps" ? 5 : 1);
+        const chosen = [
+          ...shuffle(all).slice(0, QUIZ_SIZE - nLive),
+          ...shuffle(live).slice(0, nLive),
+        ];
+        const picked = shuffle(chosen)
           .map((q) => ({ q, order: shuffle(mcqOptions(q).map((_, i) => i)) }));
         setCats(map);
+        setFilterLabel(
+          catParam || level
+            ? [catParam ? (map[catParam] ?? catParam) : null, level ? DIFFICULTY_FR[level] : null]
+                .filter(Boolean)
+                .join(" · ")
+            : null,
+        );
         setItems(picked);
         setIdx(0);
         setChoice(null);
@@ -184,7 +216,7 @@ export default function QuickQuiz() {
         .from("quiz_sessions")
         .insert({
           user_id: user.id,
-          mode: "quick",
+          mode: filterRef.current.cat || filterRef.current.level ? "training" : "quick",
           finished_at: new Date().toISOString(),
           score,
           total: final.length,
@@ -193,8 +225,10 @@ export default function QuickQuiz() {
         .select("id")
         .single();
       if (e1 || !s) throw new Error(e1?.message ?? "Session non enregistrée");
-      const { error: e2 } = await supabase.from("attempts").insert(
-        final.map((r) => ({
+      // Les questions « du jour » n'existent pas en base : on ne les enregistre pas dans attempts
+      const stored = final.filter((r) => !String(r.q.id).startsWith("live:"));
+      const { error: e2 } = stored.length === 0 ? { error: null } : await supabase.from("attempts").insert(
+        stored.map((r) => ({
           user_id: user.id,
           session_id: s.id,
           question_id: r.q.id,
@@ -230,7 +264,8 @@ export default function QuickQuiz() {
   if (phase === "empty")
     return shell(
       <p className="text-sm text-muted">
-        Aucune question disponible pour le moment. Ajoute-en dans Supabase, puis recharge la page.
+        Aucune question disponible pour ce filtre pour le moment.{" "}
+        <Link href="/quiz" className="text-fg underline underline-offset-4">Lancer un quiz sur toutes les catégories</Link>
       </p>,
     );
   if (phase === "error")
@@ -334,6 +369,9 @@ export default function QuickQuiz() {
 
   return shell(
     <>
+      {filterLabel && (
+        <p className="mb-3 font-mono text-xs text-warn">Entraînement : {filterLabel}</p>
+      )}
       <div className="flex items-center justify-between font-mono text-xs text-muted">
         <span>
           Q {String(idx + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}

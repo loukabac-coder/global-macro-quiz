@@ -120,6 +120,32 @@ export default function Dashboard() {
             >
               Lancer un Quick Quiz
             </Link>
+            <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5 text-sm">
+              <Link href="/quiz?niveau=beginner" className="border border-line px-4 py-2 hover:border-muted">
+                Quiz débutant
+              </Link>
+              <Link href="/quiz?categorie=mental-math" className="border border-line px-4 py-2 hover:border-muted">
+                Calcul mental
+              </Link>
+              <Link href="/quiz?categorie=market-caps" className="border border-line px-4 py-2 hover:border-muted">
+                Capitalisations
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {email && (
+          <div className="mt-6 border border-line p-6">
+            <h2 className="text-lg font-semibold">Cours</h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+              Un chapitre par catégorie : l’essentiel, les formules, des exemples. À lire avant de t’entraîner.
+            </p>
+            <Link href="/cours" className="mt-5 inline-block border border-line px-5 py-3 text-sm hover:border-muted">
+              Ouvrir les cours
+            </Link>
+            <Link href="/capitalisations" className="ml-3 mt-5 inline-block border border-line px-5 py-3 text-sm hover:border-muted">
+              Capitalisations du jour
+            </Link>
           </div>
         )}
       </main>
