@@ -1,0 +1,134 @@
+{
+ "updated_at": "2026-11-23T18:35:20+00:00",
+ "checked_at": "2026-11-23T18:35:20+00:00",
+ "failed": [
+  "Primature du Royaume-Uni",
+  "Présidence du Conseil européen"
+ ],
+ "events": [
+  {
+   "id": "eu-sanctions-against-terrorism-council-lists-the-founder-of-the-base",
+   "title": "EU sanctions against terrorism: Council lists the founder of 'The Base'",
+   "context": "The Council expands its sanctions list to combat terrorism by designating the founder and leader of the EU-sanctioned organisation 'The Base'.",
+   "topic": "Sanctions et mesures restrictives",
+   "date": "2026-11-23",
+   "published_at": null,
+   "source": "Consilium · service de presse",
+   "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/23/eu-sanctions-against-terrorism-council-lists-the-founder-of-the-base/",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "eu-budget-for-2027-council-gives-final-green-light",
+   "title": "Budget de l'UE pour 2027: le Conseil donne son feu vert définitif",
+   "context": "Le Conseil a donné son feu vert définitif sur le budget annuel de l'UE pour 2027, le septième et dernier budget annuel de l'actuel cadre financier pluriannuel (CFP) 2021-2027.",
+   "topic": "Budget et financement public",
+   "date": "2026-11-23",
+   "published_at": null,
+   "source": "Consilium · service de presse",
+   "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/23/eu-budget-for-2027-council-gives-final-green-light/",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "joint-statement-eu-united-kingdom-summit-20-november-2026",
+   "title": "Sommet UE–Royaume-Uni à Bruxelles",
+   "context": "L’Union européenne et le Royaume-Uni ont publié une déclaration commune à leur deuxième sommet. Ils ont réaffirmé leur engagement à appliquer l’accord de retrait.",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-20",
+   "published_at": "2026-11-20T14:07:00+01:00",
+   "source": "Consilium · service de presse",
+   "url": "https://www.consilium.europa.eu/en/meetings/international-summit/2026/11/20/",
+   "retrieved_at": "2026-11-23T17:46:14Z"
+  },
+  {
+   "id": "methane-regulation-eu-agrees-targeted-amendment-to-safeguard-security-of-supply",
+   "title": "Accord provisoire sur les importations d’énergies fossiles et le méthane",
+   "context": "Le Conseil de l’UE et le Parlement européen ont annoncé un accord provisoire reportant de deux ans certaines obligations liées au méthane. Le report couvre des importations de gaz naturel, de pétrole brut et de charbon. L’adoption formelle constitue une étape distincte.",
+   "topic": "Énergie et approvisionnement",
+   "date": "2026-11-19",
+   "published_at": "2026-11-19T03:45:00+01:00",
+   "source": "Consilium · service de presse",
+   "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/19/methane-regulation-eu-agrees-targeted-amendment-to-safeguard-security-of-supply/",
+   "retrieved_at": "2026-11-23T17:46:14Z"
+  },
+  {
+   "id": "sustainability-council-and-parliament-strike-deal-on-simpler-transparency-rules-for-financial-product",
+   "title": "Durabilité: le Conseil et le Parlement parviennent à un accord sur la simplification des règles de transparence pour les produits financiers",
+   "context": "Le Conseil et le Parlement européen sont parvenus à un accord provisoire sur la simplification des règles de transparence pour les produits financiers durables vendus dans l'UE.",
+   "topic": "Réglementation financière",
+   "date": "2026-11-19",
+   "published_at": null,
+   "source": "Consilium · service de presse",
+   "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/19/sustainability-council-and-parliament-strike-deal-on-simpler-transparency-rules-for-financial-product/",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "prime-minister-carney-strengthens-economic-partnerships-apec-capping",
+   "title": "Prime Minister Carney strengthens economic partnerships at APEC, capping an ambitious week that delivered major gains for Canadian workers and businesses",
+   "context": "Canada is moving strategically, pragmatically, and decisively to secure greater access to new markets and attract new investment – building our strength at home and diversifying our partnerships abroad. To these ends, the Prime Minister, Mark Carney, represented Canada this week at the 33 rd Asia-Pacific Economic Cooperation (APEC) Economic Leaders’ Meeting, in Shenzhen, China. There, APEC leaders outlined a shared vision for the Asia-Pacific to remain the world’s most dynamic and interconnected region. Prime Minister Carney emphasised the importance of predictable trade, resilient supply chains, and deeper economic integration in driving investment, innovation, and shared prosperity across the region. At the Summit, the leaders renewed APEC’s Connectivity Blueprint to strengthen the infrastructure and supply chains that move our goods, a",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-19",
+   "published_at": "2026-11-19T01:00:00-05:00",
+   "source": "Cabinet du premier ministre du Canada",
+   "url": "https://www.pm.gc.ca/en/news/news-releases/2026/11/19/prime-minister-carney-strengthens-economic-partnerships-apec-capping",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "prime-minister-carney-advances-canadas-strategic-partnership-china",
+   "title": "Prime Minister Carney advances Canada’s strategic partnership with China across trade, commerce, and culture",
+   "context": "Over the past year and a half, Canada’s government has recalibrated our relationship with China – strategically, pragmatically, and decisively. Last January, the Prime Minister, Mark Carney, and the President of the People’s Republic of China, Xi Jinping, launched a new Canada-China strategic partnership to stabilise trade, build out clean energy industries, and better connect our peoples. Under the partnership, Canada and China have strengthened economic and financial cooperation, expanded cultural exchanges, and reduced tariffs on Canadian exports of canola seed and meal, peas, crab, and lobster. To date, Canada has restored market access for more than 90% of trade previously subject to tariff action – nearly $7.5 billion worth of Canadian exports. To build on that success, Prime Minister Carney today met with President Xi in Shenzhen, ",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-17",
+   "published_at": "2026-11-17T00:05:00-05:00",
+   "source": "Cabinet du premier ministre du Canada",
+   "url": "https://www.pm.gc.ca/en/news/news-releases/2026/11/17/prime-minister-carney-advances-canadas-strategic-partnership-china",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  }
+ ],
+ "leaders": [
+  {
+   "id": "fr",
+   "office": "Présidence de la République française",
+   "name": "Emmanuel Macron",
+   "source": "Élysée",
+   "url": "https://www.elysee.fr/la-presidence/les-presidents-de-la-republique",
+   "date": "2026-11-23",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "uk",
+   "office": "Primature du Royaume-Uni",
+   "name": "Andy Burnham",
+   "source": "GOV.UK",
+   "url": "https://www.gov.uk/government/ministers/prime-minister",
+   "date": "2026-11-23",
+   "retrieved_at": "2026-11-23T17:46:14Z"
+  },
+  {
+   "id": "de",
+   "office": "Chancellerie fédérale allemande",
+   "name": "Friedrich Merz",
+   "source": "Gouvernement fédéral allemand",
+   "url": "https://www.bundesregierung.de/breg-en/federal-government/federal-cabinet",
+   "date": "2026-11-23",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "ca",
+   "office": "Primature du Canada",
+   "name": "Mark Carney",
+   "source": "Gouvernement du Canada",
+   "url": "https://www.pm.gc.ca/en",
+   "date": "2026-11-23",
+   "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "eu",
+   "office": "Présidence du Conseil européen",
+   "name": "António Costa",
+   "source": "Conseil européen",
+   "url": "https://www.consilium.europa.eu/fr/european-council/president/",
+   "date": "2026-11-23",
+   "retrieved_at": "2026-11-23T17:46:14Z"
+  }
+ ]
+}
