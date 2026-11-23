@@ -1,17 +1,17 @@
 {
- "updated_at": "2026-11-22T20:42:55+00:00",
- "checked_at": "2026-11-22T20:42:55+00:00",
+ "updated_at": "2026-11-23T01:09:06+00:00",
+ "checked_at": "2026-11-23T01:09:06+00:00",
  "failed": [],
  "indicators": {
   "ecb_deposit_rate": {
    "label": "Taux de la facilité de dépôt de la BCE",
    "value": 2.5,
    "unit": "%",
-   "ref_date": "2026-11-22",
+   "ref_date": "2026-11-23",
    "source": "BCE (FM/D.U2.EUR.4F.KR.DFR.LEV)",
    "max_age_days": 120,
    "frequency": "daily",
-   "retrieved_at": "2026-11-22T20:42:19+00:00",
+   "retrieved_at": "2026-11-23T01:08:50+00:00",
    "status": "A"
   },
   "fed_target_upper": {
@@ -22,7 +22,7 @@
    "source": "Réserve fédérale via FRED (DFEDTARU)",
    "max_age_days": 120,
    "frequency": "daily",
-   "retrieved_at": "2026-11-22T20:42:19+00:00",
+   "retrieved_at": "2026-11-23T01:08:50+00:00",
    "status": null
   },
   "ez_hicp_yoy": {
@@ -33,7 +33,7 @@
    "source": "Eurostat (prc_hicp_minr, EA)",
    "max_age_days": 100,
    "frequency": "monthly",
-   "retrieved_at": "2026-11-22T20:42:30+00:00",
+   "retrieved_at": "2026-11-23T01:09:02+00:00",
    "status": null
   },
   "us_unrate": {
@@ -44,18 +44,18 @@
    "source": "BLS via FRED (UNRATE)",
    "max_age_days": 100,
    "frequency": "monthly",
-   "retrieved_at": "2026-11-22T20:42:30+00:00",
+   "retrieved_at": "2026-11-23T01:09:02+00:00",
    "status": null
   },
   "us_10y": {
    "label": "Rendement du Treasury américain à 10 ans",
-   "value": 5.04,
+   "value": 4.92,
    "unit": "%",
-   "ref_date": "2026-11-19",
-   "source": "Réserve fédérale via FRED (DGS10)",
+   "ref_date": "2026-11-20",
+   "source": "Trésor américain (Daily Treasury Par Yield Curve, 10 ans)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "retrieved_at": "2026-11-23T01:09:06+00:00",
    "status": null
   },
   "eurusd": {
@@ -66,7 +66,7 @@
    "source": "BCE (EXR/D.USD.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "retrieved_at": "2026-11-23T01:09:06+00:00",
    "status": "A"
   },
   "brent": {
@@ -77,7 +77,7 @@
    "source": "EIA via FRED (DCOILBRENTEU)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "retrieved_at": "2026-11-23T01:09:06+00:00",
    "status": null
   },
   "wti": {
@@ -88,18 +88,18 @@
    "source": "EIA via FRED (DCOILWTICO)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "retrieved_at": "2026-11-23T01:09:06+00:00",
    "status": null
   },
   "gold": {
    "label": "Or (once troy, contrat à terme)",
-   "value": 3515.4,
+   "value": 3570.2,
    "unit": "$/once",
-   "ref_date": "2026-11-20",
+   "ref_date": "2026-11-22",
    "source": "Yahoo Finance (GC=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-22T20:42:55+00:00",
+   "retrieved_at": "2026-11-23T01:09:06+00:00",
    "status": null
   },
   "us_cpi_yoy": {
@@ -110,7 +110,7 @@
    "source": "BLS via FRED (CPIAUCNS, non désaisonnalisé)",
    "max_age_days": 100,
    "frequency": "monthly",
-   "retrieved_at": "2026-11-22T20:42:19+00:00",
+   "retrieved_at": "2026-11-23T01:08:50+00:00",
    "status": null
   }
  }
