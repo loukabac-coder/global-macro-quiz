@@ -68,10 +68,13 @@ test("migration en mémoire, correction, historique et modules", async () => {
     const exactConversion = guestPool.find((q) => q.id === "guest:004");
     const questions = Array.from({ length: 10 }, (_, i) => ({ ...base, id: i === 0 ? "1" : i === 1 ? "2" : `module:d1:${i}` }));
     questions[0] = { ...weight, id: "1" };
+    const estimate = { ...base, correct: 4_123, tolerance_pct: 100 * 500 / 4_123 };
+    questions[2] = { ...estimate, id: "module:d1:2" };
     questions[7] = weight;
     questions[8] = exactConversion;
+    questions[9] = { ...estimate, id: "module:d1:9" };
     const id = await session(db, first, "training", "module", questions, 0, "d1");
-    const answers = [4.7, -105, -105, -105, -105, -105, -105, 4.59, 1.49, 0];
+    const answers = [4.7, -105, 4_623, -105, -105, -105, -105, 4.59, 1.49, 4_624];
     for (let i = 0; i < answers.length; i++) assert.equal((await answer(db, id, i, answers[i])).ok, i < 7);
     const finalized = (await db.query("select finish_quiz_run($1) as result", [id])).rows[0].result;
     assert.equal(finalized.score, 7);

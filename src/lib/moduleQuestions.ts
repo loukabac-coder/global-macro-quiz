@@ -1,11 +1,12 @@
+import { capitalisationCulture } from "@/lib/capitalisationQuestions";
+import type { MarketCaps } from "@/lib/marketcaps";
 import { mentalQuestion, type Topic } from "@/lib/mental";
 import type { Module } from "@/lib/modules";
-import { fmt, NUMERIC_TOLERANCE, shuffle, type Question } from "@/lib/quiz";
+import { fmt, NUMERIC_TOLERANCE, shuffle, type ModuleExercise, type Question } from "@/lib/quiz";
 
-type Exercise = Pick<Question, "prompt" | "type" | "correct" | "options" | "explanation" | "tolerance_pct">;
-type Scenario = (n: number) => Exercise;
+type Scenario = (n: number) => ModuleExercise;
 
-function numeric(prompt: string, value: number, unit: string, method: string, tolerance = 0): Exercise {
+function numeric(prompt: string, value: number, unit: string, method: string, tolerance = 0): ModuleExercise {
   const correct = Number(value.toFixed(2));
   return { prompt, correct, type: "numeric", options: { unit }, tolerance_pct: tolerance, explanation: `${method} Résultat : ${fmt(correct)} ${unit}.` };
 }
@@ -158,10 +159,10 @@ const MENTAL: Record<string, { level: number; topics: Topic[] }> = {
   e1: { level: 5, topics: ["pourcentages", "multiplications", "interets", "ratios"] },
 };
 
-export function moduleQuestions(module: Module, count: number): Question[] {
+export function moduleQuestions(module: Module, count: number, caps: MarketCaps | null = null, now = Date.now()): Question[] {
   const mental = MENTAL[module.id];
   const scenarios = SCENARIOS[module.id];
-  const candidates = shuffle(
+  const candidates = module.id === "d2" ? capitalisationModule(count, caps, now) : shuffle(
     mental
       ? Array.from({ length: 48 }, (_, i) => mentalQuestion(mental.level, Math.random, mental.topics[i % mental.topics.length]))
       : scenarios.flatMap((make) => Array.from({ length: 8 }, (_, i) => make(i + 1))),
@@ -177,4 +178,11 @@ export function moduleQuestions(module: Module, count: number): Question[] {
     category_id: module.categories[0],
     difficulty: module.level,
   }));
+}
+
+function capitalisationModule(count: number, caps: MarketCaps | null, now: number): ModuleExercise[] {
+  const culture = capitalisationCulture(caps, now).slice(0, count - Math.ceil(count * 0.3));
+  const variants = SCENARIOS.d2.map((make) => shuffle(Array.from({ length: 8 }, (_, i) => make(i + 1))));
+  const calculations = Array.from({ length: 8 }, (_, i) => shuffle(variants.map((group) => group[i]))).flat();
+  return shuffle([...culture, ...calculations.slice(0, count - culture.length)]);
 }

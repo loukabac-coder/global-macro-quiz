@@ -34,12 +34,13 @@ export const MODULES: Module[] = [
   },
   {
     id: "d2", level: "beginner", title: "Capitalisations et indices",
-    goal: "Comprendre la taille des entreprises et les grands indices.",
+    goal: "Reconnaître les grandes valeurs, situer leur taille et comprendre les indices.",
     categories: ["market-caps"], chapter: "capitalisations", ready: true,
     points: [
       "Capitalisation = cours de l’action × nombre d’actions : la valeur de marché des fonds propres.",
       "Valeur d’entreprise (EV) = capitalisation + dette nette.",
-      "Poids dans un indice = capitalisation de la société / capitalisation totale de l’indice.",
+      "Dans un indice pondéré par capitalisation, divise la capitalisation retenue de la société par le total de l’indice. Un indice pondéré au flottant utilise la valeur des actions disponibles à la négociation.",
+      "LVMH, L’Oréal, Air Liquide et Schneider Electric sont des exemples de grandes valeurs françaises cotées à Paris.",
     ],
   },
   {

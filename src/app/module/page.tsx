@@ -5,6 +5,7 @@ import Link from "next/link";
 import QuizRunner, { type Result } from "@/components/QuizRunner";
 import AppShell from "@/components/AppShell";
 import Crumbs from "@/components/Crumbs";
+import { fetchMarketCaps } from "@/lib/marketcaps";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 import { useSearch } from "@/lib/useSearch";
 import { moduleQuestions } from "@/lib/moduleQuestions";
@@ -134,7 +135,7 @@ function ModuleContent({ m }: { m?: Module }) {
         key={`check-${round}`}
         title={`Mini-check · ${m.title}`}
         kicker="Mini-check · non noté, rien n’est enregistré"
-        practiceLoad={async () => moduleQuestions(m, MINI_CHECK_SIZE)}
+        practiceLoad={async () => moduleQuestions(m, MINI_CHECK_SIZE, m.id === "d2" ? await fetchMarketCaps() : null)}
         backHref="/parcours"
         backLabel="Parcours"
         replayLabel="Refaire le mini-check"

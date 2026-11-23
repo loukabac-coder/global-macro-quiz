@@ -14,6 +14,9 @@ export type Question = {
   reference_date: string | null;
 };
 
+export type ModuleExercise = Pick<Question, "prompt" | "type" | "correct" | "options" | "explanation" | "tolerance_pct">
+  & Partial<Pick<Question, "kind" | "source" | "reference_date">>;
+
 export const DIFFICULTY_FR: Record<string, string> = {
   beginner: "Débutant",
   intermediate: "Intermédiaire",

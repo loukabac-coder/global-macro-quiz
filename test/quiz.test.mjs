@@ -57,9 +57,9 @@ test("calculs approchés plus souples et conversions exactes", () => {
 });
 
 test("les modules et l’ancienne banque utilisent des marges adaptées à la consigne", () => {
-  const exercises = moduleQuestions(MODULES.find((m) => m.id === "d2"), 24);
-  const weight = exercises.find((q) => q.prompt.includes("Estime son poids") && q.correct === 5);
-  assert.equal(checkNumeric(weight, 5.3), true);
+  const exercises = moduleQuestions(MODULES.find((m) => m.id === "d2"), 10);
+  const weight = exercises.find((q) => q.prompt.includes("Estime son poids"));
+  assert.equal(checkNumeric(weight, weight.correct * 1.06), true);
   const cap = exercises.find((q) => q.prompt.includes("Quelle est la capitalisation"));
   assert.equal(cap.tolerance_pct, 0);
 
@@ -71,6 +71,43 @@ test("les modules et l’ancienne banque utilisent des marges adaptées à la co
   assert.equal(withBankTolerance({ ...estimate, tolerance_pct: 20 }).tolerance_pct, 20);
   assert.equal(withBankTolerance({ ...estimate, prompt: "Calcule la dépense totale. Arrondis au centime.", tolerance_pct: 0 }).tolerance_pct, 0);
   assert.equal(withBankTolerance({ ...previous, kind: "conjunctural" }).tolerance_pct, 1);
+});
+
+test("les capitalisations débutant mêlent culture de marché, estimations datées et calculs", () => {
+  const lesson = MODULES.find((m) => m.id === "d2");
+  const collected = "2026-11-23T10:00:00Z";
+  const now = Date.parse("2026-11-23T11:00:00Z");
+  const rows = [
+    ["AAPL", "Apple", 4_123], ["MC.PA", "LVMH", 360], ["OR.PA", "L’Oréal", 245],
+    ["SU.PA", "Schneider Electric", 170], ["AI.PA", "Air Liquide", 115], ["AIR.PA", "Airbus", 400],
+    ...Array.from({ length: 4 }, (_, i) => [`T${i}`, `Société ${i}`, 50]),
+  ];
+  const caps = {
+    updated_at: collected, checked_at: collected, source: "Collecte de test", failed: [],
+    items: rows.map(([ticker, name, cap]) => ({ ticker, name, market_cap_usd: cap * 1e9, price_date: "2026-11-23", currency: "USD" })),
+  };
+  const questions = moduleQuestions(lesson, 10, caps, now);
+  assert.equal(questions.length, 10);
+  assert.equal(questions.filter((q) => q.type === "mcq").length, 6);
+  assert.ok(questions.some((q) => q.prompt.includes("deux grandes")));
+  const apple = questions.find((q) => q.prompt.includes("500 Md$"));
+  assert.equal(apple.correct, 4_123);
+  assert.equal(apple.source, caps.source);
+  assert.equal(apple.reference_date, "2026-11-23");
+  for (const value of [3_623, 4_623]) assert.equal(checkNumeric(apple, value), true);
+  for (const value of [3_622, 4_624]) assert.equal(checkNumeric(apple, value), false);
+  const france = questions.find((q) => q.prompt.includes("quatre valeurs françaises"));
+  assert.equal(france.options[france.correct], "LVMH");
+  assert.ok(!france.options.includes("Airbus"));
+  const practice = moduleQuestions(lesson, 3, caps, now);
+  assert.equal(practice.length, 3);
+  assert.ok(practice.some((q) => q.prompt.includes("500 Md$")));
+  assert.ok(practice.some((q) => q.prompt.includes("deux grandes")));
+
+  const stale = moduleQuestions(lesson, 10, caps, Date.parse("2026-11-23T16:00:00Z"));
+  assert.equal(stale.length, 10);
+  assert.equal(stale.filter((q) => q.type === "mcq").length, 7);
+  assert.ok(stale.every((q) => q.kind === "structural"));
 });
 
 test("le défi du jour partage une série stable de dix questions", () => {

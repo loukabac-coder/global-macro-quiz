@@ -10,7 +10,7 @@ import { buildMacroQuestions } from "@/lib/macroQuestions";
 import { hasFreshMarketCaps } from "@/lib/marketcaps";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
 import { moduleQuestions } from "@/lib/moduleQuestions";
-import { computeStatuses, moduleById, type Progress } from "@/lib/modules";
+import { computeStatuses, moduleById, type Module, type Progress } from "@/lib/modules";
 import { DIFFICULTY_FR, isNumeric, shuffle, type Question } from "@/lib/quiz";
 import { gameSeconds, mentalSeconds, type Activity, type QuizMode } from "@/lib/quizSession";
 import { todayParis } from "@/lib/rng";
@@ -69,6 +69,11 @@ async function liveQuestions(): Promise<Question[]> {
 
 type Run = { questions: Question[]; mode: QuizMode; timer?: number; note?: string; day?: string };
 
+async function loadModuleQuestions(module: Module): Promise<Question[]> {
+  const caps = module.id === "d2" ? await readMarketCapsSnapshot() : null;
+  return moduleQuestions(module, MODULE_QUIZ_SIZE, caps);
+}
+
 async function loadActivity(db: SupabaseClient, userId: string, activity: Activity): Promise<Run | null> {
   switch (activity.type) {
     case "daily": {
@@ -83,8 +88,14 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
     }
     case "weakness":
       return { ...await loadWeakness(db, userId), mode: "weakness" };
-    case "training":
+    case "training": {
+      if (activity.categories.length === 1 && activity.categories[0] === "market-caps"
+        && activity.levels.length === 1 && activity.levels[0] === "beginner") {
+        const beginner = moduleById("d2");
+        if (beginner) return { questions: await loadModuleQuestions(beginner), mode: "training" };
+      }
       return { questions: await loadTraining(db, activity.categories, activity.levels, liveQuestions), mode: "training" };
+    }
     case "mental":
       return { questions: mentalSession(12, activity.level, Math.random, activity.topic), mode: "training", timer: activity.timed ? mentalSeconds(activity.level) : 0 };
     case "game": {
@@ -108,7 +119,7 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
       if (rows.error || profile.error) throw new Error("module_progress");
       const progress: Progress = Object.fromEntries((rows.data ?? []).map((r) => [r.module_id, r]));
       if (computeStatuses(progress, profile.data?.placement_level ?? null)[m.id] === "locked") return null;
-      return { questions: moduleQuestions(m, MODULE_QUIZ_SIZE), mode: "training" };
+      return { questions: await loadModuleQuestions(m), mode: "training" };
     }
   }
 }
