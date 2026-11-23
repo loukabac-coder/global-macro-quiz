@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { shuffle, type Question } from "@/lib/quiz";
-import { mentalDifficulty, mentalQuestion } from "@/lib/mental";
-import type { Game, HistoryFilter } from "@/lib/quizSession";
-import { LEVELS } from "@/lib/program";
+import { mentalQuestion } from "@/lib/mental";
+import type { HistoryFilter } from "@/lib/quizSession";
+import { GROUPS, LEVELS } from "@/lib/program";
+import { questionLocation } from "@/lib/curriculum/legacyMapping";
 import { diverseDraw } from "@/lib/drawQuestions";
 import { stableReferenceKey } from "@/lib/studyQuestions";
 
@@ -29,17 +30,6 @@ export async function loadQuick(mixed: boolean, liveQuestions: LiveQuestions): P
     ...balanced(curriculumQuestions({ levels: ["advanced"] }), 1),
   ];
   return [...shuffle(dedicated.filter((q) => q.difficulty === "beginner")), ...shuffle([...live, ...dedicated.filter((q) => q.difficulty !== "beginner")])];
-}
-
-export async function loadGame(game: Game, level: number, liveQuestions: LiveQuestions): Promise<Question[]> {
-  const difficulty = mentalDifficulty(level);
-  const types = game === "culture" ? ["mcq", "true_false"] : ["numeric", "guesstimate"];
-  const categories = game === "calcul" ? ["mental-math"] : undefined;
-  const pool = curriculumQuestions({ categories, levels: [difficulty], types });
-  const dated = game === "calcul" ? [] : shuffle((await liveQuestions()).filter((q) =>
-    q.reference_date && q.difficulty === difficulty && types.includes(q.type),
-  )).slice(0, 2);
-  return shuffle([...dated, ...balanced(pool, SIZE - dated.length)]);
 }
 
 export async function loadTraining(categories: string[], levels: string[], liveQuestions: LiveQuestions): Promise<Question[]> {
@@ -74,6 +64,40 @@ export async function loadTrainingByHistory(
     return history === "unseen" ? answer === undefined : answer === (history === "correct");
   });
   return balanced(questions, SIZE);
+}
+
+export async function loadScopedTraining(
+  supabase: SupabaseClient, group: string, units: string[], levels: string[], history: HistoryFilter, liveQuestions: LiveQuestions,
+) {
+  const inScope = (q: Question) => {
+    const stored = q as Question & { groupNo?: string; unitSlug?: string };
+    const mapped = stored.groupNo && stored.unitSlug ? stored : questionLocation(q);
+    return GROUPS.some((subject) => subject.no === mapped.groupNo && subject.slug === group)
+      && (!units.length || units.includes(mapped.unitSlug ?? ""))
+      && (!levels.length || levels.includes(q.difficulty));
+  };
+  const live = levels.length === 1 && levels[0] === "beginner" ? [] : (await liveQuestions()).filter(inScope);
+  const pool = curriculumQuestions({ levels }).filter(inScope);
+  if (history === "all") {
+    const dated = balanced(live, 2);
+    const stable = balanced(pool, SIZE - dated.length);
+    const chosen = new Set(dated.map((q) => q.id));
+    return shuffle([...dated, ...stable, ...balanced(live.filter((q) => !chosen.has(q.id)), SIZE - dated.length - stable.length)]);
+  }
+  const latest = new Map<string, { answer: boolean; seen: string }>();
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase.from("question_reviews").select("question_id,box,last_seen").gt("seen", 0).order("question_id").range(offset, offset + 499);
+    if (error) throw new Error(error.message);
+    for (const row of data) {
+      const key = stableReferenceKey(row.question_id);
+      if (row.last_seen >= (latest.get(key)?.seen ?? "")) latest.set(key, { answer: row.box > 0, seen: row.last_seen });
+    }
+    if (data.length < 500) break;
+  }
+  return balanced([...live, ...pool].filter((q) => {
+    const previous = latest.get(q.reference_key ?? stableReferenceKey(q.id));
+    return history === "unseen" ? !previous : previous?.answer === (history === "correct");
+  }), SIZE);
 }
 
 export async function loadWeakness(

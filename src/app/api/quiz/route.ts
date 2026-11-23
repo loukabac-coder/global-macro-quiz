@@ -4,16 +4,15 @@ import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { PASS_THRESHOLD } from "@/lib/config";
 import { readStudySources } from "@/lib/dataSnapshots";
 import { drawExam, EXAM_SECONDS, EXAM_SIZE } from "@/lib/exam";
-import { dailyQuestions } from "@/lib/guest";
-import { loadGame, loadPlacement, loadQuick, loadTraining, loadTrainingByHistory, loadWeakness } from "@/lib/loaders";
+import { readDailySnapshot } from "@/lib/dailySnapshot";
+import { loadPlacement, loadQuick, loadScopedTraining, loadTraining, loadTrainingByHistory, loadWeakness } from "@/lib/loaders";
 import { buildStudyQuestions } from "@/lib/studyQuestions";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
-import { milestoneDraw } from "@/lib/drawQuestions";
+import { newMilestoneDraw, type SeenChoice } from "@/lib/drawQuestions";
 import type { Progress } from "@/lib/modules";
-import { canAttempt, getMilestone, LEVELS, milestoneSize } from "@/lib/program";
+import { canAttempt, getMilestone, GROUPS, LEVELS, milestoneSize } from "@/lib/program";
 import { isNumeric, type Question } from "@/lib/quiz";
-import { gameSeconds, mentalSeconds, parseHistory, type Activity, type QuizMode } from "@/lib/quizSession";
-import { todayParis } from "@/lib/rng";
+import { EXAM_PROFILES, parseHistory, type Activity, type ExamProfile, type QuizMode, type ResumedQuiz } from "@/lib/quizSession";
 
 function filters(values: unknown, allowed: Record<string, unknown>): string[] | undefined {
   if (!Array.isArray(values) || !values.every((v) => typeof v === "string" && Object.hasOwn(allowed, v))) return;
@@ -23,7 +22,12 @@ function filters(values: unknown, allowed: Record<string, unknown>): string[] | 
 function parseActivity(value: unknown): Activity | undefined {
   if (!value || typeof value !== "object") return;
   const v = value as Record<string, unknown>;
-  if (v.type === "quick" || v.type === "mixed" || v.type === "daily" || v.type === "weakness" || v.type === "placement" || v.type === "exam") return { type: v.type };
+  if (v.type === "quick" || v.type === "mixed" || v.type === "daily" || v.type === "weakness" || v.type === "placement") return { type: v.type };
+  if (v.type === "exam") {
+    const profile = v.profile ?? "general";
+    if (typeof profile === "string" && Object.hasOwn(EXAM_PROFILES, profile)) return { type: "exam", profile: profile as ExamProfile };
+    return;
+  }
   if (v.type === "module" && typeof v.id === "string") {
     const item = getMilestone(v.id);
     return item ? { type: v.type, id: item.id } : undefined;
@@ -32,13 +36,20 @@ function parseActivity(value: unknown): Activity | undefined {
     const categories = filters(v.categories, CAT_NAME);
     const activeLevels = Array.isArray(v.levels) ? v.levels.map((level) => level === "expert" ? "advanced" : level) : v.levels;
     const levels = filters(activeLevels, Object.fromEntries(LEVELS.map(({ id }) => [id, true])));
-    if (categories && levels) return { type: v.type, categories, levels, history: parseHistory(v.history) };
+    const history = parseHistory(v.history);
+    if (!categories || !levels) return;
+    if (v.group !== undefined) {
+      const group = GROUPS.find((candidate) => candidate.slug === v.group);
+      const units = group && filters(v.units ?? [], Object.fromEntries(group.units.map(({ slug }) => [slug, true])));
+      if (group && units) return { type: v.type, categories: [], levels, history, group: group.slug, units };
+      return;
+    }
+    return { type: v.type, categories, levels, history };
   }
   const level = v.level;
   if (typeof level !== "number" || !Number.isInteger(level) || level < 1 || level > 5) return;
-  if (v.type === "game" && (v.game === "calcul" || v.game === "ordres" || v.game === "culture")) return { type: v.type, game: v.game, level };
-  if (v.type === "mental" && (v.topic === null || TOPICS.some((t) => t.id === v.topic)) && typeof v.timed === "boolean") {
-    return { type: v.type, level, topic: v.topic as Topic | null, timed: v.timed };
+  if (v.type === "mental" && (v.topic === null || TOPICS.some((t) => t.id === v.topic))) {
+    return { type: v.type, level, topic: v.topic as Topic | null, timed: false };
   }
 }
 
@@ -70,7 +81,7 @@ async function liveQuestions(): Promise<Question[]> {
 
 type Run = { questions: Question[]; mode: QuizMode; timer?: number; note?: string; day?: string; emptyMessage?: string };
 
-async function loadActivity(db: SupabaseClient, userId: string, activity: Activity): Promise<Run | null> {
+async function loadActivity(db: SupabaseClient, writer: SupabaseClient, userId: string, activity: Activity): Promise<Run | null> {
   switch (activity.type) {
     case "exam": {
       const [current, previous] = await Promise.all([liveQuestions(), db.rpc("recent_exam_question_ids")]);
@@ -79,6 +90,7 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
       const { questions, available, missing } = drawExam(
         bank.map(normalizeQuestion).filter((q): q is Question => q !== null),
         previous.data as string[],
+        activity.profile,
       );
       const emptyMessage = questions.length === EXAM_SIZE ? undefined : [
         `La banque contient ${available} questions admissibles. Un examen exige ${EXAM_SIZE} questions intermédiaires ou avancées couvrant les sept thèmes.`,
@@ -87,8 +99,7 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
       return { questions, mode: "training", timer: EXAM_SECONDS, emptyMessage };
     }
     case "daily": {
-      const day = todayParis();
-      return { questions: dailyQuestions(curriculumQuestions(), day), mode: "daily", day };
+      return { ...await readDailySnapshot(writer), mode: "daily" };
     }
     case "quick":
     case "mixed": {
@@ -97,6 +108,14 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
     case "weakness":
       return { ...await loadWeakness(db, userId, liveQuestions), mode: "weakness" };
     case "training": {
+      if (activity.group) {
+        const questions = await loadScopedTraining(db, activity.group, activity.units ?? [], activity.levels, activity.history ?? "all", liveQuestions);
+        return {
+          questions, mode: "training",
+          note: questions.length < 10 ? `Série de ${questions.length} questions disponibles pour cette sélection.` : undefined,
+          emptyMessage: "0 question disponible pour cette sélection. Retourne aux filtres pour élargir le périmètre.",
+        };
+      }
       if (activity.history && activity.history !== "all") {
         const questions = await loadTrainingByHistory(db, activity.categories, activity.levels, activity.history, liveQuestions);
         return { questions, mode: "training", emptyMessage: "Aucune question ne correspond à ces filtres et à ton historique." };
@@ -104,10 +123,7 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
       return { questions: await loadTraining(activity.categories, activity.levels, liveQuestions), mode: "training" };
     }
     case "mental":
-      return { questions: mentalSession(12, activity.level, Math.random, activity.topic), mode: "training", timer: activity.timed ? mentalSeconds(activity.level) : 0 };
-    case "game": {
-      return { questions: await loadGame(activity.game, activity.level, liveQuestions), mode: "challenge", timer: gameSeconds(activity.game, activity.level) };
-    }
+      return { questions: mentalSession(12, activity.level, Math.random, activity.topic), mode: "training" };
     case "placement":
       return { questions: loadPlacement(), mode: "quick" };
     case "module": {
@@ -119,10 +135,10 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
       if (!canAttempt(m, progress)) return null;
       const [live, reviewed] = await Promise.all([
         m.level !== "beginner" ? liveQuestions() : Promise.resolve([]),
-        db.from("question_reviews").select("question_id").eq("user_id", userId).order("last_seen", { ascending: false }).limit(150),
+        db.rpc("recent_module_draws", { p_module: m.id }),
       ]);
       if (reviewed.error) throw new Error("question_reviews");
-      const questions = milestoneDraw(m, live, new Set(reviewed.data.map((row) => row.question_id)));
+      const questions = newMilestoneDraw(m, live, reviewed.data as SeenChoice[][]);
       const size = milestoneSize(m);
       return {
         questions: questions.length === size ? questions : [], mode: "training",
@@ -135,8 +151,13 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
   if (!token) return Response.json({ error: "Connecte-toi pour sauvegarder ta partie." }, { status: 401 });
-  const activity = parseActivity(await request.json().catch(() => null));
+  const payload = await request.json().catch(() => null);
+  const activity = parseActivity(payload);
   if (!activity) return Response.json({ error: "Mode de quiz invalide." }, { status: 400 });
+  const restart = payload?.restart;
+  if (restart !== undefined && (activity.type !== "module" || typeof restart !== "string" || !/^[0-9a-f-]{36}$/i.test(restart))) {
+    return Response.json({ error: "Tentative invalide." }, { status: 400 });
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const secret = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -148,12 +169,19 @@ export async function POST(request: Request) {
     const identity = createClient(url, key, { auth });
     const { data: { user }, error } = await identity.auth.getUser(token);
     if (error || !user) return Response.json({ error: "Ta session a expiré. Reconnecte-toi." }, { status: 401 });
-    const run = await loadActivity(db, user.id, activity);
+    const writer = createClient(url, secret, { auth });
+    const run = await loadActivity(db, writer, user.id, activity);
     if (!run) return Response.json({ error: "Ce module est verrouillé." }, { status: 403 });
     const questions = run.questions.map(normalizeQuestion).filter((q): q is Question => q !== null);
     if (!questions.length) return Response.json({ questions: [], note: run.emptyMessage }, { headers: { "Cache-Control": "no-store" } });
     if (activity.type === "module" && questions.length !== milestoneSize(getMilestone(activity.id)!)) throw new Error("module_questions");
-    const writer = createClient(url, secret, { auth });
+    if (restart) {
+      const result = await writer.rpc("issue_module_restart", { p_user: user.id, p_original: restart, p_module: activity.type === "module" ? activity.id : null, p_questions: questions });
+      if (result.error) throw new Error("module_restart");
+      const resumed = await db.rpc("resume_quiz_run", { p_run: restart });
+      if (resumed.error || !(resumed.data as ResumedQuiz | null)?.id) throw new Error("module_resume");
+      return Response.json(resumed.data, { headers: { "Cache-Control": "no-store" } });
+    }
     const { data: id, error: issueError } = await writer.rpc("issue_quiz_run", {
       p_user: user.id,
       p_mode: run.mode,

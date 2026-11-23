@@ -6,7 +6,7 @@ import { todayParis } from "@/lib/rng";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 
 type Profile = { display_name: string | null; xp: number; streak_days: number; last_daily_date: string | null };
-type Loaded = { status: "loading" | "error" | "guest" | "ready"; progress: Progress; profile?: Profile; due?: number; today?: string };
+type Loaded = { status: "loading" | "error" | "guest" | "ready"; progress: Progress; profile?: Profile; today?: string };
 
 export function useProgramProgress(dashboard = false) {
   const [state, setState] = useState<Loaded>({ status: "loading", progress: {} });
@@ -19,15 +19,14 @@ export function useProgramProgress(dashboard = false) {
       if (error) throw error;
       const userId = data.session?.user.id;
       if (!userId) return { status: "guest", progress: {} };
-      const [rows, profile, reviews] = await Promise.all([
+      const [rows, profile] = await Promise.all([
         db.from("module_progress").select("module_id, passed, best_pct, attempts").eq("user_id", userId),
         dashboard ? db.from("profiles").select("display_name, xp, streak_days, last_daily_date").eq("id", userId).maybeSingle() : null,
-        dashboard ? db.from("question_reviews").select("question_id", { count: "exact", head: true }).eq("user_id", userId).lte("due_at", new Date().toISOString()) : null,
       ]);
-      if (rows.error || profile?.error || reviews?.error) throw rows.error ?? profile?.error ?? reviews?.error;
+      if (rows.error || profile?.error) throw rows.error ?? profile?.error;
       return {
         status: "ready", progress: Object.fromEntries(rows.data.map((row) => [row.module_id, row])),
-        profile: profile?.data ?? undefined, due: reviews?.count ?? 0, today: todayParis(),
+        profile: profile?.data ?? undefined, today: todayParis(),
       };
     }
     load().then((result) => {

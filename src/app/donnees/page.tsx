@@ -7,12 +7,13 @@ import CourseReferences from "@/components/CourseReferences";
 import { dataTimestamp } from "@/lib/dataFreshness";
 import { fetchMacro, fmtValue, isDatedObservation, isVerifiedMacro, referenceLabel } from "@/lib/macro";
 import { useDataSnapshot } from "@/lib/useDataSnapshot";
+import { indicatorScope } from "@/lib/studyReferences";
 
 export default function Donnees() {
   const { data, loading, unreachable, now } = useDataSnapshot(fetchMacro);
 
-  const rows = data ? Object.entries(data.indicators) : [];
-  const pending = data?.failed?.filter((series) => !data.indicators[series]) ?? [];
+  const rows = data ? Object.entries(data.indicators).filter(([key]) => indicatorScope(key)) : [];
+  const pending = data?.failed?.filter((series) => indicatorScope(series) && !data.indicators[series]) ?? [];
 
   return (
     <AppShell width="max-w-4xl">

@@ -23,7 +23,7 @@ export const TRACKS = [
 
 export const GROUPS: StudyGroup[] = [
   { no: "01", slug: "macro", title: "Macroéconomie", track: "culture", units: [
-    { slug: "pib", title: "PIB et croissance" },
+    { slug: "pib", title: "PIB et taille des économies" },
     { slug: "inflation", title: "Inflation et pouvoir d’achat" },
     { slug: "emploi", title: "Emploi et cycles" },
     { slug: "finances", title: "Finances publiques" },
@@ -66,12 +66,15 @@ export const GROUPS: StudyGroup[] = [
 ];
 
 export const SUBMODULE_SIZE = 5;
-export const SYNTHESIS_SIZE = 8;
+export const SYNTHESIS_SIZE = 12;
 
 export type Milestone = { id: string; group: StudyGroup; level: ProgramLevel; unit: StudyUnit | null };
 
 export function milestoneSize(item: Milestone) {
-  return item.unit ? SUBMODULE_SIZE : SYNTHESIS_SIZE;
+  if (item.unit) return SUBMODULE_SIZE;
+  if (item.group.no === "05") return [12, 14, 15][stageIndex(item.level)];
+  if (item.group.no === "04" && item.level === "advanced") return 13;
+  return SYNTHESIS_SIZE;
 }
 
 export function stageIndex(level: ProgramLevel) {

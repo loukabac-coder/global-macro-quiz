@@ -18,6 +18,8 @@ export type Question = {
   family?: string;
   competency?: string;
   max_seconds?: number;
+  limit_seconds?: number;
+  false_first?: boolean;
 };
 
 export type ModuleExercise = Pick<Question, "prompt" | "type" | "correct" | "options" | "explanation" | "tolerance_pct">

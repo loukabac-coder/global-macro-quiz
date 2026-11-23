@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { getSupabase } from "@/lib/supabase";
-import { CATS } from "@/lib/categories";
-import type { StatRow } from "@/lib/progress";
+import { GROUPS, unitCode } from "@/lib/program";
+import { trainingHistoryScope } from "@/lib/trainingHistory";
 import { HISTORY_LABELS, parseHistory } from "@/lib/quizSession";
 
 const LEVELS: [string, string][] = [
@@ -40,9 +40,11 @@ function Card({ href, title, text, tag, locked }: { href: string; title: string;
 
 export default function Entrainement() {
   const [logged, setLogged] = useState<boolean | null>(null);
-  const [stats, setStats] = useState<StatRow[]>([]);
+  const [stats, setStats] = useState<{ question_id: string; seen: number; lapses: number }[]>([]);
   const [level, setLevel] = useState("");
   const [history, setHistory] = useState<keyof typeof HISTORY_LABELS>("all");
+  const [selected, setSelected] = useState("");
+  const [units, setUnits] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -53,8 +55,14 @@ export default function Entrainement() {
         if (!active) return;
         setLogged(!!data.session);
         if (!data.session) return;
-        const res = await supabase.from("category_stats").select("category_id, difficulty, answered, correct");
-        if (active && res.data) setStats(res.data as StatRow[]);
+        const reviews = [];
+        for (let offset = 0; active; offset += 500) {
+          const res = await supabase.from("question_reviews").select("question_id,seen,lapses").order("question_id").range(offset, offset + 499);
+          if (res.error || !res.data) return;
+          reviews.push(...res.data);
+          if (res.data.length < 500) break;
+        }
+        if (active) setStats(reviews);
       } catch {
         if (active) setLogged(false);
       }
@@ -67,18 +75,21 @@ export default function Entrainement() {
 
   const lock = logged === false;
 
-  function trainingHref(category?: string) {
+  function trainingHref(group?: string, selectedUnits: string[] = []) {
     const params = new URLSearchParams({ mode: "training" });
-    if (category) params.set("categorie", category);
+    if (group) params.set("module", group);
+    if (selectedUnits.length) params.set("sous", selectedUnits.join(","));
     if (level) params.set("niveau", level);
     if (history !== "all") params.set("historique", history);
     return `/quiz?${params}`;
   }
 
-  function acc(cat: string): string {
-    const rows = stats.filter((s) => s.category_id === cat);
-    const a = rows.reduce((x, r) => x + r.answered, 0);
-    const c = rows.reduce((x, r) => x + r.correct, 0);
+  const scopedStats = stats.map((row) => ({ ...row, scope: trainingHistoryScope(row.question_id) }));
+  function acc(group: string, selectedUnits: string[] = []): string {
+    const rows = scopedStats.filter(({ scope }) => scope?.groupNo === group && (!level || scope.difficulty === level) &&
+      (!selectedUnits.length || selectedUnits.includes(scope.unitSlug)));
+    const a = rows.reduce((x, r) => x + r.seen, 0);
+    const c = rows.reduce((x, r) => x + Math.max(0, r.seen - r.lapses), 0);
     return a ? `${Math.round((c / a) * 100)} % · ${a}` : "—";
   }
 
@@ -105,19 +116,12 @@ export default function Entrainement() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Card locked={lock} href="/quiz?mode=weakness" title="Weakness Training" text="Les questions que tu rates reviennent au bon moment (répétition espacée), avec tes catégories faibles." />
           <Card locked={lock} href="/quiz?mode=mixed" title="Mixed" text="15 questions, toutes catégories mélangées." />
-          <Card locked={lock} href="/calcul-mental" title="Calcul mental infini" text="Pourcentages, variations, intérêts composés, devises, bps, règle de 72. Générés à la volée, niveaux 1 à 5." />
+          <Card locked={lock} href="/calcul-mental" title="Calcul mental infini" text="Pourcentages, variations, intérêts et devises. Exercices générés à chacun des trois niveaux." />
           <Card locked={lock} href="/test-niveau" title="Test de niveau" text="12 questions pour te placer dans le parcours." />
-          <Card locked={lock} href="/examen-blanc" title="Examen blanc" tag="45 s" text="20 questions intermédiaires et avancées. Correction en fin d’examen." />
+          <Card locked={lock} href="/examen-blanc" title="Examen blanc" tag="≤ 45 s" text="20 questions intermédiaires et avancées. Correction en fin d’examen." />
         </div>
 
-        <h2 className="mt-8 font-mono text-xs text-accent">CHRONOMÉTRÉ · FINANCE GAMES</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <Card locked={lock} href="/jeux?mode=calcul" title="Calcul éclair" tag="20–30 s" text="Calcul mental sous pression." />
-          <Card locked={lock} href="/jeux?mode=ordres" title="Ordres de grandeur" tag="30 s" text="PIB, capitalisations, ratios." />
-          <Card locked={lock} href="/jeux?mode=culture" title="Culture marchés" tag="15 s" text="QCM et vrai/faux rapides." />
-        </div>
-
-        <h2 className="mt-8 font-mono text-xs text-accent">PAR CATÉGORIE</h2>
+        <h2 className="mt-8 font-mono text-xs text-accent">PAR MODULE</h2>
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
           {LEVELS.map(([v, label]) => (
             <button key={v} onClick={() => setLevel(v)} disabled={lock} aria-pressed={level === v} className={`border px-3 py-1.5 ${level === v ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"} disabled:opacity-50`}>
@@ -137,19 +141,35 @@ export default function Entrainement() {
           </div>
         )}
         <div className="mt-3 grid gap-px border border-line bg-line sm:grid-cols-3">
-          {CATS.map(([id, name]) =>
-            lock ? (
-              <Link key={id} href="/inscription" className="bg-ink p-4 opacity-70 hover:bg-panel">
-                <div className="font-semibold text-muted">{name}</div>
-                <div className="mt-1 font-mono text-xs text-muted">Compte requis</div>
-              </Link>
-            ) : (
-              <Link key={id} href={trainingHref(id)} className="bg-ink p-4 hover:bg-panel">
-                <div className="font-semibold">{name}</div>
-                <div className="mt-1 font-mono text-xs text-muted">réussite · réponses : {acc(id)}</div>
-              </Link>
-            ),
-          )}
+          {GROUPS.map((group) => (
+            <section key={group.no} className="min-w-0 bg-ink p-4">
+              <h3 className="font-semibold"><span className="mr-2 font-mono text-xs text-accent">{group.no}</span>{group.title}</h3>
+              <p className="mt-1 font-mono text-xs text-muted">{lock ? "Compte requis" : `Réussite · réponses · ${acc(group.no)}`}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                <Link href={lock ? "/inscription" : trainingHref(group.slug)} className="border border-line px-3 py-2 hover:border-accent">Tout le module</Link>
+                {!lock && <button type="button" aria-expanded={selected === group.slug} onClick={() => {
+                  setSelected(selected === group.slug ? "" : group.slug);
+                  setUnits([]);
+                }} className="border border-line px-3 py-2 hover:border-accent">Choisir les sous-modules</button>}
+              </div>
+              {selected === group.slug && !lock && (
+                <fieldset className="mt-4 space-y-2 text-sm">
+                  <legend className="mb-2 font-semibold">Sous-modules</legend>
+                  {group.units.map((unit) => (
+                    <label key={unit.slug} className="flex items-start gap-2">
+                      <input className="mt-1 accent-[#c6ff3d]" type="checkbox" checked={units.includes(unit.slug)}
+                        onChange={(event) => setUnits((previous) => event.target.checked ? [...previous, unit.slug] : previous.filter((slug) => slug !== unit.slug))} />
+                      {unitCode(group, unit)} · {unit.title}
+                    </label>
+                  ))}
+                  {!!units.length && <>
+                    <p className="font-mono text-xs text-muted">Réussite · réponses · {acc(group.no, units)}</p>
+                    <Link href={trainingHref(group.slug, units)} className="inline-block bg-accent px-3 py-2 font-semibold text-ink">Lancer la sélection</Link>
+                  </>}
+                </fieldset>
+              )}
+            </section>
+          ))}
         </div>
       </main>
     </AppShell>

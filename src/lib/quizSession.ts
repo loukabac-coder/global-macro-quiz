@@ -2,7 +2,12 @@ import type { Topic } from "@/lib/mental";
 import type { Question } from "@/lib/quiz";
 
 export type QuizMode = "quick" | "training" | "challenge" | "daily" | "mixed" | "weakness";
-export type Game = "calcul" | "ordres" | "culture";
+export const EXAM_PROFILES = {
+  general: "Généraliste",
+  culture: "Culture économique et financière",
+  technique: "Technique et calcul",
+} as const;
+export type ExamProfile = keyof typeof EXAM_PROFILES;
 export const HISTORY_LABELS = {
   all: "Toutes les questions",
   unseen: "Jamais répondues",
@@ -16,10 +21,10 @@ export function parseHistory(value: unknown): HistoryFilter {
 }
 
 export type Activity =
-  | { type: "quick" | "mixed" | "daily" | "weakness" | "placement" | "exam" }
-  | { type: "training"; categories: string[]; levels: string[]; history?: HistoryFilter }
+  | { type: "quick" | "mixed" | "daily" | "weakness" | "placement" }
+  | { type: "exam"; profile?: ExamProfile }
+  | { type: "training"; categories: string[]; levels: string[]; history?: HistoryFilter; group?: string; units?: string[] }
   | { type: "mental"; level: number; topic: Topic | null; timed: boolean }
-  | { type: "game"; game: Game; level: number }
   | { type: "module"; id: string };
 
 export type Answer = number | boolean | null;
@@ -45,11 +50,3 @@ export type ResumedQuiz = {
   timeLimit: number;
   summary: QuizSummary | null;
 };
-
-export function mentalSeconds(level: number): number {
-  return level === 1 ? 75 : level >= 4 ? 45 : 60;
-}
-
-export function gameSeconds(game: Game, level: number): number {
-  return game === "calcul" ? (level >= 4 ? 30 : 20) : game === "ordres" ? 30 : 15;
-}

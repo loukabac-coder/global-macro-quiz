@@ -7,7 +7,7 @@ import { buildNewsQuestions, electionSummary, isNewsVerified, POLICY_MOVEMENT } 
 import { GROUPS } from "@/lib/program";
 import { PRODUCTION_SERIES, verifiedTable, type ProductionData } from "@/lib/production";
 import { fmt, shuffle, type Question } from "@/lib/quiz";
-import { buildStudyView, type StudySources } from "@/lib/studyReferences";
+import { buildStudyView, studyDataHref, type StudySources } from "@/lib/studyReferences";
 
 export function stableReferenceKey(id: string): string {
   return /^(macro|live|news:(leader|election)|production|policy):/.test(id) ? id.replace(/:(\d{4}-\d{2}-\d{2}|\d{4})$/, "") : id;
@@ -18,7 +18,7 @@ export function productionQuestions(data: ProductionData, now: number): Question
     const table = data.tables[key];
     if (!table || !verifiedTable(table, now) || table.rows.length < 4) return [];
     const [a, b, c, d] = table.rows;
-    const reference_href = `/cours/reperes/producteurs#${key}`;
+    const reference_href = studyDataHref("reperes/producteurs", key);
     const explanation = table.rows.slice(0, 4).map((row) => `${row.name} · ${fmt(row.value)} ${meta.unit}`).join(" / ");
     const common = {
       category_id: "commodities", kind: "conjunctural", reference_date: `${table.year}-01-01`,
@@ -55,16 +55,17 @@ export function buildStudyQuestions(sources: StudySources, now: number) {
   const market = buildLiveQuestions(sources.caps, now).map((q) => {
     const key = stableReferenceKey(q.id);
     const slug = key.slice(5);
-    const panel = slug.slice(0, slug.lastIndexOf(":"));
+    const delimiter = slug.lastIndexOf(":");
+    const panel = delimiter >= 0 ? slug.slice(0, delimiter) : "";
     const anchor = panel ? `panel-${panel}` : `cap-${slug}`;
-    return { ...q, reference_key: key, reference_href: `/cours/reperes/capitalisations#${encodeURIComponent(anchor)}` };
+    return { ...q, reference_key: key, reference_href: studyDataHref("reperes/capitalisations", anchor) };
   });
   const news = buildNewsQuestions(sources.news, now).map((q) => {
     const key = stableReferenceKey(q.id);
     const leader = key.startsWith("news:leader:");
     const id = key.split(":").at(-1)!;
     const scope = leader ? "institutions" : "actualite";
-    return { ...q, reference_key: key, reference_href: `/cours/geopolitique/${scope}#${leader ? "leader" : "news"}-${id}` };
+    return { ...q, reference_key: key, reference_href: studyDataHref(`geopolitique/${scope}`, `${leader ? "leader" : "news"}-${id}`) };
   });
   const policy: Question[] = (sources.news.decisions ?? []).filter((row) => isNewsVerified(row, now, 130)).map((row, i) => {
     const options = Object.values(POLICY_MOVEMENT);
@@ -77,12 +78,12 @@ export function buildStudyQuestions(sources: StudySources, now: number) {
       prompt: `${row.source} · quel mouvement du taux directeur a été annoncé dans la décision du ${row.date} ?`,
       options: shifted, correct: shifted.indexOf(label), tolerance_pct: null, explanation: `${label} · décision du ${row.date}.`,
       wrong_explanations: null, source: row.source, source_url: row.url, reference_date: row.date,
-      reference_href: `/cours/banques/decisions#policy-${row.id}`,
+      reference_href: studyDataHref("banques/decisions", `policy-${row.id}`),
     };
   });
   const elections: Question[] = (sources.news.elections ?? []).filter((row) => isNewsVerified(row, now, Infinity) && row.seats * 2 !== row.total).map((row) => ({
     id: `news:election:${row.id}:${row.date}`, reference_key: `news:election:${row.id}`,
-    reference_href: `/cours/geopolitique/institutions#election-${row.id}`, category_id: "geopolitics",
+    reference_href: studyDataHref("geopolitique/institutions", `election-${row.id}`), category_id: "geopolitics",
     difficulty: "intermediate", type: "true_false", family: "institutions:elections",
     competency: "Distinguer le premier parti d’une majorité absolue",
     prompt: `Vrai ou faux. Le parti arrivé en tête du scrutin du ${row.date} en ${row.country} a obtenu plus de la moitié des sièges.`,
@@ -99,7 +100,7 @@ export function memoryDraw(sources: StudySources, scope: string, now: number): Q
   const view = buildStudyView(sources, scope, now);
   const rows = new Set(view.tables.flatMap((table) => table.rows.map((row) => row.id)));
   const tables = new Set(view.tables.map((table) => table.id));
-  const course = `/cours/${scope}`;
+  const course = studyDataHref(scope);
   const pool = buildStudyQuestions(sources, now).flatMap((q) => {
     const [href, hash] = q.reference_href?.split("#") ?? [];
     const id = hash ? decodeURIComponent(hash) : "";

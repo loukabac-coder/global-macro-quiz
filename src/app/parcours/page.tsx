@@ -5,7 +5,7 @@ import AppShell from "@/components/AppShell";
 import { PASS_THRESHOLD } from "@/lib/config";
 import { moduleById, type Progress } from "@/lib/modules";
 import { levelName, levelProgress } from "@/lib/progress";
-import { GROUPS, LEVELS, TRACKS, GUEST_MILESTONE, canAttempt, getMilestone, hasPassed, levelOpen, milestone, milestoneHref, unitCode, unitsAt, type Milestone } from "@/lib/program";
+import { GROUPS, LEVELS, TRACKS, GUEST_MILESTONE, canAttempt, hasPassed, levelOpen, milestone, milestoneHref, unitCode, unitsAt, type Milestone } from "@/lib/program";
 import { useProgramProgress } from "@/lib/useProgramProgress";
 
 function QuizLink({ item, progress, guest }: { item: Milestone; progress: Progress; guest: boolean }) {
@@ -29,7 +29,7 @@ function QuizLink({ item, progress, guest }: { item: Milestone; progress: Progre
 }
 
 export default function Parcours() {
-  const { status, progress, profile, due, today } = useProgramProgress(true);
+  const { status, progress, profile, today } = useProgramProgress(true);
   const guest = status === "guest";
   const lp = profile ? levelProgress(profile.xp) : undefined;
   const stages = LEVELS.flatMap(({ id }) => GROUPS.map((group) => milestone(group, id, null)));
@@ -39,12 +39,8 @@ export default function Parcours() {
     .find((item) => canAttempt(item, progress) && !hasPassed(item, progress));
   const archive = Object.entries(progress).filter(([id, row]) => !id.startsWith("p:") && row.passed);
   const links = [
-    ["/examen-blanc", "Examen blanc", "20 questions · 45 s par question"],
+    ["/examen-blanc", "Examen blanc", "20 questions · jusqu’à 45 s par question"],
     ["/quiz?mode=daily", "Défi du jour", today && profile?.last_daily_date === today ? "Fait aujourd’hui ✓" : "10 questions"],
-    ["/quiz?mode=weakness", "Questions à revoir", due ? `${due} à revoir` : "Révision ciblée"],
-    ["/entrainement", "Entraînement libre", "Quiz, filtres et jeux"],
-    ["/favoris", "Favoris", "Questions enregistrées"],
-    ["/test-niveau", "Test de niveau", "12 questions"],
   ];
 
   return (
@@ -52,15 +48,15 @@ export default function Parcours() {
       <main className="py-8 sm:py-10">
         <h1 className="text-3xl font-semibold tracking-tight">Parcours</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">Réussis les quiz des sous-modules pour débloquer chacune des six synthèses. Il faut {PASS_THRESHOLD} % pour réussir un quiz. Les six synthèses ouvrent le niveau suivant.</p>
+        <nav aria-label="Modes d’entraînement" className="mt-6 grid gap-2 sm:grid-cols-2">
+          {links.map(([href, label, detail]) => (
+            <Link key={href} className="border border-line px-4 py-3 text-sm hover:border-accent" href={href}>
+              <span className="font-semibold">{label}</span><span className="mt-1 block text-xs text-muted">{detail}</span>
+            </Link>
+          ))}
+        </nav>
         {status === "loading" && <p className="mt-6 text-sm text-muted">Chargement de ta progression…</p>}
         {status === "error" && <p role="alert" className="mt-6 border-l-2 border-danger bg-panel p-4 text-sm">Ta progression n’a pas pu être chargée. Actualise la page pour réessayer.</p>}
-        {guest && (
-          <div className="mt-6 flex flex-wrap gap-3 text-sm">
-            <Link href={milestoneHref(getMilestone(GUEST_MILESTONE)!)} className="bg-accent px-5 py-3 font-semibold text-ink">Essayer le calcul mental</Link>
-            <Link href="/invite" className="border border-line px-5 py-3 hover:border-accent">Quiz rapide</Link>
-            <Link href="/inscription" className="border border-line px-5 py-3 hover:border-accent">Créer un compte</Link>
-          </div>
-        )}
         {profile && lp && (
           <section className="mt-6 border border-line bg-panel p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -72,13 +68,6 @@ export default function Parcours() {
             {todo && <Link href={milestoneHref(todo)} className="mt-4 inline-block bg-accent px-4 py-3 text-sm font-semibold text-ink">Continuer · {todo.unit?.title ?? todo.group.title}</Link>}
           </section>
         )}
-        <nav aria-label="Modes d’entraînement" className="mt-6 grid gap-2 sm:grid-cols-3">
-          {links.map(([href, label, detail]) => (
-            <Link key={href} className="border border-line px-4 py-3 text-sm hover:border-accent" href={href}>
-              <span className="font-semibold">{label}</span><span className="mt-1 block text-xs text-muted">{detail}</span>
-            </Link>
-          ))}
-        </nav>
         {(status === "ready" || guest) && (
           <div className="mt-10 space-y-10">
             {LEVELS.map(({ id, name }) => (

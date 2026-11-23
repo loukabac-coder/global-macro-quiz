@@ -40,7 +40,7 @@ export function editorial(groupNo: string, unitSlug: string, stages: string[], s
       correct: numeric ? Number(value) : choices ? position : answer === "Vrai",
       tolerance_pct: numeric ? Number(tolerance ?? 0) : null,
       prompt, explanation, wrong_explanations: null, source, kind: "structural", reference_date: null,
-      origin: "editorial", max_seconds: groupNo === "06" ? 60 : 45,
+      origin: "editorial", max_seconds: groupNo === "06" && prompt.length > 190 ? 60 : 45,
     };
   }));
 }

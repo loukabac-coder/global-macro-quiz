@@ -19,7 +19,7 @@ export default function Home() {
           <div className="flex flex-col justify-center">
             <p className="font-mono text-xs text-accent">préparation aux entretiens · finance de marché</p>
             <h1 className="mt-3 max-w-xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
-              Prépare les questions techniques et les finance games de tes entretiens.
+              Prépare les questions de culture économique et les exercices techniques de tes entretiens.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-muted">
               Calcul mental, culture marchés, macro. Six modules à travailler à trois niveaux et des chiffres de marché datés.

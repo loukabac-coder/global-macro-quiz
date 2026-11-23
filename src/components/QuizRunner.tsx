@@ -24,6 +24,9 @@ import QuestionActions from "@/components/QuestionActions";
 import { clearQuizResume, quizResumeKey, readQuizResume, writeQuizResume } from "@/lib/quizResume";
 import type { Activity, Answer, Feedback, QuizSummary, ResumedQuiz } from "@/lib/quizSession";
 import { answerScales, parseNumericAnswer } from "@/lib/quizUnits";
+import { mentalMethod, questionCourseHref } from "@/lib/quizLearning";
+import { newMilestoneDraw, type SeenChoice } from "@/lib/drawQuestions";
+import { getMilestone, milestoneSize } from "@/lib/program";
 
 export type Result = { q: Question; ok: boolean; given: string; seconds: number; points: number; wrongNote?: string | null };
 type Phase = "loading" | "empty" | "error" | "playing" | "done";
@@ -35,7 +38,6 @@ export type RunnerProps = {
   title: string;
   kicker?: string;
   activity?: Activity;
-  timePerQuestion?: number;
   practiceLoad?: () => Promise<Question[]>;
   practiceKey?: string;
   /** Questions pour un visiteur sans compte. Sans cette fonction, redirection vers la connexion. */
@@ -47,6 +49,7 @@ export type RunnerProps = {
   backLabel?: string;
   replayLabel?: string;
   onBack?: () => void;
+  widerHref?: string;
 };
 
 function nowMs(): number {
@@ -76,6 +79,24 @@ function resultOf({ question, ok, answer, seconds, points, timedOut }: Feedback)
     q: question, ok, given: timedOut ? "Temps écoulé" : answerLabel(question, answer), seconds, points,
     wrongNote: !ok && question.type === "mcq" && typeof answer === "number" ? wrongNote(question, answer) : null,
   };
+}
+
+function ReviewHelp({ question, wrong }: { question: Question; wrong: boolean }) {
+  const method = wrong ? mentalMethod(question) : undefined;
+  const href = wrong ? questionCourseHref(question) : undefined;
+  return (
+    <>
+      {method ? <div className="mt-2 border-l-2 border-accent pl-3"><p className="font-semibold text-fg">Méthode de tête</p>
+        <ol className="list-decimal space-y-1 pl-5">{method.map((step, i) => <li key={i}>{step}</li>)}</ol></div>
+        : <p className="mt-2 text-muted">{question.explanation}</p>}
+      {href && <Link href={href} className="mt-2 inline-block text-xs underline underline-offset-4 hover:text-accent">Revoir ce point du cours</Link>}
+    </>
+  );
+}
+
+function displayOrder(q: Question, canonical = false) {
+  const indexes = mcqOptions(q).map((_, i) => i);
+  return canonical ? indexes : shuffle(indexes);
 }
 
 async function startQuestion(db: ReturnType<typeof getSupabase>, id: string, index: number, exam: boolean) {
@@ -112,7 +133,8 @@ export default function QuizRunner(props: RunnerProps) {
   const [summary, setSummary] = useState<QuizSummary | null>(null);
   const [guest, setGuest] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [T, setTimer] = useState(0);
+  const [timer, setTimer] = useState(0);
+  const T = exam ? items[idx]?.q.limit_seconds ?? timer : 0;
   const [pending, setPending] = useState(false);
   const [restarting, setRestarting] = useState(false);
 
@@ -121,6 +143,7 @@ export default function QuizRunner(props: RunnerProps) {
   const submitRef = useRef<(timedOut: boolean) => void>(() => {});
   const resumeKey = useRef<string | null>(null);
   const responses = useRef<HTMLDivElement>(null);
+  const guestDraws = useRef<SeenChoice[][]>([]);
 
   useEffect(() => {
     configRef.current = props;
@@ -161,12 +184,13 @@ export default function QuizRunner(props: RunnerProps) {
     let active = true;
     async function run() {
       try {
-        const { practiceLoad, practiceKey, guestOnly, guestLoad, activity, timePerQuestion } = configRef.current;
+        const { practiceLoad, practiceKey, guestOnly, guestLoad, activity } = configRef.current;
         const isExam = activity?.type === "exam";
+        const isModule = activity?.type === "module";
         let questions: Question[] = [];
         let issuedId: string | null = null;
         let quizNote: string | null = null;
-        let timer = timePerQuestion ?? 0;
+        let timer = 0;
         let isGuest = false;
         let resumed: ResumedQuiz | null = null;
         let local: LocalResume | null = null;
@@ -195,7 +219,7 @@ export default function QuizRunner(props: RunnerProps) {
                 issuedId = resumed.id ?? previous.id;
                 questions = resumed.questions;
                 timer = resumed.timeLimit;
-                orders = previous.orders;
+                orders = issuedId === previous.id ? previous.orders : questions.map((q) => displayOrder(q, isModule));
                 if (key && issuedId !== previous.id) {
                   writeQuizResume<ServerResume>(key, { id: issuedId, orders }, Date.now() - resumed.issuedSeconds * 1000);
                 }
@@ -214,7 +238,7 @@ export default function QuizRunner(props: RunnerProps) {
               issuedId = res.id ?? null;
               quizNote = res.note ?? null;
               timer = res.timeLimit ?? 0;
-              orders = questions.map((q) => shuffle(mcqOptions(q).map((_, i) => i)));
+                orders = questions.map((q) => displayOrder(q, isModule));
               if (issuedId && key) writeQuizResume<ServerResume>(key, { id: issuedId, orders });
             }
             if (issuedId && (!resumed || (!resumed.feedback.length && resumed.questionSeconds === null))) {
@@ -228,7 +252,10 @@ export default function QuizRunner(props: RunnerProps) {
             isGuest = true;
             resumeKey.current = quizResumeKey(null, activity);
             local = readQuizResume<LocalResume>(resumeKey.current);
-            if (!local) questions = await guestLoad();
+            if (!local) {
+              const milestone = isModule ? getMilestone(activity.id) : undefined;
+              questions = milestone ? newMilestoneDraw(milestone, [], guestDraws.current) : await guestLoad();
+            }
           }
         }
         if (!active) return;
@@ -240,8 +267,9 @@ export default function QuizRunner(props: RunnerProps) {
         setTimer(timer);
         setGuest(isGuest);
         const nextItems = local?.items ?? questions.map((q, i) => ({
-          q, order: orders?.[i] ?? shuffle(mcqOptions(q).map((_, j) => j)),
+          q, order: orders?.[i] ?? displayOrder(q, isModule),
         }));
+        if (isModule && !issuedId) guestDraws.current = [nextItems.map(({ q }) => q), ...guestDraws.current].slice(0, 4);
         restorePosition(nextItems, issuedId, resumed, local, beganAt);
       } catch (e) {
         if (!active) return;
@@ -264,11 +292,11 @@ export default function QuizRunner(props: RunnerProps) {
 
   // Horloge (et fin de temps automatique pour les séries chronométrées)
   useEffect(() => {
-    if (phase !== "playing" || checked || restarting) return;
+    if (phase !== "playing" || checked || restarting || T <= 0) return;
     const tick = () => {
       const t = nowMs();
       setNow(t);
-      if (T > 0 && t - qStart >= T * 1000) {
+      if (t - qStart >= T * 1000) {
         clearInterval(id);
         submitRef.current(true);
       }
@@ -289,8 +317,18 @@ export default function QuizRunner(props: RunnerProps) {
 
   async function restart() {
     if (exam || phase !== "playing" || busy.current) return;
+    const activity = configRef.current.activity;
+    const stage = activity?.type === "module" ? getMilestone(activity.id) : undefined;
     if (!sessionId) {
-      restorePosition(items, null);
+      if (stage) {
+        const questions = newMilestoneDraw(stage, [], guestDraws.current);
+        if (questions.length !== milestoneSize(stage)) {
+          setFormError("Il manque des questions pour renouveler cette série.");
+          return;
+        }
+        guestDraws.current = [questions, ...guestDraws.current].slice(0, 4);
+        restorePosition(questions.map((q) => ({ q, order: displayOrder(q, true) })), null);
+      } else restorePosition(items, null);
       return;
     }
 
@@ -299,14 +337,32 @@ export default function QuizRunner(props: RunnerProps) {
     setRestarting(true);
     setFormError(null);
     try {
-      const { data, error } = await getSupabase().rpc("restart_quiz_run", { p_run: sessionId });
-      const resumed = data as ResumedQuiz | null;
-      if (error || !resumed?.id) throw new Error("redémarrage");
+      const db = getSupabase();
+      let resumed: ResumedQuiz | null;
+      if (stage) {
+        const { data } = await db.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) throw new Error("session");
+        const response = await fetch("/api/quiz", {
+          method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "module", id: stage.id, restart: sessionId }),
+        });
+        if (!response.ok) throw new Error("redémarrage");
+        resumed = await response.json() as ResumedQuiz;
+      } else {
+        const { data, error } = await db.rpc("restart_quiz_run", { p_run: sessionId });
+        if (error) throw error;
+        resumed = data as ResumedQuiz | null;
+      }
+      if (!resumed?.id) throw new Error("redémarrage");
+      const nextItems = stage ? resumed.questions.map((q) => ({ q, order: displayOrder(q, true) })) : items;
       if (resumeKey.current) {
-        writeQuizResume<ServerResume>(resumeKey.current, { id: resumed.id, orders: items.map((item) => item.order) },
+        writeQuizResume<ServerResume>(resumeKey.current, { id: resumed.id, orders: nextItems.map((item) => item.order) },
           Date.now() - resumed.issuedSeconds * 1000);
       }
-      restorePosition(items, resumed.id, resumed);
+      let started: number | null = null;
+      if (stage && resumed.questionSeconds === null && !resumed.feedback.length) started = await startQuestion(db, resumed.id, 0, false);
+      restorePosition(nextItems, resumed.id, resumed, null, started);
     } catch {
       setFormError("La série n’a pas pu redémarrer. Réessaie.");
     } finally {
@@ -487,9 +543,10 @@ export default function QuizRunner(props: RunnerProps) {
     return shell(
       <div className="space-y-4">
         <p role="status" className="text-sm text-muted">{note ?? "Aucune question disponible pour ce choix pour le moment."}</p>
-        <Link href={exam ? backHref : "/entrainement"} className="inline-block border border-line px-5 py-3 text-sm hover:border-muted">
-          {exam ? "Retour au parcours" : "Choisir un autre mode"}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={backHref} className="inline-block border border-line px-5 py-3 text-sm hover:border-muted">{backLabel}</Link>
+          {props.widerHref && <Link href={props.widerHref} className="inline-block border border-line px-5 py-3 text-sm hover:border-accent">Élargir à tout le module</Link>}
+        </div>
       </div>,
     );
   if (phase === "error")
@@ -586,7 +643,7 @@ export default function QuizRunner(props: RunnerProps) {
                   <p>Ta réponse : <span className="text-fg">{r.given}</span></p>
                   <p>Bonne réponse : <span className="text-fg">{correctLabel(r.q)}</span></p>
                   {r.wrongNote && <p>{r.wrongNote}</p>}
-                  <p>{r.q.explanation}</p>
+                  <ReviewHelp question={r.q} wrong={!r.ok} />
                   {(r.q.source || r.q.reference_date) && (
                     <p className="font-mono text-xs">
                       {r.q.source && (r.q.source_url?.startsWith("https://")
@@ -597,7 +654,6 @@ export default function QuizRunner(props: RunnerProps) {
                       )}
                     </p>
                   )}
-                  {r.q.reference_href?.startsWith("/cours/") && <Link href={r.q.reference_href} className="text-xs underline underline-offset-4 hover:text-accent">Retrouver ce repère dans le cours</Link>}
                   <QuestionActions question={r.q} />
                 </div>
               </details>
@@ -658,13 +714,13 @@ export default function QuizRunner(props: RunnerProps) {
   return shell(
     <div className="fade-in" key={`${startAt}:${idx}`}>
       <p className="mb-1 font-mono text-xs text-muted">{kicker ?? title}</p>
-      {note && idx === 0 && !checked && <p className="mb-3 font-mono text-xs text-warn">{note}</p>}
+      {note && idx === 0 && !checked && <p className="mb-3 font-mono text-xs text-warn">
+        {note} {props.widerHref && <Link href={props.widerHref} className="underline hover:text-accent">Élargir à tout le module</Link>}
+      </p>}
       <div className="flex items-center justify-between font-mono text-xs text-muted">
         <span>Q {String(idx + 1).padStart(2, "0")}/{String(items.length).padStart(2, "0")}</span>
         <span className="truncate px-2">{CAT_NAME[q.category_id] ?? q.category_id}, {DIFFICULTY_FR[q.difficulty] ?? q.difficulty}</span>
-        <span className={T > 0 && remaining <= 5 && !checked ? "text-danger" : "text-fg"}>
-          {T > 0 ? `${Math.ceil(remaining)} s` : clock(Math.floor((now - startAt) / 1000))}
-        </span>
+        {exam && <span className={remaining <= 5 && !checked ? "text-danger" : "text-fg"}>{Math.ceil(remaining)} s</span>}
       </div>
       <div className="mt-3 flex gap-1" aria-hidden="true">
         {items.map((it, i) => (
@@ -705,7 +761,7 @@ export default function QuizRunner(props: RunnerProps) {
             ))}
 
           {q.type === "true_false" &&
-            [true, false].map((v) => (
+            (q.false_first ? [false, true] : [true, false]).map((v) => (
               <button key={String(v)} type="button" data-quiz-option={String(v)} disabled={checked || pending} aria-pressed={choice === v} onClick={() => setChoice(v)} className={tfClass(v)}>
                 {v ? "Vrai" : "Faux"}
               </button>
@@ -757,7 +813,7 @@ export default function QuizRunner(props: RunnerProps) {
               </p>
             )}
             {wrongSelected && <p className="mt-2 text-muted">{wrongSelected}</p>}
-            <p className="mt-2 text-muted">{q.explanation}</p>
+            <ReviewHelp question={q} wrong={!last.ok} />
             {(q.source || (q.kind === "conjunctural" && q.reference_date)) && (
               <p className="mt-3 font-mono text-xs text-muted">
                 {q.source && (q.source_url?.startsWith("https://")
@@ -766,7 +822,6 @@ export default function QuizRunner(props: RunnerProps) {
                 {q.kind === "conjunctural" && q.reference_date && <span className="ml-3 text-warn">Donnée au {frDate(q.reference_date)}</span>}
               </p>
             )}
-            {q.reference_href?.startsWith("/cours/") && <Link href={q.reference_href} className="mt-3 inline-block text-xs underline underline-offset-4 hover:text-accent">Retrouver ce repère dans le cours</Link>}
             <QuestionActions question={q} />
           </div>
         )}

@@ -1,6 +1,7 @@
 import { MENTAL_QUESTION_PREFIX, mentalQuestion, type Topic } from "@/lib/mental";
 import { hashString, mulberry32 } from "@/lib/rng";
-import type { Question } from "@/lib/quiz";
+import { isNumeric, type Question } from "@/lib/quiz";
+import { searchText } from "@/lib/searchText";
 import { applicationQuestions } from "@/lib/curriculum/applications";
 import { centralBanks } from "@/lib/curriculum/centralBanks";
 import { commodities } from "@/lib/curriculum/commodities";
@@ -23,6 +24,7 @@ import { mentalCases } from "@/lib/curriculum/mentalCases";
 import { interviewBank } from "@/lib/curriculum/interviewBank";
 import { financePractice } from "@/lib/curriculum/financePractice";
 import { productsPractice } from "@/lib/curriculum/productsPractice";
+import { trainingBasics } from "@/lib/curriculum/trainingBasics";
 
 const mentalStages: [string, number, Topic[]][] = [
   ["i1", 3, ["variations", "interets", "bps", "ratios"]],
@@ -59,8 +61,10 @@ export const LEGACY_CURRICULUM = original.map((q): ProgramQuestion => ({
 }));
 export const CURRICULUM: ProgramQuestion[] = [
   ...LEGACY_CURRICULUM, ...macroBank, ...macroCases, ...banksBank, ...geopoliticsBank, ...geopoliticsCases,
-  ...referenceBank, ...marketPractice, ...marketsBank, ...interviewBank, ...financePractice, ...productsPractice, ...mentalBank, ...mentalCases,
+  ...referenceBank, ...marketPractice, ...marketsBank, ...interviewBank, ...financePractice, ...productsPractice, ...mentalBank, ...mentalCases, ...trainingBasics,
 ];
+const activeQuestions = CURRICULUM.filter((q) => !(q.groupNo === "01" && q.unitSlug === "pib" &&
+  isNumeric(q) && /\b(croissance|revisee)\b/.test(searchText(q.prompt))));
 
 const curriculumIds = new Set(CURRICULUM.flatMap((question) => [question.id, question.id.replace(/-v2$/, "")]));
 
@@ -72,7 +76,7 @@ export function isCurrentFavorite(question: Question): boolean {
 }
 
 export function curriculumQuestions(opts: { categories?: string[]; levels?: string[]; types?: string[] } = {}) {
-  return CURRICULUM.filter((q) =>
+  return activeQuestions.filter((q) =>
     (!opts.categories?.length || opts.categories.includes(q.category_id)) &&
     (!opts.levels?.length || opts.levels.includes(q.difficulty)) &&
     (!opts.types?.length || opts.types.includes(q.type)));

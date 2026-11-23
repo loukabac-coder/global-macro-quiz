@@ -6,7 +6,6 @@ import AppShell from "@/components/AppShell";
 import QuizRunner from "@/components/QuizRunner";
 import { useSearch } from "@/lib/useSearch";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
-import { mentalSeconds } from "@/lib/quizSession";
 
 const LEVELS = [
   ["1", "Débutant", "Pourcentages usuels, produits et points de base"],
@@ -23,7 +22,6 @@ function CalculMentalContent() {
   const fromUrl = new URLSearchParams(search).get("niveau");
   const [level, setLevel] = useState<number | null>(null);
   const [topic, setTopic] = useState<Topic | null>(null);
-  const [timed, setTimed] = useState(false);
   const [started, setStarted] = useState(0);
 
   const lv = level ?? (fromUrl === "1" ? 1 : fromUrl === "4" || fromUrl === "5" ? 4 : 2);
@@ -34,8 +32,7 @@ function CalculMentalContent() {
       <QuizRunner
         key={started}
         title={`Calcul mental · ${name}${topic ? " · " + TOPICS.find((t) => t.id === topic)?.label : ""}`}
-        activity={{ type: "mental", level: lv, topic, timed }}
-        timePerQuestion={timed ? mentalSeconds(lv) : undefined}
+        activity={{ type: "mental", level: lv, topic, timed: false }}
         backHref="/calcul-mental"
         backLabel="Réglages"
         replayLabel="Série suivante"
@@ -80,11 +77,6 @@ function CalculMentalContent() {
             </button>
           ))}
         </div>
-
-        <label className="mt-8 flex cursor-pointer items-center gap-3 text-sm">
-          <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} className="size-4 accent-[#c6ff3d]" />
-          <span>Mode chronométré ({mentalSeconds(lv)} secondes par question)</span>
-        </label>
 
         <button onClick={() => setStarted((n) => n + 1)} className="mt-8 w-full bg-accent px-6 py-4 text-sm font-semibold text-ink hover:brightness-110 sm:w-auto">
           Lancer la série

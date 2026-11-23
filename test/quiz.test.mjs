@@ -17,7 +17,6 @@ const { mulberry32 } = await import("../src/lib/rng.ts");
 const { dailyQuestions, guestQuick } = await import("../src/lib/guest.ts");
 const { MODULES, computeStatuses } = await import("../src/lib/modules.ts");
 const { moduleQuestions } = await import("../src/lib/moduleQuestions.ts");
-const { gameSeconds } = await import("../src/lib/quizSession.ts");
 const { buildMacroQuestions } = await import("../src/lib/macroQuestions.ts");
 const { isFresh, isVerifiedMacro } = await import("../src/lib/macro.ts");
 const { hasFreshMarketCaps } = await import("../src/lib/marketcaps.ts");
@@ -26,17 +25,18 @@ const { isAtLeastAsRecent } = await import("../src/lib/dataFreshness.ts");
 const { GET: marketDataRoute } = await import("../src/app/api/donnees/route.ts");
 const { drawExam, EXAM_SIZE } = await import("../src/lib/exam.ts");
 const { matchesKeywords, searchText } = await import("../src/lib/searchText.ts");
-const { loadQuick, loadGame, loadPlacement, loadTraining, loadTrainingByHistory, loadWeakness } = await import("../src/lib/loaders.ts");
+const { loadQuick, loadPlacement, loadScopedTraining, loadTraining, loadTrainingByHistory, loadWeakness } = await import("../src/lib/loaders.ts");
 const { CURRICULUM, curriculumQuestions, isCurrentFavorite } = await import("../src/lib/curriculum/catalog.ts");
 const { CHAPTERS, getChapter } = await import("../src/lib/courses.ts");
 const { buildLiveQuestions } = await import("../src/lib/liveQuestions.ts");
 const { CATS } = await import("../src/lib/categories.ts");
-const { GROUPS, LEVELS: PROGRAM_LEVELS, canAttempt, getMilestone, hasPassed, levelOpen, milestone, unitsAt } = await import("../src/lib/program.ts");
-const { milestoneDraw, diverseDraw } = await import("../src/lib/drawQuestions.ts");
+const { GROUPS, LEVELS: PROGRAM_LEVELS, canAttempt, getMilestone, hasPassed, levelOpen, milestone, milestoneSize, unitsAt } = await import("../src/lib/program.ts");
+const { milestoneDraw, newMilestoneDraw, diverseDraw } = await import("../src/lib/drawQuestions.ts");
 const { lessonsFor, legacyLessonHref } = await import("../src/lib/courseTree.ts");
 const { buildNewsQuestions } = await import("../src/lib/news.ts");
 const { buildStudyQuestions, memoryDraw, stableReferenceKey } = await import("../src/lib/studyQuestions.ts");
 const { buildStudyView } = await import("../src/lib/studyReferences.ts");
+const { mentalMethod, questionCourseHref } = await import("../src/lib/quizLearning.ts");
 
 test("un cours, une correction et une série à revoir partagent la même observation révisée", () => {
   const now = Date.parse("2026-11-23T19:00:00Z");
@@ -55,7 +55,7 @@ test("un cours, une correction et une série à revoir partagent la même observ
   assert.equal(row.period, "2025");
   assert.equal(row.eligible, true);
   assert.match(row.exact, /3366,315927|3\s366,315927/);
-  assert.equal(first.reference_href, `/cours/macro/pib#${row.id}`);
+  assert.equal(first.reference_href, `/cours/macro/pib/chiffres#${row.id}`);
   assert.equal(first.correct, gdp.value);
   assert.equal(first.tolerance_pct, 15);
   const memory = memoryDraw(sources, "macro/pib", now);
@@ -102,10 +102,10 @@ test("un identifiant de tableau commun ne mélange pas les repères de deux cour
     news: { updated_at: null, events: [], leaders: [], failed: [] },
     production: { updated_at: null, tables: {}, failed: [] },
   };
-  assert.ok(buildStudyQuestions(sources, now).some((q) => q.reference_href === "/cours/macro/pib#observations-1"));
+  assert.ok(buildStudyQuestions(sources, now).some((q) => q.reference_href === "/cours/macro/pib/chiffres#observations-1"));
   const memory = memoryDraw(sources, "reperes/indices", now);
   assert.equal(memory.length, 5);
-  assert.ok(memory.every((q) => q.reference_href?.startsWith("/cours/reperes/indices#macro-index_")));
+  assert.ok(memory.every((q) => q.reference_href?.startsWith("/cours/reperes/indices/chiffres#macro-index_")));
 });
 
 test("le sélecteur normalise les montants avant d’appliquer la tolérance", () => {
@@ -348,7 +348,6 @@ test("les 22 étapes historiques conservent une fiche et leurs règles de lectur
   assert.equal(computeStatuses(passed, null).d2, "locked");
   assert.equal(computeStatuses({ ...passed, d3: passed.d1 }, null).d2, "open");
   assert.equal(computeStatuses({}, "avance").a1, "open");
-  assert.equal(gameSeconds("calcul", 4), 30);
 });
 
 test("la banque pédagogique couvre la grille et relie chaque question à un module", () => {
@@ -435,14 +434,6 @@ test("les modes jouent avec la même banque et respectent leurs niveaux et forma
   const beginners = await loadTraining(["fx", "commodities"], ["beginner"], async () => { throw new Error("Aucune donnée courante requise"); });
   assert.ok(beginners.every((q) => q.difficulty === "beginner" && bank.has(q.id)));
   assert.equal(loadPlacement().length, 12);
-  for (const game of ["calcul", "ordres", "culture"]) {
-    for (const level of [1, 2, 3, 4, 5]) {
-      const draw = await loadGame(game, level, noLive);
-      assert.equal(draw.length, 10, game);
-      assert.ok(draw.every((q) => bank.has(q.id) && q.difficulty === mentalDifficulty(level)), game);
-      assert.ok(draw.every((q) => game === "culture" ? ["mcq", "true_false"].includes(q.type) : ["numeric", "guesstimate"].includes(q.type)), game);
-    }
-  }
   const exam = drawExam(CURRICULUM, []);
   assert.equal(exam.questions.length, EXAM_SIZE);
   const next = drawExam(CURRICULUM, exam.questions.map((q) => q.id));
@@ -510,13 +501,67 @@ test("les six modules ont des pages, des tirages complets et des synthèses verr
       }
       assert.ok(canAttempt(synth, progress));
       const draw = milestoneDraw(synth, [], seen);
-      assert.equal(draw.length, 8, synth.id);
+      assert.equal(draw.length, milestoneSize(synth), synth.id);
+      assert.ok(draw.length >= 12 && draw.length <= 15, synth.id);
       assert.ok(new Set(draw.map((q) => q.unitSlug)).size >= 2);
       if (group.no === "06" && level !== "advanced") assert.ok(!levelOpen(level === "beginner" ? "intermediate" : "advanced", progress));
       progress[synth.id] = success;
     }
   }
   assert.equal(Object.keys(progress).filter((id) => id.endsWith(":synthese")).length, 18);
+});
+
+test("tous les sous-modules sont accessibles aux trois niveaux en entraînement libre", async () => {
+  for (const group of GROUPS) for (const unit of group.units) for (const { id } of PROGRAM_LEVELS) {
+    const draw = await loadScopedTraining(null, group.slug, [unit.slug], [id], "all", async () => []);
+    assert.ok(draw.length > 0, `${group.slug}/${unit.slug}/${id}`);
+    assert.ok(draw.every((q) => q.unitSlug === unit.slug && q.groupNo === group.no && q.difficulty === id));
+  }
+  const draw = await loadScopedTraining(null, "reperes", ["devises", "indices"], ["advanced"], "all", async () => []);
+  assert.ok(draw.every((q) => ["devises", "indices"].includes(q.unitSlug)));
+});
+
+test("le PIB débutant renouvelle le tirage et génère des données d’exercice si nécessaire", () => {
+  const item = getMilestone("p:b:01:pib");
+  const history = [];
+  for (let i = 0; i < 3; i++) {
+    const questions = newMilestoneDraw(item, [], history);
+    assert.equal(questions.length, 5);
+    assert.ok(questions.every((q) => q.difficulty === "beginner"));
+    if (i) assert.notDeepEqual(questions.map((q) => q.id), history[0].map((q) => q.id));
+    for (const q of questions.filter((entry) => entry.type === "mcq")) {
+      const original = CURRICULUM.find((entry) => entry.id === q.id);
+      assert.equal(correctLabel(q), correctLabel(original));
+    }
+    history.unshift(questions);
+  }
+  const old = curriculumQuestions({ levels: ["beginner"] }).filter((q) => q.groupNo === "01" && q.unitSlug === "pib");
+  const generated = newMilestoneDraw(item, [], [old]);
+  assert.ok(generated.every((q) => q.id.startsWith("gen:pib:beginner:") && mentalMethod(q).length >= 2));
+});
+
+test("une estimation de LVMH renvoie à l’entreprise et peut tomber en révision et en entraînement", async () => {
+  const checked = "2026-11-23T18:00:00Z";
+  const now = Date.parse("2026-11-23T19:00:00Z");
+  const sources = {
+    macro: { updated_at: checked, indicators: {} },
+    caps: { updated_at: checked, failed: [], source: "Marché", items: [{
+      ticker: "MC.PA", name: "LVMH", country: "France", region: "Europe", currency: "EUR",
+      market_cap_usd: 208e9, price_date: "2026-11-23", fx_date: "2026-11-23", retrieved_at: checked,
+    }] },
+    news: { updated_at: null, events: [], leaders: [], failed: [] },
+    production: { updated_at: null, tables: {}, failed: [] },
+  };
+  const live = buildStudyQuestions(sources, now);
+  const expected = "/cours/reperes/capitalisations/chiffres#cap-MC.PA";
+  assert.equal(questionCourseHref(live[0]), expected);
+  assert.equal(live[0].reference_href, expected);
+  assert.ok(memoryDraw(sources, "reperes/capitalisations", now).some((q) => q.reference_href === expected));
+  const draw = await loadScopedTraining(null, "reperes", ["capitalisations"], ["intermediate"], "all", async () => live);
+  assert.ok(draw.some((q) => q.reference_href === expected));
+  assert.equal(mentalMethod(live[0]), undefined);
+  assert.match(mentalMethod({ ...live[0], reference_date: null, type: "numeric", prompt: "Un prix passe de 80 à 100. Quelle variation en % ?",
+    options: { unit: "%" }, correct: 25, explanation: "Compare l’écart au prix de départ." }).join(" "), /un quart.*25 %/);
 });
 
 test("les estimations générées réduisent la marge selon le niveau et restent renouvelables", () => {

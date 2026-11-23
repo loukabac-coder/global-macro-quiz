@@ -49,6 +49,65 @@ async function answer(db, id, index, value) {
   return rows[0].feedback;
 }
 
+test("le lot 8 fixe le défi, renouvelle le parcours et utilise le délai individuel de l’examen", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(initialSchema);
+    for (const name of ["lot-1-progression", "lot-4-modules", "lot-5-examen-et-questions", "lot-6-recommencer-quiz", "lot-7-parcours", "lot-8-entrainement", "lot-8-entrainement"]) {
+      await db.exec(readFileSync(new URL(`../sql/${name}.sql`, import.meta.url), "utf8"));
+    }
+    const bank = Array.from({ length: 20 }, (_, i) => ({
+      id: `course:test:${i}`, type: "mcq", prompt: `Question ${i}`, correct: 1, options: ["A", "B"],
+      difficulty: "intermediate", category_id: "macroeconomics", explanation: "Corrigé", limit_seconds: i === 0 ? 20 : 40,
+    }));
+    const synthesis = "p:b:01:synthese";
+    const firstRun = await session(db, first, "training", "module", bank.slice(0, 12), 0, synthesis);
+    await answer(db, firstRun, 0, 1);
+    assert.equal((await db.query("select recent_module_draws($1) draws", [synthesis])).rows[0].draws[0].length, 12);
+    const restartArgs = [first, firstRun, synthesis, JSON.stringify(bank.slice(5, 17))];
+    await assert.rejects(db.query("select issue_module_restart($1,$2,$3,$4)", restartArgs), /permission denied/);
+    await db.exec("reset role; set role service_role;");
+    const restart = async () => (await db.query("select issue_module_restart($1,$2,$3,$4) id", restartArgs)).rows[0].id;
+    const replacement = await restart();
+    assert.equal(await restart(), replacement);
+    assert.notEqual(replacement, firstRun);
+    const day = (await db.query("select ((now() at time zone 'Europe/Paris')::date)::text as paris_day")).rows[0].paris_day;
+    const snapshot = async (list) => (await db.query("select daily_quiz_snapshot($1,$2) questions", [day, list ? JSON.stringify(list) : null])).rows[0].questions;
+    assert.equal(await snapshot(null), null);
+    assert.deepEqual(await snapshot(bank.slice(0, 10)), await snapshot(bank.slice(10, 20)));
+    await db.exec("reset role; set role authenticated;");
+    const resumed = (await db.query("select resume_quiz_run($1) run", [firstRun])).rows[0].run;
+    assert.equal(resumed.id, replacement);
+    assert.equal(resumed.feedback.length, 0);
+    assert.equal(resumed.questions[0].id, bank[5].id);
+    await assert.rejects(db.query("select finish_quiz_run($1)", [firstRun]), /session unavailable/);
+    for (let i = 0; i < 12; i++) await answer(db, replacement, i, i < 9 ? 1 : 0);
+    const final = (await db.query("select finish_quiz_run($1) result", [replacement])).rows[0].result;
+    assert.equal(final.score, 9);
+    assert.equal(final.total, 12);
+    assert.equal(final.module_passed, true);
+    assert.equal((await db.query("select count(*)::int n from quiz_sessions")).rows[0].n, 1);
+
+    const exam = await session(db, first, "training", "exam", bank, 45);
+    for (let i = 0; i < 20; i++) {
+      await db.query("select start_exam_question($1,$2)", [exam, i]);
+      if (i < 2) {
+        await db.exec("reset role");
+        await db.query("update quiz_private.quiz_runs set question_started_at=clock_timestamp()-interval '21 seconds' where id=$1", [exam]);
+        await db.exec("set role authenticated");
+      }
+      assert.deepEqual((await db.query("select record_quiz_answer($1,$2,'1') result", [exam, i])).rows[0].result, { submitted: true });
+    }
+    const { result } = (await db.query("select finish_quiz_run($1) result", [exam])).rows[0];
+    assert.equal(result.score, 19);
+    assert.equal(result.corrections[0].timedOut, true);
+    assert.equal(result.corrections[0].seconds, 20);
+    assert.equal(result.corrections[1].ok, true);
+  } finally {
+    await db.close();
+  }
+});
+
 test("migration en mémoire, correction, historique et modules", async () => {
   const db = new PGlite();
   try {

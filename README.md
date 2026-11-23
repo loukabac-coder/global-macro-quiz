@@ -32,9 +32,9 @@ Les tests Node exécutent les migrations dans PostgreSQL en mémoire avec un sch
 
 ## Publier sur Vercel
 
-1. Dans Supabase, vérifie que le projet cible contient les tables `profiles`, `questions`, `quiz_sessions` et `attempts`. Sur une base de test, applique les migrations dans l’ordre [Lot 1](sql/lot-1-progression.sql), [Lot 4](sql/lot-4-modules.sql), [Lot 5](sql/lot-5-examen-et-questions.sql), [Lot 6](sql/lot-6-recommencer-quiz.sql), puis [Lot 7](sql/lot-7-parcours.sql).
+1. Dans Supabase, vérifie que le projet cible contient les tables `profiles`, `questions`, `quiz_sessions` et `attempts`. Sur une base de test, applique les migrations dans l’ordre [Lot 1](sql/lot-1-progression.sql), [Lot 4](sql/lot-4-modules.sql), [Lot 5](sql/lot-5-examen-et-questions.sql), [Lot 6](sql/lot-6-recommencer-quiz.sql), [Lot 7](sql/lot-7-parcours.sql) et [Lot 8](sql/lot-8-entrainement.sql).
 2. Dans Vercel, ouvre **Settings → Environment Variables**. Conserve les variables publiques et ajoute `SUPABASE_SECRET_KEY` à **Production**. Pour une Preview testée sur une autre base, renseigne les trois variables de cette base pour la Preview.
-3. Avant de publier le nouveau parcours, ouvre **Supabase → SQL Editor → New query** sur le projet cible. Si les lots précédents sont déjà appliqués, copie [lot-7-parcours.sql](sql/lot-7-parcours.sql), puis clique sur **Run**.
+3. Avant de publier le nouveau parcours, ouvre **Supabase → SQL Editor → New query** sur le projet cible. Si les lots 1 à 7 sont déjà appliqués, copie [lot-8-entrainement.sql](sql/lot-8-entrainement.sql), puis clique sur **Run**.
 4. Publie le commit sur la branche Production de Vercel, habituellement `main`. Les commandes suivantes supposent que cette branche est bien `main` et que tu travailles dessus.
 
 ```powershell

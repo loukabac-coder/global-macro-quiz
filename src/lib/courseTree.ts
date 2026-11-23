@@ -1,6 +1,6 @@
 import { CHAPTERS, type Chapter, type Section } from "@/lib/courses";
 import { CORE_LESSONS } from "@/lib/courseLessons";
-import { GROUPS, stageIndex, type ProgramLevel, type StudyGroup, type StudyUnit } from "@/lib/program";
+import { GROUPS, stageIndex, unitHref, type ProgramLevel, type StudyGroup, type StudyUnit } from "@/lib/program";
 import { searchText } from "@/lib/searchText";
 
 type Lesson = {
@@ -78,7 +78,7 @@ export function lessonsFor(group: StudyGroup, unit: StudyUnit) {
 }
 
 export function lessonHref(group: StudyGroup, unit: StudyUnit, page: Lesson) {
-  return `/cours/${group.slug}/${unit.slug}/${page.slug}`;
+  return `${unitHref(group, unit)}#${page.slug}`;
 }
 
 export function legacyLessonHref(slug: string) {

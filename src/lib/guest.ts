@@ -12,13 +12,13 @@ export async function guestQuick(n = 5): Promise<Question[]> {
 }
 
 // Le défi du jour partage le même tirage par niveau avec ou sans compte.
-export function dailyQuestions(pool: Question[], day: string): Question[] {
+export function dailyQuestions(pool: Question[], day: string, live: Question[] = []): Question[] {
   const rng = mulberry32(hashString("daily:" + day));
   const sorted = [...pool].sort((a, b) => a.id.localeCompare(b.id));
   const sizes = [4, 4, 2];
-  return LEVELS.flatMap(({ id }, i) => diverseDraw(seededShuffle(sorted.filter((q) => q.difficulty === id), rng), sizes[i]));
-}
-
-export async function guestDaily(day: string): Promise<Question[]> {
-  return dailyQuestions(curriculumQuestions(), day);
+  const verified = [...live].sort((a, b) => a.id.localeCompare(b.id));
+  return LEVELS.flatMap(({ id }, i) => {
+    const dated = id === "beginner" ? [] : diverseDraw(seededShuffle(verified.filter((q) => q.difficulty === id), rng), 1);
+    return [...dated, ...diverseDraw(seededShuffle(sorted.filter((q) => q.difficulty === id), rng), sizes[i] - dated.length)];
+  });
 }

@@ -1,7 +1,7 @@
 import type { Question } from "@/lib/quiz";
 import { fmt } from "@/lib/quiz";
 import { fmtValue, isVerifiedMacro, referenceLabel, type Indicator, type MacroData } from "@/lib/macro";
-import { indicatorScope } from "@/lib/studyReferences";
+import { indicatorScope, studyDataHref } from "@/lib/studyReferences";
 
 // Questions générées à partir des indicateurs du jour. Une question n'existe que si sa donnée
 // est assez récente : sinon elle disparaît toute seule.
@@ -11,7 +11,6 @@ const META: Record<string, { prompt: string; tol: number; diff: string }> = {
   fed_target_upper: { prompt: "Quelle est la borne haute de la fourchette cible des fed funds, en % ?", tol: 0, diff: "intermediate" },
   us_cpi_yoy: { prompt: "Quelle est la hausse annuelle de l’IPC-U aux États-Unis, en % ?", tol: 12, diff: "intermediate" },
   ez_hicp_yoy: { prompt: "Quelle est l’inflation IPCH en zone euro sur 12 mois, en % ?", tol: 12, diff: "intermediate" },
-  us_unrate: { prompt: "Quel est le taux de chômage aux États-Unis ? (en %)", tol: 8, diff: "intermediate" },
   us_10y: { prompt: "Quel est le rendement du Treasury américain à 10 ans ? (en %)", tol: 6, diff: "intermediate" },
   eurusd: { prompt: "Quel est le taux de référence BCE EUR/USD, en dollars par euro ?", tol: 1.5, diff: "intermediate" },
   brent: { prompt: "Quel est le prix au comptant du Brent, en dollars par baril ?", tol: 6, diff: "intermediate" },
@@ -42,7 +41,7 @@ function base(key: string, ind: Indicator, diff: string, prompt: string, explana
     source: ind.source,
     source_url: ind.source_url,
     reference_key: `macro:${key}`,
-    reference_href: scope ? `/cours/${scope}#${key.startsWith("gdp_ordre") ? "observations-1" : `macro-${anchorKey}`}` : undefined,
+    reference_href: scope ? studyDataHref(scope, key.startsWith("gdp_ordre") ? "observations-1" : `macro-${anchorKey}`) : undefined,
     kind: "conjunctural",
     reference_date: ind.ref_date,
   };

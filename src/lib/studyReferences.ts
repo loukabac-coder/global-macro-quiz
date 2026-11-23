@@ -20,27 +20,30 @@ export type StudyRow = {
   eligible?: boolean;
   pending?: boolean;
   attempted?: string;
-  change?: string;
+  country?: string;
+  ticker?: string;
+  amount?: number;
+  comparable?: boolean;
 };
 export type StudyTable = { id: string; title: string; scope?: string; rows: StudyRow[]; attempted?: string; collapsed?: boolean };
-export type StudyView = SnapshotDates & { tables: StudyTable[]; essentials: StudyRow[]; changes: { anchor: string; text: string }[] };
+export type StudyView = SnapshotDates & { tables: StudyTable[]; essentials: StudyRow[] };
+
+export function studyDataHref(scope: string, anchor?: string) {
+  return `/cours/${scope}/chiffres${anchor ? `#${encodeURIComponent(anchor)}` : ""}`;
+}
 
 export const INDEX_KEYS = ["index_cac", "index_sp500", "index_nasdaq100", "index_dax", "index_ftse", "index_nikkei", "index_stoxx"];
 const FX_KEYS = ["eurusd", "eurgbp", "eurjpy", "eurchf", "usdjpy"];
 const PRICES = ["gold", "copper", "brent", "wti", "copper_imf", "wheat_price", "cocoa_price"];
 const RATES = ["ecb_deposit_rate", "fed_target_upper", "fed_target_lower", "boe_rate", "boj_rate", "snb_rate"];
 const ECONOMIES = ["fra", "usa", "chn", "deu", "jpn", "ind", "gbr", "ita", "bra", "can", "kor", "esp"];
-const FR_US_DE = ["fra", "usa", "deu"];
-const byCountry = (name: string, list = FR_US_DE) => list.map((code) => `${name}_${code}`);
+const byCountry = (name: string, list: string[]) => list.map((code) => `${name}_${code}`);
 
 const INDICATOR_SCOPES: Record<string, { title: string; keys: string[] }[]> = {
-  "macro/pib": [{ title: "PIB nominal", keys: byCountry("gdp", ECONOMIES) }, { title: "Croissance réelle", keys: byCountry("growth") }],
+  "macro/pib": [{ title: "PIB nominal", keys: byCountry("gdp", ECONOMIES) }],
   "macro/inflation": [{ title: "Inflation annuelle", keys: ["ez_hicp_yoy", "us_cpi_yoy"] }],
-  "macro/emploi": [{ title: "Emploi et activité", keys: ["us_unrate", ...byCountry("unemployment"), ...byCountry("growth")] }],
-  "macro/finances": [{ title: "Dette et solde publics en pourcentage du PIB", keys: [...byCountry("debt"), ...byCountry("budget")] }],
-  "macro/commerce": [{ title: "Solde courant", keys: byCountry("current_account", ["fra", "usa"]) }],
   "banques/taux": [{ title: "Taux directeurs en vigueur", keys: RATES }],
-  "banques/decisions": [{ title: "Derniers taux et changements observés", keys: RATES }],
+  "banques/decisions": [{ title: "Taux directeurs en vigueur", keys: RATES }],
   "reperes/indices": [{ title: "Niveaux des grands indices", keys: INDEX_KEYS }],
   "reperes/devises": [{ title: "Cours de référence", keys: FX_KEYS }],
   "reperes/matieres": [{ title: "Prix et références", keys: PRICES }],
@@ -94,32 +97,18 @@ function indicatorRow(macro: MacroData, key: string, now: number): StudyRow {
   const policy = RATES.includes(key);
   const complete = base ? `${base} = ${exact(row.value, quoted)}` : exact(row.value, row.unit);
   const value = policy ? complete : base ? `${base} ${approx(row.value, quoted)}` : approx(row.value, row.unit);
-  let change: string | undefined;
-  let detail = levelNote[key] ?? (row.status ? `Statut de l’observation · ${row.status}` : undefined);
-  if (eligible && policy && row.change_date && typeof row.change_from === "number") {
-    const move = (row.value - row.change_from) * 100;
-    const sentence = `${move > 0 ? "Hausse" : "Baisse"} de ${exact(Math.abs(move), "pb")} effective le ${row.change_date}.`;
-    detail = sentence;
-    if (now - Date.parse(row.change_date) <= 45 * 86_400_000) change = sentence;
-  } else if (eligible && row.previous_date && row.previous_date < row.ref_date && typeof row.previous_value === "number") {
-    const delta = row.value - row.previous_value;
-    const percent = row.previous_value > 0 ? delta / row.previous_value * 100 : 0;
-    if (row.unit === "%" ? Math.abs(delta) >= 0.1 : Math.abs(percent) >= 1) {
-      const diff = row.unit === "%" ? exact(delta, "point(s)") : exact(Math.round(percent * 100) / 100, "%");
-      change = `${delta > 0 ? "+" : ""}${diff} depuis ${referenceLabel(key, { ...row, ref_date: row.previous_date })}.`;
-    }
-  }
+  const detail = levelNote[key] ?? (row.status ? `Statut de l’observation · ${row.status}` : undefined);
+  const country = levelNote[key]?.split(" · ")[0] ?? (/^(gdp|debt|budget|population|current_account)_/.test(key) ? label.split(" · ").at(-1) : undefined);
   return {
-    id, label, value, exact: policy ? undefined : complete, detail,
+    id, label, value, exact: policy ? undefined : complete, detail, country,
     period: referenceLabel(key, row), checked: row.retrieved_at, published: row.published_at,
-    source: row.source, url: row.source_url, eligible, change, pending: macro.failed?.includes(key),
+    source: row.source, url: row.source_url, eligible, pending: macro.failed?.includes(key),
   };
 }
 
 function capitalTables(data: MarketCaps, now: number): StudyTable[] {
   const checked = verifiedCompanies(data, now);
   const verified = new Set(checked.map((company) => company.ticker));
-  const previous = comparablePanels(data.previous_items ?? []);
   const panels = comparablePanels(checked);
   const limits = { world: 10, europe: 8, fr: 5 } as const;
   const scopes = { world: "Panel mondial", europe: "Panel européen", fr: "Panel des groupes français" };
@@ -128,11 +117,12 @@ function capitalTables(data: MarketCaps, now: number): StudyTable[] {
   const capRow = (ticker: string): StudyRow => {
     const row = data.items.find((company) => company.ticker === ticker);
     const id = `cap-${ticker}`;
-    if (!row?.price_date) return { id, label: row?.name ?? ticker, value: "Première séance vérifiée attendue", pending: true };
+    if (!row?.price_date) return { id, label: row?.name ?? ticker, ticker, country: row?.country, value: "Première séance vérifiée attendue", pending: true };
     const amount = row.market_cap_usd / 1e9;
     return {
-      id, label: row.name, value: approx(amount, "Md$"), exact: exact(amount, "Md$"), period: row.price_date,
+      id, label: row.name, ticker, country: row.country, amount, value: approx(amount, "Md$"), exact: exact(amount, "Md$"), period: row.price_date,
       checked: companyCheckedAt(data, row) ?? undefined, source, eligible: verified.has(ticker), pending: data.failed.includes(ticker),
+      comparable: verified.has(ticker) && (row.currency === "USD" || row.fx_date === row.price_date),
       url: `https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}/`,
       detail: row.fx_date ? `Conversion en dollars · taux du ${row.fx_date}` : undefined,
     };
@@ -149,10 +139,6 @@ function capitalTables(data: MarketCaps, now: number): StudyTable[] {
     const panel = panels.find((entry) => entry.key === key);
     const title = scopes[key as keyof typeof scopes] ?? `Panel ${panel?.title ?? key}`;
     if (!panel) return { id: `panel-${key}`, title, rows: [] };
-    const cohort = new Set(panel.companies.map((company) => company.ticker));
-    const old = previous.find((entry) => entry.key === key && entry.date < panel.date &&
-      entry.companies.filter((company) => cohort.has(company.ticker)).length >= 0.9 * Math.max(entry.companies.length, cohort.size));
-    const before = new Set(old?.companies.slice(0, limit).map((row) => row.ticker));
     return {
       id: `panel-${key}`, title, collapsed: !(key in limits),
       scope: `${panel.companies.length} entreprises comparables · dollars américains · séance du ${panel.date}`,
@@ -161,8 +147,6 @@ function capitalTables(data: MarketCaps, now: number): StudyTable[] {
         value: approx(company.market_cap_usd / 1e9, "Md$"), exact: exact(company.market_cap_usd / 1e9, "Md$"),
         period: panel.date, checked: companyCheckedAt(data, company) ?? undefined, source, eligible: true,
         url: `https://finance.yahoo.com/quote/${encodeURIComponent(company.ticker)}/`,
-        change: old && before.size >= limit && !before.has(company.ticker) && old.companies.some((x) => x.ticker === company.ticker)
-          ? `Entre dans les ${limit} premiers du panel depuis la séance du ${old.date}.` : undefined,
       })),
     };
   }), otherCompanies];
@@ -176,8 +160,6 @@ function geopoliticsTables(data: NewsData, scope: string, now: number): StudyTab
       return {
         id: `leader-${row.id}`, label: row.office, value: row.name, period: row.date, checked: row.retrieved_at,
         source: row.source, url: row.url, eligible, pending: data.failed.includes(row.office),
-        change: eligible && row.previous_name && row.previous_name !== row.name && row.change_date && now - Date.parse(row.change_date) <= 30 * 86_400_000
-          ? `Succède à ${row.previous_name} selon le contrôle du ${row.change_date}.` : undefined,
       };
     }),
   };
@@ -232,8 +214,6 @@ function productionTables(data: ProductionData, now: number): StudyTable[] {
         value: approx(row.value, meta.unit), exact: exact(row.value, meta.unit),
         period: String(table.year), checked: table.retrieved_at, published: table.published_at, source: table.source,
         url: table.url, eligible: verifiedTable(table, now), pending: data.failed.includes(id),
-        change: index === 0 && verifiedTable(table, now) && table.previous && table.previous.leader !== row.name
-          ? `Premier pays du tableau de ${table.year}. En ${table.previous.year}, le premier était ${table.previous.leader}.` : undefined,
       })) : [],
     };
   });
@@ -250,9 +230,8 @@ export function buildStudyView(sources: StudySources, scope: string, now: number
   // Prend d’abord une ligne de chaque tableau, puis les autres repères disponibles.
   const favorites = tables.filter((table) => !table.collapsed).map((table) => table.rows.filter((row) => row.eligible));
   const essentials = [0, 1, 2, 3, 4, 5, 6].flatMap((i) => favorites.flatMap((rows) => rows[i] ?? [])).slice(0, 7);
-  const changes = tables.flatMap((table) => table.rows.flatMap((row) => row.change ? [{ anchor: row.id, text: `${row.label} · ${row.change}` }] : [])).slice(0, 5);
   const publication = scope === "reperes/capitalisations" ? sources.caps : scope === "reperes/producteurs" ? sources.production : scope.startsWith("geopolitique/") ? sources.news : sources.macro;
-  return { updated_at: publication.updated_at, checked_at: publication.checked_at, tables, essentials, changes };
+  return { updated_at: publication.updated_at, checked_at: publication.checked_at, tables, essentials };
 }
 
 export function studyDate(stamp?: string | null) {

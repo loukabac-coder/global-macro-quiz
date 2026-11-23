@@ -7,9 +7,9 @@ import { parseList } from "@/lib/loaders";
 import { HISTORY_LABELS, parseHistory, type Activity } from "@/lib/quizSession";
 import { CAT_NAME } from "@/lib/categories";
 import { DIFFICULTY_FR, type Question } from "@/lib/quiz";
-import { hasStudyReferences } from "@/lib/studyReferences";
-import { todayParis } from "@/lib/rng";
-import { guestDaily, guestQuick } from "@/lib/guest";
+import { hasStudyReferences, studyDataHref } from "@/lib/studyReferences";
+import { guestQuick } from "@/lib/guest";
+import { GROUPS } from "@/lib/program";
 
 const TITLES: Record<string, string> = {
   quick: "Quick Quiz",
@@ -39,7 +39,7 @@ function Quiz() {
           if (!response.ok) throw new Error("Les repères n’ont pas pu être chargés.");
           return ((await response.json()) as { questions: Question[] }).questions;
         }}
-        backHref={`/cours/${scope}`}
+        backHref={studyDataHref(scope)}
         backLabel="Retour au cours"
         replayLabel="Autre tirage"
       />
@@ -48,10 +48,14 @@ function Quiz() {
   const categories = parseList(params.get("categorie"));
   const levels = parseList(params.get("niveau"));
   const history = parseHistory(params.get("historique"));
-  const training = m === "training" || categories.length > 0 || levels.length > 0 || history !== "all";
+  const group = params.get("module") ?? undefined;
+  const units = parseList(params.get("sous"));
+  const subject = GROUPS.find(({ slug }) => slug === group);
+  const training = m === "training" || !!group || categories.length > 0 || levels.length > 0 || history !== "all";
 
   let activity: Activity = { type: "quick" };
   let title = TITLES.quick;
+  let widerHref: string | undefined;
   if (m === "daily") {
     activity = { type: "daily" };
     title = TITLES.daily;
@@ -62,12 +66,18 @@ function Quiz() {
     activity = { type: "mixed" };
     title = TITLES.mixed;
   } else if (training) {
-    activity = { type: "training", categories, levels, history };
+    activity = { type: "training", categories, levels, history, group, units };
     title = [
-      categories.map((category) => CAT_NAME[category] ?? category).join(", ") || "Tous les thèmes",
+      subject?.title ?? (categories.map((category) => CAT_NAME[category] ?? category).join(", ") || "Tous les thèmes"),
+      subject?.units.filter((unit) => units.includes(unit.slug)).map(({ title }) => title).join(", "),
       levels.map((level) => DIFFICULTY_FR[level] ?? level).join(", "),
       history === "all" ? "" : HISTORY_LABELS[history],
     ].filter(Boolean).join(" · ");
+    if (subject && units.length) {
+      const wider = new URLSearchParams(params);
+      wider.delete("sous");
+      widerHref = `/quiz?${wider}`;
+    }
   }
 
   return (
@@ -77,9 +87,14 @@ function Quiz() {
       activity={activity}
       backHref="/entrainement"
       backLabel="Entraînement libre"
+      widerHref={widerHref}
       guestLoad={
         // Un invité peut faire le quiz rapide et le défi du jour. Les autres modes demandent un compte.
-        activity.type === "daily" ? () => guestDaily(todayParis()) : activity.type === "quick" ? () => guestQuick(10) : undefined
+        activity.type === "daily" ? async () => {
+          const response = await fetch("/api/donnees?type=defi", { cache: "no-store" });
+          if (!response.ok) throw new Error("Le défi du jour est momentanément indisponible.");
+          return ((await response.json()) as { questions: Question[] }).questions;
+        } : activity.type === "quick" ? () => guestQuick(10) : undefined
       }
     />
   );

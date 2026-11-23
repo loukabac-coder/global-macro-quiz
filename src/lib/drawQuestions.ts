@@ -1,7 +1,8 @@
 import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { questionFamily, questionLocation } from "@/lib/curriculum/legacyMapping";
 import { milestoneSize, unitsAt, type Milestone } from "@/lib/program";
-import { shuffle, type Question } from "@/lib/quiz";
+import { mentalQuestion, type Topic } from "@/lib/mental";
+import { fmt, mcqOptions, shuffle, type Question } from "@/lib/quiz";
 import { searchText } from "@/lib/searchText";
 
 export function diverseDraw(
@@ -57,5 +58,83 @@ export function milestoneDraw(item: Milestone, live: Question[] = [], recent = n
     ...curriculumQuestions({ levels: [item.level] }),
     ...live.filter((q) => q.reference_date && q.difficulty === item.level).map((q) => ({ ...q, ...questionLocation(q) })),
   ].filter((q) => q.groupNo === item.group.no && units.has(q.unitSlug));
-  return diverseDraw(shuffle(pool), size, recent, (q) => "unitSlug" in q ? String(q.unitSlug) : q.category_id);
+  const bucket = (q: Question) => "unitSlug" in q ? String(q.unitSlug) : q.category_id;
+  const fresh = pool.filter((q) => !recent.has(q.id));
+  const novel = diverseDraw(shuffle(fresh), size, recent, bucket);
+  const novelPrompts = new Set(novel.map((q) => searchText(q.prompt)));
+  const generated = novel.length < size ? [...units].flatMap((unit) => unitVariants(item.group.no, unit, item.level, size * 2))
+    .filter((q) => !recent.has(q.id) && !novelPrompts.has(searchText(q.prompt))) : [];
+  const chosen = [...novel, ...diverseDraw(shuffle(generated), size - novel.length, recent, bucket)];
+  const prompts = new Set(chosen.map((q) => searchText(q.prompt)));
+  return shuffle([...chosen, ...diverseDraw(shuffle(pool.filter((q) => !prompts.has(searchText(q.prompt)))), size - chosen.length, recent, bucket)]);
+}
+
+const mentalTopics: Record<string, Topic[]> = {
+  pourcentages: ["pourcentages", "variations", "bps"], unites: ["devises", "ratios", "multiplications"],
+  interets: ["interets"], estimations: ["estimations", "ordres"],
+};
+
+function unitVariants(group: string, unit: string, level: Milestone["level"], count: number): (Question & { groupNo: string; unitSlug: string })[] {
+  const scope = { groupNo: group, unitSlug: unit };
+  if (group === "06" && mentalTopics[unit]) {
+    const topics = mentalTopics[unit];
+    const rank = { beginner: 1, intermediate: 2, advanced: 4 }[level];
+    return Array.from({ length: count }, (_, i) => ({ ...mentalQuestion(rank, Math.random, topics[i % topics.length]), ...scope }));
+  }
+  if (group === "04" && unit === "capitalisations") {
+    return shuffle(Array.from({ length: 80 }, (_, i) => i + 1)).slice(0, count).map((i) => {
+      const quote = (10 + i) * 5;
+      const shares = [2, 4, 5, 8][i % 4];
+      const expected = quote * shares;
+      return {
+        ...scope,
+        id: `gen:capitalisations:${level}:${i}`, category_id: "market-caps", difficulty: level, type: "numeric",
+        prompt: `Une société fictive cote ${quote} € par action et compte ${shares} millions d’actions. Estime sa capitalisation en M€.`,
+        options: { unit: "M€" }, correct: expected, tolerance_pct: 0,
+        explanation: `Garde les actions en millions. Dans cette unité, multiplie ${quote} € par ${shares}. Tu obtiens ${fmt(expected)} millions d’euros.`,
+        kind: "structural", reference_date: null, source: null, wrong_explanations: null,
+        family: "capitalisations:cours-fois-actions", competency: "Déduire la capitalisation du cours et du nombre d’actions",
+      };
+    });
+  }
+  if (group !== "01" || unit !== "pib") return [];
+  return shuffle(Array.from({ length: 48 }, (_, i) => i + 1)).slice(0, count).map((i) => {
+    const people = [10, 20, 25, 40][i % 4];
+    const income = (10 + i) * 1000;
+    const expected = people * income / 1000;
+    return {
+      ...scope,
+      id: `gen:pib:${level}:${i}`, category_id: "macroeconomics", difficulty: level, type: "numeric",
+      prompt: `Une économie fictive compte ${people} millions d’habitants et produit ${fmt(income)} $ par habitant. Quel est son PIB en Md$ ?`,
+      options: { unit: "Md$" }, correct: expected, tolerance_pct: 0,
+      explanation: `Exprime ${fmt(income)} $ en milliers de dollars, soit ${income / 1000}. Multiplie par les ${people} millions d’habitants. Millions × milliers donne ${fmt(expected)} milliards de dollars.`,
+      kind: "structural", reference_date: null, source: null, wrong_explanations: null,
+      family: "pib:reconstruire-un-montant", competency: "Passer du PIB par habitant au PIB total",
+    };
+  });
+}
+
+export type SeenChoice = Pick<Question, "id" | "options" | "false_first">;
+
+export function newMilestoneDraw(item: Milestone, live: Question[], history: SeenChoice[][]) {
+  const previous = history[0] ?? [];
+  const old = new Map<string, SeenChoice>();
+  for (const q of history.flat()) if (!old.has(q.id)) old.set(q.id, q);
+  let draw = milestoneDraw(item, live, new Set(old.keys()));
+  if (draw.length > 1 && draw.every((q, i) => q.id === previous[i]?.id)) draw = [...draw.slice(1), draw[0]];
+  return draw.map((q) => {
+    const last = old.get(q.id);
+    if (q.type === "true_false") return { ...q, false_first: last ? !last.false_first : Math.random() < 0.5 };
+    if (q.type !== "mcq") return q;
+    const values = mcqOptions(q);
+    const order = shuffle(values.map((_, i) => i));
+    if (last && Array.isArray(last.options) && order.length > 1 && order.every((index, i) => values[index] === (last.options as string[])[i])) {
+      [order[0], order[1]] = [order[1], order[0]];
+    }
+    const notes = q.wrong_explanations;
+    return {
+      ...q, options: order.map((index) => values[index]), correct: order.indexOf(Number(q.correct)),
+      wrong_explanations: Array.isArray(notes) ? order.map((index) => notes[index]) : notes,
+    };
+  });
 }
