@@ -2,8 +2,9 @@ import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { questionFamily, questionLocation } from "@/lib/curriculum/legacyMapping";
 import { milestoneSize, unitsAt, type Milestone } from "@/lib/program";
 import { mentalQuestion, type Topic } from "@/lib/mental";
-import { fmt, mcqOptions, shuffle, type Question } from "@/lib/quiz";
+import { fmt, isNumeric, mcqOptions, shuffle, type Question } from "@/lib/quiz";
 import { searchText } from "@/lib/searchText";
+import { distinctObservedMarketQuestions, isObservedMarketRecall } from "@/lib/marketRecall";
 
 export function diverseDraw(
   pool: Question[],
@@ -52,6 +53,28 @@ export function diverseDraw(
   return selected;
 }
 
+export function marketRecallDraw(
+  pool: Question[], size: number, recent = new Set<string>(), bucket: (q: Question) => string = (q) => questionLocation(q).unitSlug,
+  isObserved = isObservedMarketRecall,
+) {
+  const ordered = shuffle(pool).sort((a, b) => Number(recent.has(a.id)) - Number(recent.has(b.id)));
+  const observed = distinctObservedMarketQuestions(ordered.filter(isObserved));
+  const direct = diverseDraw(observed.filter(isNumeric), Math.ceil(size * 0.6), recent, bucket);
+  const taken = new Set(direct.map((q) => q.id));
+  const additional = diverseDraw(observed.filter((q) => !taken.has(q.id)), Math.ceil(size * 0.7) - direct.length, recent, bucket);
+  const selected = [...direct, ...additional];
+  for (const q of additional) taken.add(q.id);
+  const stablePool = ordered.filter((q) => !isObserved(q));
+  const composition = selected.length < size && selected.some((q) => bucket(q) === "indices")
+    ? stablePool.find((q) => q.family === "indices:composition-indice") : undefined;
+  const stable = [
+    ...(composition ? [composition] : []),
+    ...diverseDraw(stablePool.filter((q) => q.id !== composition?.id), size - selected.length - Number(!!composition), recent, bucket),
+  ];
+  const rest = diverseDraw(observed.filter((q) => !taken.has(q.id)), size - selected.length - stable.length, recent, bucket);
+  return shuffle([...selected, ...stable, ...rest]);
+}
+
 export function milestoneDraw(item: Milestone, live: Question[] = [], recent = new Set<string>(), size = milestoneSize(item)) {
   const units = new Set((item.unit ? [item.unit] : unitsAt(item.group, item.level)).map((unit) => unit.slug));
   const pool = [
@@ -59,6 +82,7 @@ export function milestoneDraw(item: Milestone, live: Question[] = [], recent = n
     ...live.filter((q) => q.reference_date && q.difficulty === item.level).map((q) => ({ ...q, ...questionLocation(q) })),
   ].filter((q) => q.groupNo === item.group.no && units.has(q.unitSlug));
   const bucket = (q: Question) => "unitSlug" in q ? String(q.unitSlug) : q.category_id;
+  if (item.group.no === "04" && pool.some(isObservedMarketRecall)) return marketRecallDraw(pool, size, recent, bucket);
   const fresh = pool.filter((q) => !recent.has(q.id));
   const novel = diverseDraw(shuffle(fresh), size, recent, bucket);
   const novelPrompts = new Set(novel.map((q) => searchText(q.prompt)));

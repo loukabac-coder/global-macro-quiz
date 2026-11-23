@@ -6,7 +6,7 @@ import { hasStudyReferences, studyDataHref } from "@/lib/studyReferences";
 import { fmt, isNumeric, mcqOptions, parseNumber, unitOf, type Question } from "@/lib/quiz";
 
 export function questionCourseHref(q: Question): string | undefined {
-  const company = /^live:([^:]+):\d{4}-\d{2}-\d{2}$/.exec(q.id);
+  const company = /^live:([^:~]+)(?:~(?:debutant|avance))?:\d{4}-\d{2}-\d{2}$/.exec(q.id);
   if (company) return studyDataHref("reperes/capitalisations", `cap-${company[1]}`);
   if (q.reference_href?.startsWith("/cours/")) {
     const [path, anchor] = q.reference_href.split("#");

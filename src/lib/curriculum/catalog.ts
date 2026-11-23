@@ -2,6 +2,7 @@ import { MENTAL_QUESTION_PREFIX, mentalQuestion, type Topic } from "@/lib/mental
 import { hashString, mulberry32 } from "@/lib/rng";
 import { isNumeric, type Question } from "@/lib/quiz";
 import { searchText } from "@/lib/searchText";
+import { isObservedMarketRecall } from "@/lib/marketRecall";
 import { applicationQuestions } from "@/lib/curriculum/applications";
 import { centralBanks } from "@/lib/curriculum/centralBanks";
 import { commodities } from "@/lib/curriculum/commodities";
@@ -72,7 +73,8 @@ export function isCurrentFavorite(question: Question): boolean {
   if (typeof question.id !== "string") return false;
   return curriculumIds.has(question.id) ||
     question.id.startsWith(MENTAL_QUESTION_PREFIX) ||
-    (question.kind === "conjunctural" && question.difficulty !== "beginner" && !!question.reference_date);
+    (question.kind === "conjunctural" && !!question.reference_date &&
+      (question.difficulty !== "beginner" || isObservedMarketRecall(question)));
 }
 
 export function curriculumQuestions(opts: { categories?: string[]; levels?: string[]; types?: string[] } = {}) {

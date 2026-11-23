@@ -37,6 +37,7 @@ const { buildNewsQuestions } = await import("../src/lib/news.ts");
 const { buildStudyQuestions, memoryDraw, stableReferenceKey } = await import("../src/lib/studyQuestions.ts");
 const { buildStudyView } = await import("../src/lib/studyReferences.ts");
 const { mentalMethod, questionCourseHref } = await import("../src/lib/quizLearning.ts");
+const { isMarketPriceEstimate, isObservedMarketRecall, marketScope } = await import("../src/lib/marketRecall.ts");
 
 test("un cours, une correction et une série à revoir partagent la même observation révisée", () => {
   const now = Date.parse("2026-11-23T19:00:00Z");
@@ -293,7 +294,7 @@ test("les marges gardent les poids approchés distincts des conversions exactes"
   assert.equal(checkNumeric(cap, cap.correct + 1), false);
 });
 
-test("les estimations et classements datés commencent à l’intermédiaire", () => {
+test("la banque historique de capitalisations démarre à l’intermédiaire", () => {
   const collected = "2026-11-23T10:00:00Z";
   const now = Date.parse("2026-11-23T11:00:00Z");
   const rows = [
@@ -562,6 +563,37 @@ test("une estimation de LVMH renvoie à l’entreprise et peut tomber en révisi
   assert.equal(mentalMethod(live[0]), undefined);
   assert.match(mentalMethod({ ...live[0], reference_date: null, type: "numeric", prompt: "Un prix passe de 80 à 100. Quelle variation en % ?",
     options: { unit: "%" }, correct: 25, explanation: "Compare l’écart au prix de départ." }).join(" "), /un quart.*25 %/);
+});
+
+test("les repères chiffrés dominent les tirages de marché aux trois niveaux", async () => {
+  const [macro, caps, news, production] = await Promise.all(["macro", "market-caps", "actualite", "production"]
+    .map(async (name) => (await import(`../public/data/${name}.json`, { with: { type: "json" } })).default));
+  const now = Date.parse("2026-11-23T20:00:00Z");
+  const sources = { macro, caps, news, production };
+  const live = buildStudyQuestions(sources, now);
+  for (const { id } of PROGRAM_LEVELS) {
+    const example = live.find((q) => q.difficulty === id && /live:MC\.PA(?:~[^:]+)?:/.test(q.id));
+    assert.ok(example && isMarketPriceEstimate(example), id);
+    assert.equal(example.reference_href, "/cours/reperes/capitalisations/chiffres#cap-MC.PA");
+    for (const unit of ["capitalisations", "indices", "devises", "matieres", "producteurs"]) {
+      const draw = await loadScopedTraining(null, "reperes", [unit], [id], "all", async () => live);
+      assert.equal(draw.length, 10, unit);
+      assert.ok(draw.filter(isObservedMarketRecall).length >= 7, `${unit}/${id}`);
+      assert.ok(draw.filter(isMarketPriceEstimate).length >= 6, `${unit}/${id}`);
+      if (unit === "indices") assert.ok(draw.some((q) => q.family === "indices:composition-indice"), id);
+    }
+  }
+  for (const profile of ["general", "culture", "technique"]) {
+    const exam = drawExam([...curriculumQuestions(), ...live], [], profile).questions;
+    const market = exam.filter(marketScope);
+    assert.equal(exam.length, 20);
+    assert.ok(market.length > 0);
+    assert.ok(market.filter(isMarketPriceEstimate).length > market.length / 2, profile);
+    assert.ok(exam.every((q) => q.difficulty !== "beginner"));
+  }
+  const old = buildStudyQuestions(sources, now + 72 * 3_600_000);
+  assert.ok(old.every((q) => !isMarketPriceEstimate(q)));
+  assert.ok(!live.some((q) => q.id.startsWith("production:") && q.id.includes("~") && !q.id.endsWith(q.reference_date.slice(0, 4))));
 });
 
 test("les estimations générées réduisent la marge selon le niveau et restent renouvelables", () => {

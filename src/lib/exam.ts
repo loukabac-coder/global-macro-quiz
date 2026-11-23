@@ -2,6 +2,7 @@ import { isNumeric, LETTERS, mcqOptions, shuffle, type Question } from "@/lib/qu
 import { searchText } from "@/lib/searchText";
 import { questionLocation } from "@/lib/curriculum/legacyMapping";
 import type { ExamProfile } from "@/lib/quizSession";
+import { isMarketPriceEstimate, isObservedMarketRecall, isPolicyRateRecall, marketRecallKey, marketScope } from "@/lib/marketRecall";
 
 export const EXAM_SIZE = 20;
 export const EXAM_SECONDS = 45;
@@ -53,11 +54,14 @@ export function drawExam(bank: Question[], previous: string[], profile: ExamProf
   const themes = Object.keys(THEMES) as Theme[];
   const ids = new Set<string>();
   const prompts = new Set<string>();
+  const referenceKeys = new Set<string>();
   const pools = new Map(themes.map((theme) => [theme, { fresh: [] as Question[], repeated: [] as Question[] }]));
   function priority(q: Question) {
     const theme = examTheme(q);
     const culture = theme === "macro" || theme === "monetary" || q.kind === "conjunctural";
-    return (recent.has(q.id) ? 2 : 0) + (culture && q.difficulty === "advanced" ? 1 : 0);
+    const replay = recent.has(q.id) ? 2 : 0;
+    const repere = isMarketPriceEstimate(q) ? -4 : isObservedMarketRecall(q) || isPolicyRateRecall(q) ? -3 : 0;
+    return replay + repere + (culture && q.difficulty === "advanced" ? 1 : 0);
   }
   for (const q of shuffle(bank).sort((a, b) => priority(a) - priority(b))) {
     if (q.difficulty !== "intermediate" && q.difficulty !== "advanced") continue;
@@ -65,14 +69,22 @@ export function drawExam(bank: Question[], previous: string[], profile: ExamProf
     if (q.difficulty === "advanced" && q.type === "numeric" && q.id.startsWith("course:e")) continue;
     const theme = examTheme(q);
     const prompt = searchText(q.prompt);
-    if (!theme || !prompt || typeof q.explanation !== "string" || !q.explanation.trim() || ids.has(q.id) || prompts.has(prompt)) continue;
+    const reference = q.reference_key ? marketRecallKey(q.reference_key) : undefined;
+    if (!theme || !prompt || typeof q.explanation !== "string" || !q.explanation.trim() || ids.has(q.id) || prompts.has(prompt) ||
+      (reference && referenceKeys.has(reference))) continue;
     if (q.type === "mcq") {
       const options = mcqOptions(q).map(searchText);
       if (options.length < 2 || options.length > LETTERS.length || options.includes("") || new Set(options).size !== options.length) continue;
     }
     ids.add(q.id);
     prompts.add(prompt);
+    if (reference) referenceKeys.add(reference);
     pools.get(theme)![recent.has(q.id) ? "repeated" : "fresh"].push(q);
+  }
+  const equities = pools.get("equities")!;
+  for (const tier of [equities.fresh, equities.repeated]) {
+    const indexPrice = tier.findIndex((q) => isMarketPriceEstimate(q) && questionLocation(q).unitSlug === "indices");
+    if (indexPrice > 1) tier.splice(1, 0, tier.splice(indexPrice, 1)[0]);
   }
   const missing = themes.filter((theme) => {
     const { fresh, repeated } = pools.get(theme)!;
@@ -103,5 +115,29 @@ export function drawExam(bank: Question[], previous: string[], profile: ExamProf
       }
     }
   }
-  return { questions: shuffle(selected).map((q) => ({ ...q, limit_seconds: examQuestionSeconds(q) })), available: ids.size, missing };
+  const marketSize = selected.filter(marketScope).length;
+  let estimatesNeeded = Math.floor(marketSize / 2) + 1 - selected.filter(isMarketPriceEstimate).length;
+  const focused = selected.map((q) => {
+    if (!marketScope(q) || isMarketPriceEstimate(q)) return q;
+    const { fresh, repeated } = pools.get(examTheme(q)!)!;
+    for (const tier of [fresh, repeated]) {
+      if (estimatesNeeded <= 0) break;
+      const index = tier.findIndex(isMarketPriceEstimate);
+      if (index < 0) continue;
+      estimatesNeeded -= 1;
+      return tier.splice(index, 1)[0];
+    }
+    if (isObservedMarketRecall(q)) return q;
+    const index = fresh.findIndex(isObservedMarketRecall);
+    return index < 0 ? q : fresh.splice(index, 1)[0];
+  });
+  const market = focused.filter(marketScope);
+  const thirdEquity = market.filter((q) => examTheme(q) === "equities")[2];
+  const isComposition = (q: Question) => q.family === "indices:composition-indice";
+  if (thirdEquity && market.filter(isMarketPriceEstimate).length - Number(isMarketPriceEstimate(thirdEquity)) > market.length / 2
+    && !market.some(isComposition)) {
+    const composition = equities.fresh.find(isComposition) ?? equities.repeated.find(isComposition);
+    if (composition) focused[focused.indexOf(thirdEquity)] = composition;
+  }
+  return { questions: shuffle(focused).map((q) => ({ ...q, limit_seconds: examQuestionSeconds(q) })), available: ids.size, missing };
 }

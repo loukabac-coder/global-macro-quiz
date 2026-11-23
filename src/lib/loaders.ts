@@ -5,8 +5,9 @@ import { mentalQuestion } from "@/lib/mental";
 import type { HistoryFilter } from "@/lib/quizSession";
 import { GROUPS, LEVELS } from "@/lib/program";
 import { questionLocation } from "@/lib/curriculum/legacyMapping";
-import { diverseDraw } from "@/lib/drawQuestions";
+import { diverseDraw, marketRecallDraw } from "@/lib/drawQuestions";
 import { stableReferenceKey } from "@/lib/studyQuestions";
+import { isPolicyRateRecall } from "@/lib/marketRecall";
 
 export const SIZE = 10;
 type LiveQuestions = () => Promise<Question[]>;
@@ -76,9 +77,12 @@ export async function loadScopedTraining(
       && (!units.length || units.includes(mapped.unitSlug ?? ""))
       && (!levels.length || levels.includes(q.difficulty));
   };
-  const live = levels.length === 1 && levels[0] === "beginner" ? [] : (await liveQuestions()).filter(inScope);
+  const live = group !== "reperes" && levels.length === 1 && levels[0] === "beginner" ? [] : (await liveQuestions()).filter(inScope);
   const pool = curriculumQuestions({ levels }).filter(inScope);
+  const onlyRates = group === "banques" && units.length === 1 && units[0] === "taux";
   if (history === "all") {
+    if (group === "reperes") return marketRecallDraw([...live, ...pool], SIZE);
+    if (onlyRates && live.some(isPolicyRateRecall)) return marketRecallDraw([...live, ...pool], SIZE, undefined, undefined, isPolicyRateRecall);
     const dated = balanced(live, 2);
     const stable = balanced(pool, SIZE - dated.length);
     const chosen = new Set(dated.map((q) => q.id));
@@ -94,10 +98,13 @@ export async function loadScopedTraining(
     }
     if (data.length < 500) break;
   }
-  return balanced([...live, ...pool].filter((q) => {
+  const filtered = [...live, ...pool].filter((q) => {
     const previous = latest.get(q.reference_key ?? stableReferenceKey(q.id));
     return history === "unseen" ? !previous : previous?.answer === (history === "correct");
-  }), SIZE);
+  });
+  if (group === "reperes") return marketRecallDraw(filtered, SIZE);
+  if (onlyRates) return marketRecallDraw(filtered, SIZE, undefined, undefined, isPolicyRateRecall);
+  return balanced(filtered, SIZE);
 }
 
 export async function loadWeakness(

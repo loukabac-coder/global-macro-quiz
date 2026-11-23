@@ -8,6 +8,7 @@ import { GROUPS } from "@/lib/program";
 import { PRODUCTION_SERIES, verifiedTable, type ProductionData } from "@/lib/production";
 import { fmt, shuffle, type Question } from "@/lib/quiz";
 import { buildStudyView, studyDataHref, type StudySources } from "@/lib/studyReferences";
+import { distinctObservedMarketQuestions, marketRecallVariants } from "@/lib/marketRecall";
 
 export function stableReferenceKey(id: string): string {
   return /^(macro|live|news:(leader|election)|production|policy):/.test(id) ? id.replace(/:(\d{4}-\d{2}-\d{2}|\d{4})$/, "") : id;
@@ -37,6 +38,14 @@ export function productionQuestions(data: ProductionData, now: number): Question
         type: "mcq", difficulty: "intermediate", family: "production:tete", competency: "Reconnaître le pays en tête",
         correct: 1, options: [c.name, a.name, b.name, d.name], tolerance_pct: null,
         prompt: `${panel} Quel pays arrive en tête dans ce classement ?`,
+      });
+    }
+    if (c.value > d.value) {
+      result.push({
+        ...common, id: `production:${key}:trio:${table.year}`, reference_key: `production:${key}:trio`,
+        type: "mcq", difficulty: "intermediate", family: "production:trio", competency: "Citer les trois premiers pays du classement",
+        correct: 1, options: [[a, b, d], [a, b, c], [a, c, d]].map((trio) => trio.map((row) => row.name).join(", ")), tolerance_pct: null,
+        prompt: `${panel} Quels sont les trois premiers pays du classement ?`,
       });
     }
     if (a.value > b.value && b.value > c.value) {
@@ -90,7 +99,8 @@ export function buildStudyQuestions(sources: StudySources, now: number) {
     correct: row.seats > row.total / 2, options: null, tolerance_pct: null, explanation: electionSummary(row),
     wrong_explanations: null, source: row.source, source_url: row.url, kind: "conjunctural", reference_date: row.date,
   }));
-  return [...market, ...buildMacroQuestions(sources.macro, now), ...news, ...policy, ...elections, ...productionQuestions(sources.production, now)];
+  const observed = [...market, ...buildMacroQuestions(sources.macro, now), ...productionQuestions(sources.production, now)];
+  return [...observed, ...marketRecallVariants(observed), ...news, ...policy, ...elections];
 }
 
 export function memoryDraw(sources: StudySources, scope: string, now: number): Question[] {
@@ -109,7 +119,7 @@ export function memoryDraw(sources: StudySources, scope: string, now: number): Q
     const { groupNo, unitSlug: unit } = questionLocation(q);
     return groupNo === group.no && unit === unitSlug && !q.reference_href ? [q] : [];
   });
-  const unique = [...new Map(shuffle(pool).map((q) => [q.reference_key ?? q.id, q])).values()];
+  const unique = distinctObservedMarketQuestions(shuffle(pool));
   const fresh = diverseDraw(unique, 5, new Set(), (q) => q.family ?? q.category_id);
   if (fresh.length === 5) return fresh;
   const structural = curriculumQuestions().filter((q) => q.groupNo === group.no && q.unitSlug === unitSlug);

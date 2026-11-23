@@ -1,7 +1,7 @@
 import type { Question } from "@/lib/quiz";
 import { fmt } from "@/lib/quiz";
 import { fmtValue, isVerifiedMacro, referenceLabel, type Indicator, type MacroData } from "@/lib/macro";
-import { indicatorScope, studyDataHref } from "@/lib/studyReferences";
+import { indicatorScope, studyDataHref, withVerifiedFxCrosses } from "@/lib/studyReferences";
 
 // Questions générées à partir des indicateurs du jour. Une question n'existe que si sa donnée
 // est assez récente : sinon elle disparaît toute seule.
@@ -48,6 +48,7 @@ function base(key: string, ind: Indicator, diff: string, prompt: string, explana
 }
 
 export function buildMacroQuestions(data: MacroData, nowMs: number): Question[] {
+  data = withVerifiedFxCrosses(data, nowMs);
   const out: Question[] = [];
   const get = (k: string): Indicator | null => {
     const i = data.indicators[k];

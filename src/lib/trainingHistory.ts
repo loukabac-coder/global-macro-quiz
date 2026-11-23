@@ -11,7 +11,9 @@ const mentalUnits: Record<string, string> = {
 export function trainingHistoryScope(id: string) {
   const question = indexed.get(id);
   if (question) return question;
-  const [type, kind = "", key] = id.split(":");
+  const [type, rawKind = "", rawKey = ""] = id.split(":");
+  const [kind, kindTier] = rawKind.split("~");
+  const [key, keyTier] = rawKey.split("~");
   let scope: string | undefined;
   let difficulty = "intermediate";
   if (type === "live") {
@@ -39,6 +41,9 @@ export function trainingHistoryScope(id: string) {
     const level = Number(id.split(":").at(-2));
     if (mentalUnits[topic] && level) return { groupNo: "06", unitSlug: mentalUnits[topic], difficulty: level === 1 ? "beginner" : level <= 3 ? "intermediate" : "advanced" };
   }
+  if ((kindTier ?? keyTier) === "debutant") difficulty = "beginner";
+  if ((kindTier ?? keyTier) === "intermediaire") difficulty = "intermediate";
+  if ((kindTier ?? keyTier) === "avance") difficulty = "advanced";
   const [group, unitSlug] = scope?.split("/") ?? [];
   const groupNo = GROUPS.find(({ slug }) => slug === group)?.no;
   return groupNo ? { groupNo, unitSlug, difficulty } : undefined;

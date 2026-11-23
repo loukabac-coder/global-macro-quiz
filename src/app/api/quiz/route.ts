@@ -10,6 +10,7 @@ import { buildStudyQuestions } from "@/lib/studyQuestions";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
 import { newMilestoneDraw, type SeenChoice } from "@/lib/drawQuestions";
 import type { Progress } from "@/lib/modules";
+import { isObservedMarketRecall } from "@/lib/marketRecall";
 import { canAttempt, getMilestone, GROUPS, LEVELS, milestoneSize } from "@/lib/program";
 import { isNumeric, type Question } from "@/lib/quiz";
 import { EXAM_PROFILES, parseHistory, type Activity, type ExamProfile, type QuizMode, type ResumedQuiz } from "@/lib/quizSession";
@@ -110,9 +111,14 @@ async function loadActivity(db: SupabaseClient, writer: SupabaseClient, userId: 
     case "training": {
       if (activity.group) {
         const questions = await loadScopedTraining(db, activity.group, activity.units ?? [], activity.levels, activity.history ?? "all", liveQuestions);
+        const observed = questions.filter(isObservedMarketRecall).length;
+        const note = [
+          questions.length < 10 ? `Série de ${questions.length} questions disponibles pour cette sélection.` : "",
+          activity.group === "reperes" && observed < Math.ceil(questions.length * 0.7)
+            ? `${observed} repère(s) vérifié(s) parmi les questions de cette sélection.` : "",
+        ].filter(Boolean).join(" ");
         return {
-          questions, mode: "training",
-          note: questions.length < 10 ? `Série de ${questions.length} questions disponibles pour cette sélection.` : undefined,
+          questions, mode: "training", note: note || undefined,
           emptyMessage: "0 question disponible pour cette sélection. Retourne aux filtres pour élargir le périmètre.",
         };
       }
@@ -134,7 +140,7 @@ async function loadActivity(db: SupabaseClient, writer: SupabaseClient, userId: 
       const progress: Progress = Object.fromEntries((rows.data ?? []).map((r) => [r.module_id, r]));
       if (!canAttempt(m, progress)) return null;
       const [live, reviewed] = await Promise.all([
-        m.level !== "beginner" ? liveQuestions() : Promise.resolve([]),
+        m.level !== "beginner" || m.group.no === "04" ? liveQuestions() : Promise.resolve([]),
         db.rpc("recent_module_draws", { p_module: m.id }),
       ]);
       if (reviewed.error) throw new Error("question_reviews");

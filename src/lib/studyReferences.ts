@@ -33,7 +33,12 @@ export function studyDataHref(scope: string, anchor?: string) {
 }
 
 export const INDEX_KEYS = ["index_cac", "index_sp500", "index_nasdaq100", "index_dax", "index_ftse", "index_nikkei", "index_stoxx"];
-const FX_KEYS = ["eurusd", "eurgbp", "eurjpy", "eurchf", "usdjpy"];
+const FX_CROSSES = {
+  gbpusd: { numerator: "eurusd", denominator: "eurgbp", label: "GBP/USD", unit: "$/£" },
+  usdchf: { numerator: "eurchf", denominator: "eurusd", label: "USD/CHF", unit: "CHF/$" },
+  gbpjpy: { numerator: "eurjpy", denominator: "eurgbp", label: "GBP/JPY", unit: "¥/£" },
+} as const;
+const FX_KEYS = ["eurusd", "eurgbp", "eurjpy", "eurchf", "usdjpy", ...Object.keys(FX_CROSSES)];
 const PRICES = ["gold", "copper", "brent", "wti", "copper_imf", "wheat_price", "cocoa_price"];
 const RATES = ["ecb_deposit_rate", "fed_target_upper", "fed_target_lower", "boe_rate", "boj_rate", "snb_rate"];
 const ECONOMIES = ["fra", "usa", "chn", "deu", "jpn", "ind", "gbr", "ita", "bra", "can", "kor", "esp"];
@@ -57,6 +62,7 @@ const LABELS: Record<string, string> = {
   ecb_deposit_rate: "BCE · facilité de dépôt", fed_target_upper: "Fed · borne haute", fed_target_lower: "Fed · borne basse",
   boe_rate: "Banque d’Angleterre · Bank Rate", boj_rate: "Banque du Japon · taux directeur de référence", snb_rate: "Banque nationale suisse · taux directeur",
   eurusd: "EUR/USD", eurgbp: "EUR/GBP", eurjpy: "EUR/JPY", eurchf: "EUR/CHF", usdjpy: "USD/JPY",
+  gbpusd: "GBP/USD", usdchf: "USD/CHF", gbpjpy: "GBP/JPY",
   index_cac: "CAC 40", index_sp500: "S&P 500", index_nasdaq100: "Nasdaq-100", index_dax: "DAX", index_ftse: "FTSE 100", index_nikkei: "Nikkei 225", index_stoxx: "EURO STOXX 50",
   gold: "Or · terme", copper: "Cuivre · terme", brent: "Brent · comptant", wti: "WTI · comptant",
   copper_imf: "Cuivre · moyenne mensuelle FMI", wheat_price: "Blé Chicago · terme", cocoa_price: "Cacao New York · terme", us_10y: "Treasury américain à 10 ans",
@@ -64,6 +70,7 @@ const LABELS: Record<string, string> = {
 
 const FX_LABELS: Record<string, [string, string]> = {
   eurusd: ["1 €", "$"], eurgbp: ["1 €", "£"], eurjpy: ["1 €", "¥"], eurchf: ["1 €", "CHF"], usdjpy: ["1 $", "¥"],
+  gbpusd: ["1 £", "$"], usdchf: ["1 $", "CHF"], gbpjpy: ["1 £", "¥"],
 };
 
 const levelNote: Record<string, string> = {
@@ -85,6 +92,23 @@ export function hasStudyReferences(scope: string) {
 
 export function indicatorScope(key: string) {
   return Object.entries(INDICATOR_SCOPES).find(([, tables]) => tables.some((table) => table.keys.includes(key)))?.[0];
+}
+
+export function withVerifiedFxCrosses(macro: MacroData, now: number): MacroData {
+  const indicators = { ...macro.indicators };
+  for (const [key, { numerator, denominator, label, unit }] of Object.entries(FX_CROSSES)) {
+    if (!isVerifiedMacro(macro, numerator, now) || !isVerifiedMacro(macro, denominator, now)) continue;
+    const a = macro.indicators[numerator], b = macro.indicators[denominator];
+    if (a.ref_date !== b.ref_date || a.value <= 0 || b.value <= 0) continue;
+    indicators[key] = {
+      label, unit, value: a.value / b.value, ref_date: a.ref_date, frequency: "daily",
+      max_age_days: Math.min(a.max_age_days, b.max_age_days),
+      retrieved_at: new Date(Math.min(Date.parse(a.retrieved_at!), Date.parse(b.retrieved_at!))).toISOString(),
+      source: "BCE · taux croisé calculé à partir des cours de référence",
+      source_url: "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.fr.html",
+    };
+  }
+  return { ...macro, indicators };
 }
 
 function indicatorRow(macro: MacroData, key: string, now: number): StudyRow {
@@ -220,11 +244,12 @@ function productionTables(data: ProductionData, now: number): StudyTable[] {
 }
 
 export function buildStudyView(sources: StudySources, scope: string, now: number): StudyView {
+  const macro = scope === "reperes/devises" ? withVerifiedFxCrosses(sources.macro, now) : sources.macro;
   const tables: StudyTable[] = scope === "reperes/capitalisations" ? capitalTables(sources.caps, now)
     : scope === "reperes/producteurs" ? productionTables(sources.production, now)
       : scope.startsWith("geopolitique/") ? geopoliticsTables(sources.news, scope, now)
         : (INDICATOR_SCOPES[scope] ?? []).map(({ title, keys }, i) => ({
-          id: `observations-${i + 1}`, title, rows: keys.map((key) => indicatorRow(sources.macro, key, now)),
+          id: `observations-${i + 1}`, title, rows: keys.map((key) => indicatorRow(macro, key, now)),
         }));
   if (scope === "banques/decisions" || scope === "banques/taux") tables.push(decisionsTable(sources.news, now));
   // Prend d’abord une ligne de chaque tableau, puis les autres repères disponibles.
