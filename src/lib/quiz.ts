@@ -66,13 +66,14 @@ export function wrongNote(q: Question, optionIndex: number): string | null {
 }
 
 // Accepte « 1 234,5 », « 4,75 % », « −4 »…
-export function parseNumber(input: string): number | null {
+export function parseNumber(input: string, shift = 0): number | null {
   const s = input
     .trim()
     .replace(/[−–]/g, "-")
     .replace(/[ \u00a0\u202f]*%$/, "");
   if (!/^[+-]?(?:\d+|\d{1,3}(?:[ \u00a0\u202f]\d{3})+)(?:[.,]\d+)?$/.test(s)) return null;
-  const value = Number(s.replace(/[ \u00a0\u202f]/g, "").replace(",", "."));
+  const decimal = s.replace(/[ \u00a0\u202f]/g, "").replace(",", ".");
+  const value = Number(shift ? `${decimal}e${shift}` : decimal);
   return Number.isFinite(value) ? value : null;
 }
 

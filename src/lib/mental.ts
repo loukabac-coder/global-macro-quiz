@@ -16,7 +16,7 @@ export type Topic =
 export const TOPICS: { id: Topic; label: string }[] = [
   { id: "pourcentages", label: "Pourcentages" },
   { id: "variations", label: "Variations" },
-  { id: "interets", label: "Intérêts composés et règle de 72" },
+  { id: "interets", label: "Intérêts simples et composés" },
   { id: "devises", label: "Devises" },
   { id: "bps", label: "Points de base et points de %" },
   { id: "multiplications", label: "Multiplications rapides" },
@@ -86,96 +86,84 @@ function variations(level: number, r: Rng): Gen {
       explanation: `Prix de départ = prix final / (1 + variation) = ${nf(end)} / ${nf(1 + pct / 100)} = ${nf(start)}.`,
     };
   }
-  if (level >= 2 && r() < 0.4) {
+  if (level >= 3 && r() < 0.4) {
     const pairs: [number, number][] = [
       [20, -20], [10, -10], [50, -50], [30, -10], [25, -20], [-50, 50], [100, -50], [20, 10], [-10, -10], [40, -25],
     ];
-    const [a, b] = pick(r, pairs);
+    const easyPairs: [number, number][] = [[10, -10], [-10, 10], [20, -10], [-20, 25], [10, 10], [-10, -10]];
+    const [a, b] = pick(r, level === 3 ? easyPairs : pairs);
+    const first = 100 + a;
+    const final = r4(first * (1 + b / 100));
     const total = r4(((1 + a / 100) * (1 + b / 100) - 1) * 100);
     return {
       prompt: `Un actif varie de ${sign(a)} % puis de ${sign(b)} %. Quelle est la variation totale, en % ?`,
       answer: total,
       tol: 0,
       unit: "%",
-      explanation: `Les variations se multiplient : ${nf(1 + a / 100)} × ${nf(1 + b / 100)} = ${nf(1 + total / 100)}, soit ${sign(total)} %.`,
+      explanation: level === 3
+        ? `Pars de 100. La première variation donne ${first}. Applique ${sign(b)} % à ${first} pour obtenir ${nf(final)}, soit ${sign(total)} % par rapport à 100.`
+        : `Multiplie ${nf(1 + a / 100)} par ${nf(1 + b / 100)}. Tu obtiens ${nf(1 + total / 100)}, soit ${sign(total)} %.`,
     };
   }
   const pcts =
     level <= 1
       ? [10, 20, 25, 50, 100, -10, -20, -25, -50]
       : level === 2
-        ? [5, 15, 30, 40, -5, -15, -30, 12.5, -12.5]
-        : [8, 12, 35, 60, -8, -35, -60, 75, -40];
+        ? [10, 20, 25, 50, -10, -20, -25, -50]
+        : level === 3
+          ? [5, 10, 20, 25, 50, -5, -10, -20, -25, -50]
+          : [8, 12, 35, 60, -8, -35, -60, 75, -40];
   const pct = pick(r, pcts);
-  const a = pick(r, [40, 80, 100, 160, 200, 240, 400, 800]);
+  const a = pick(r, level === 2 ? [100, 200, 400, 500, 1000] : [40, 80, 100, 160, 200, 240, 400, 800]);
   const b = r4(a * (1 + pct / 100));
+  const fractions: Record<number, string> = { 5: "un vingtième", 10: "un dixième", 20: "un cinquième", 25: "un quart", 50: "la moitié" };
+  const fraction = fractions[Math.abs(pct)];
   return {
     prompt: `Un titre passe de ${nf(a)} à ${nf(b)}. Quelle est la variation, en % ?`,
     answer: pct,
     tol: level >= 3 ? NUMERIC_TOLERANCE.rounding : 0,
     unit: "%",
-    explanation: `Variation = (${nf(b)} − ${nf(a)}) / ${nf(a)} = ${nf(b - a)} / ${nf(a)} = ${sign(pct)} %.`,
+    explanation: fraction
+      ? `L’écart de ${nf(Math.abs(b - a))} représente ${fraction} de ${nf(a)}. Avec le signe du mouvement, ça donne ${sign(pct)} %.`
+      : `L’écart est de ${sign(b - a)}. ${nf(a / 100)} représente 1 % du départ. Divise ${sign(b - a)} par ${nf(a / 100)} pour obtenir ${sign(pct)} %.`,
   };
 }
 
-// ---------- Intérêts, règle de 72 ----------
+// ---------- Intérêts ----------
 function interets(level: number, r: Rng): Gen {
   if (level <= 1) {
     const cap = pick(r, [100, 200, 500, 1000]);
     const rate = pick(r, [5, 10, 20]);
     const ans = r4(cap * (1 + rate / 100));
     return {
-      prompt: `Tu places ${nf(cap)} € à ${rate} % pendant 1 an. Combien d’euros d’intérêts gagnes-tu ?`,
+      prompt: `Tu places ${nf(cap)} € à ${rate} % d’intérêts simples pendant un an. Combien d’euros d’intérêts gagnes-tu ?`,
       answer: r4(ans - cap),
       tol: 0,
       unit: "€",
       explanation: `Les intérêts correspondent à ${rate} % de ${nf(cap)} €, soit ${nf(ans - cap)} €.`,
     };
   }
-  if (level === 2) {
-    if (r() < 0.5) {
-      const rate = pick(r, [2, 3, 4, 6, 8, 9, 12]);
+  if (level <= 3) {
+    const cap = pick(r, [100, 200, 400, 1000, 2000]);
+    const rate = pick(r, level === 2 ? [10, 20] : [5, 10, 20]);
+    const interest = cap * rate / 100;
+    const first = cap + interest;
+    const tip = rate === 5 ? "Prends la moitié de 10 %." : rate === 10 ? "Divise par 10." : "Prends deux fois 10 %.";
+    if (level === 2 && r() < 0.5) {
       return {
-        prompt: `Règle de 72 : à ${rate} % par an, en combien d’années un capital double-t-il environ ?`,
-        answer: r4(72 / rate),
-        tol: 10,
-        unit: "ans",
-        explanation: `72 / ${rate} = ${nf(72 / rate)} ans.`,
+        prompt: `Tu places ${nf(cap)} € à ${rate} % par an en intérêts simples pendant deux ans. Combien d’euros d’intérêts gagnes-tu ?`,
+        answer: interest * 2, tol: 0, unit: "€",
+        explanation: `${tip} Tu gagnes ${nf(interest)} € par an sur le capital de départ, soit ${nf(interest * 2)} € en deux ans.`,
       };
     }
-    const cap = pick(r, [100, 1000]);
-    const rate = pick(r, [10, 20]);
-    const n = 2;
-    const ans = r4(cap * Math.pow(1 + rate / 100, n));
+    const second = first * rate / 100;
+    const ans = r4(first + second);
     return {
-      prompt: `${nf(cap)} € placés à ${rate} % par an en intérêts composés pendant ${n} ans valent combien ?`,
+      prompt: `${nf(cap)} € à ${rate} % par an en intérêts composés pendant deux ans. Quel capital à la fin ?`,
       answer: ans,
-      tol: 0,
+      tol: level === 2 ? 0 : 1,
       unit: "€",
-      explanation: `${nf(cap)} × ${nf(1 + rate / 100)}² = ${nf(ans)} €. On applique la hausse deux fois.`,
-    };
-  }
-  if (level === 3) {
-    if (r() < 0.5) {
-      const years = pick(r, [6, 8, 9, 12, 18, 24]);
-      return {
-        prompt: `Un capital double en ${years} ans. Quel est le taux annuel approximatif (règle de 72) ?`,
-        answer: r4(72 / years),
-        tol: 10,
-        unit: "%",
-        explanation: `72 / ${years} = ${nf(72 / years)} % par an.`,
-      };
-    }
-    const cap = pick(r, [1000, 2000, 5000]);
-    const rate = pick(r, [5, 10]);
-    const n = 3;
-    const ans = r4(cap * Math.pow(1 + rate / 100, n));
-    return {
-      prompt: `${nf(cap)} € à ${rate} % par an en intérêts composés pendant ${n} ans. Combien à la fin ?`,
-      answer: ans,
-      tol: 1,
-      unit: "€",
-      explanation: `${nf(cap)} × ${nf(1 + rate / 100)}³ = ${nf(ans)} €. Les intérêts composés rapportent plus que 3 × ${rate} % (= ${nf(cap * (1 + (3 * rate) / 100))} €).`,
+      explanation: `${tip} Après un an, tu obtiens ${nf(first)} €. Applique le même raccourci à ${nf(first)} € pour ajouter ${nf(second)} € et finir à ${nf(ans)} €.`,
     };
   }
   if (level === 4) {
@@ -498,13 +486,20 @@ export function mentalSession(count: number, startLevel: number, r: Rng, topic?:
   const out: Question[] = [];
   const seen = new Set<string>();
   let guard = 0;
+  let duplicates = 0;
+  const intermediate = startLevel === 2 || startLevel === 3;
+  const maxLevel = intermediate ? 3 : 5;
   while (out.length < count && guard < count * 20) {
     guard += 1;
-    const level = Math.min(5, startLevel + Math.floor(out.length / step));
+    const level = intermediate && duplicates >= 6 ? 2 : Math.min(maxLevel, startLevel + Math.floor(out.length / step));
     const q = mentalQuestion(level, r, topic);
-    if (seen.has(q.prompt)) continue;
+    if (seen.has(q.prompt)) {
+      duplicates += 1;
+      continue;
+    }
     seen.add(q.prompt);
     out.push(q);
+    duplicates = 0;
   }
   return out;
 }

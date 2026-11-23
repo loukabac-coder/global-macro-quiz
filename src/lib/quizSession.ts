@@ -37,6 +37,7 @@ export type QuizSummary = {
 };
 
 export type ResumedQuiz = {
+  id?: string;
   questions: Question[];
   feedback: Feedback[];
   issuedSeconds: number;

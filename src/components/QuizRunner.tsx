@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
@@ -12,7 +12,6 @@ import {
   fmt,
   isNumeric,
   mcqOptions,
-  parseNumber,
   shuffle,
   unitOf,
   wrongNote,
@@ -24,6 +23,7 @@ import { CAT_NAME } from "@/lib/categories";
 import QuestionActions from "@/components/QuestionActions";
 import { clearQuizResume, quizResumeKey, readQuizResume, writeQuizResume } from "@/lib/quizResume";
 import type { Activity, Answer, Feedback, QuizSummary, ResumedQuiz } from "@/lib/quizSession";
+import { answerScales, parseNumericAnswer } from "@/lib/quizUnits";
 
 export type Result = { q: Question; ok: boolean; given: string; seconds: number; points: number; wrongNote?: string | null };
 type Phase = "loading" | "empty" | "error" | "playing" | "done";
@@ -68,7 +68,7 @@ function answerLabel(q: Question, answer: Answer) {
   if (answer === null) return "Pas de réponse";
   if (q.type === "mcq") return mcqOptions(q)[Number(answer)] ?? "";
   if (typeof answer === "boolean") return answer ? "Vrai" : "Faux";
-  return fmt(answer);
+  return [fmt(answer), unitOf(q)].filter(Boolean).join(" ");
 }
 
 function resultOf({ question, ok, answer, seconds, points, timedOut }: Feedback): Result {
@@ -87,7 +87,8 @@ async function startQuestion(db: ReturnType<typeof getSupabase>, id: string, ind
 }
 
 export default function QuizRunner(props: RunnerProps) {
-  const { title, kicker, renderEnd, backHref = "/parcours", backLabel = "Quitter", replayLabel = "Rejouer" } = props;
+  const { title, kicker, renderEnd, backHref = "/parcours", backLabel = "Quitter",
+    replayLabel = props.activity?.type === "daily" ? "Rejouer le défi" : "Nouveau tirage" } = props;
   const router = useRouter();
   const exam = props.activity?.type === "exam";
 
@@ -98,6 +99,7 @@ export default function QuizRunner(props: RunnerProps) {
   const [idx, setIdx] = useState(0);
   const [choice, setChoice] = useState<number | boolean | null>(null);
   const [text, setText] = useState("");
+  const [answerPower, setAnswerPower] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
   const [results, setResults] = useState<Result[]>([]);
   const [startAt, setStartAt] = useState(0);
@@ -112,6 +114,7 @@ export default function QuizRunner(props: RunnerProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [T, setTimer] = useState(0);
   const [pending, setPending] = useState(false);
+  const [restarting, setRestarting] = useState(false);
 
   const configRef = useRef(props);
   const busy = useRef(false);
@@ -122,6 +125,36 @@ export default function QuizRunner(props: RunnerProps) {
   useEffect(() => {
     configRef.current = props;
   });
+
+  const restorePosition = useCallback((
+    nextItems: Item[], id: string | null, resumed: ResumedQuiz | null = null,
+    local: LocalResume | null = null, beganAt: number | null = null,
+  ) => {
+    const restoredFeedback = resumed?.feedback ?? [];
+    const lastFeedback = restoredFeedback.at(-1);
+    const showingFeedback = resumed?.questionSeconds === null && !!lastFeedback;
+    setSessionId(id);
+    setItems(nextItems);
+    setIdx(local?.idx ?? (showingFeedback ? restoredFeedback.length - 1 : restoredFeedback.length));
+    setChoice(showingFeedback ? lastFeedback.answer : local?.choice ?? null);
+    setText("");
+    setAnswerPower(null);
+    setChecked(local?.checked ?? showingFeedback);
+    setResults(local?.results ?? restoredFeedback.map(resultOf));
+    setFormError(null);
+    setSave(resumed?.summary ? "saved" : null);
+    setSummary(resumed?.summary ?? null);
+    const t = nowMs();
+    const wallTime = Date.now();
+    const issuedSeconds = resumed?.issuedSeconds ?? (local ? (wallTime - local.issuedAt) / 1000 : 0);
+    const questionSeconds = resumed?.questionSeconds ?? (local ? (wallTime - local.questionAt) / 1000 : lastFeedback?.seconds ?? 0);
+    setStartAt(t - issuedSeconds * 1000);
+    setQStart(beganAt ?? t - questionSeconds * 1000);
+    setNow(t);
+    setTotal(Math.floor(issuedSeconds));
+    if (resumed?.summary && resumeKey.current) clearQuizResume(resumeKey.current);
+    setPhase(resumed?.summary ? "done" : "playing");
+  }, []);
 
   // Chargement des questions
   useEffect(() => {
@@ -159,10 +192,13 @@ export default function QuizRunner(props: RunnerProps) {
               if (!active) return;
               resumed = data as ResumedQuiz | null;
               if (resumed) {
-                issuedId = previous.id;
+                issuedId = resumed.id ?? previous.id;
                 questions = resumed.questions;
                 timer = resumed.timeLimit;
                 orders = previous.orders;
+                if (key && issuedId !== previous.id) {
+                  writeQuizResume<ServerResume>(key, { id: issuedId, orders }, Date.now() - resumed.issuedSeconds * 1000);
+                }
               }
             }
             if (!resumed) {
@@ -201,31 +237,12 @@ export default function QuizRunner(props: RunnerProps) {
           setPhase("empty");
           return;
         }
-        setSessionId(issuedId);
         setTimer(timer);
         setGuest(isGuest);
-        const restoredFeedback = resumed?.feedback ?? [];
-        const lastFeedback = restoredFeedback.at(-1);
-        const showingFeedback = resumed?.questionSeconds === null && !!lastFeedback;
-        setItems(local?.items ?? questions.map((q, i) => ({ q, order: orders?.[i] ?? shuffle(mcqOptions(q).map((_, j) => j)) })));
-        setIdx(local?.idx ?? (showingFeedback ? restoredFeedback.length - 1 : restoredFeedback.length));
-        setChoice(showingFeedback ? lastFeedback.answer : local?.choice ?? null);
-        setText("");
-        setChecked(local?.checked ?? showingFeedback);
-        setResults(local?.results ?? restoredFeedback.map(resultOf));
-        setFormError(null);
-        setSave(resumed?.summary ? "saved" : null);
-        setSummary(resumed?.summary ?? null);
-        const t = nowMs();
-        const wallTime = Date.now();
-        const issuedSeconds = resumed?.issuedSeconds ?? (local ? (wallTime - local.issuedAt) / 1000 : 0);
-        const questionSeconds = resumed?.questionSeconds ?? (local ? (wallTime - local.questionAt) / 1000 : lastFeedback?.seconds ?? 0);
-        setStartAt(t - issuedSeconds * 1000);
-        setQStart(beganAt ?? t - questionSeconds * 1000);
-        setNow(t);
-        setTotal(Math.floor(issuedSeconds));
-        if (resumed?.summary && resumeKey.current) clearQuizResume(resumeKey.current);
-        setPhase(resumed?.summary ? "done" : "playing");
+        const nextItems = local?.items ?? questions.map((q, i) => ({
+          q, order: orders?.[i] ?? shuffle(mcqOptions(q).map((_, j) => j)),
+        }));
+        restorePosition(nextItems, issuedId, resumed, local, beganAt);
       } catch (e) {
         if (!active) return;
         setMessage(e instanceof Error ? e.message : "Erreur inconnue.");
@@ -236,7 +253,7 @@ export default function QuizRunner(props: RunnerProps) {
     return () => {
       active = false;
     };
-  }, [router, runId]);
+  }, [router, runId, restorePosition]);
 
   useEffect(() => {
     if (phase !== "playing" || sessionId || !resumeKey.current) return;
@@ -247,7 +264,7 @@ export default function QuizRunner(props: RunnerProps) {
 
   // Horloge (et fin de temps automatique pour les séries chronométrées)
   useEffect(() => {
-    if (phase !== "playing" || checked) return;
+    if (phase !== "playing" || checked || restarting) return;
     const tick = () => {
       const t = nowMs();
       setNow(t);
@@ -262,7 +279,7 @@ export default function QuizRunner(props: RunnerProps) {
       clearInterval(id);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, [phase, checked, T, qStart, idx]);
+  }, [phase, checked, restarting, T, qStart, idx]);
 
   function replay() {
     if (phase === "done" && resumeKey.current) clearQuizResume(resumeKey.current);
@@ -270,11 +287,41 @@ export default function QuizRunner(props: RunnerProps) {
     setRunId((n) => n + 1);
   }
 
+  async function restart() {
+    if (exam || phase !== "playing" || busy.current) return;
+    if (!sessionId) {
+      restorePosition(items, null);
+      return;
+    }
+
+    busy.current = true;
+    setPending(true);
+    setRestarting(true);
+    setFormError(null);
+    try {
+      const { data, error } = await getSupabase().rpc("restart_quiz_run", { p_run: sessionId });
+      const resumed = data as ResumedQuiz | null;
+      if (error || !resumed?.id) throw new Error("redémarrage");
+      if (resumeKey.current) {
+        writeQuizResume<ServerResume>(resumeKey.current, { id: resumed.id, orders: items.map((item) => item.order) },
+          Date.now() - resumed.issuedSeconds * 1000);
+      }
+      restorePosition(items, resumed.id, resumed);
+    } catch {
+      setFormError("La série n’a pas pu redémarrer. Réessaie.");
+    } finally {
+      setPending(false);
+      setRestarting(false);
+      busy.current = false;
+    }
+  }
+
   async function advanceQuestion() {
     const t = sessionId ? await startQuestion(getSupabase(), sessionId, idx + 1, exam) : nowMs();
     setIdx(idx + 1);
     setChoice(null);
     setText("");
+    setAnswerPower(null);
     setChecked(false);
     setFormError(null);
     setQStart(t);
@@ -293,7 +340,7 @@ export default function QuizRunner(props: RunnerProps) {
     const { q } = items[idx];
     const t = nowMs();
     timedOut ||= T > 0 && t - qStart >= T * 1000;
-    const answer = timedOut ? null : isNumeric(q) ? parseNumber(text) : choice;
+    const answer = timedOut ? null : isNumeric(q) ? parseNumericAnswer(q, text, answerPower) : choice;
     if (answer === null && !timedOut) {
       if (isNumeric(q)) setFormError("Entre un nombre, par exemple 12 ou 4,75.");
       return;
@@ -582,6 +629,7 @@ export default function QuizRunner(props: RunnerProps) {
   const q = checked && last ? last.q : item.q;
   const allowsEstimate = isNumeric(q) && (q.tolerance_pct ?? 0) > 0;
   const unit = unitOf(q);
+  const scales = answerScales(q);
   const wrongSelected = checked && q.type === "mcq" && !last?.ok && typeof choice === "number" ? wrongNote(q, choice) : null;
   const elapsedQ = Math.max(0, (now - qStart) / 1000);
   const remaining = T > 0 ? Math.max(0, T - elapsedQ) : 0;
@@ -605,7 +653,7 @@ export default function QuizRunner(props: RunnerProps) {
   }
 
   return shell(
-    <div className="fade-in" key={idx}>
+    <div className="fade-in" key={`${startAt}:${idx}`}>
       <p className="mb-1 font-mono text-xs text-muted">{kicker ?? title}</p>
       {note && idx === 0 && !checked && <p className="mb-3 font-mono text-xs text-warn">{note}</p>}
       <div className="flex items-center justify-between font-mono text-xs text-muted">
@@ -630,7 +678,14 @@ export default function QuizRunner(props: RunnerProps) {
       )}
 
       <div className="mt-8">
-        <h1 className="text-lg font-medium leading-snug sm:text-xl">{q.prompt}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap sm:gap-4">
+          <h1 className="grow text-lg font-medium leading-snug sm:text-xl">{q.prompt}</h1>
+          {!exam && (
+            <button type="button" onClick={restart} disabled={pending} className="min-h-9 shrink-0 border border-line px-2.5 text-xs text-muted hover:border-muted hover:text-fg disabled:opacity-50">
+              {restarting ? "Redémarrage…" : "Recommencer"}
+            </button>
+          )}
+        </div>
 
         <div ref={responses} className="mt-6 space-y-2">
           {q.type === "mcq" &&
@@ -649,7 +704,7 @@ export default function QuizRunner(props: RunnerProps) {
             ))}
 
           {isNumeric(q) && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <input
                 type="text"
                 inputMode="decimal"
@@ -663,7 +718,17 @@ export default function QuizRunner(props: RunnerProps) {
                 aria-label="Ta réponse"
                 className="w-full max-w-[14rem] border border-line bg-panel px-3 py-3 font-mono text-base focus:border-accent focus:outline-none disabled:opacity-60"
               />
-              {unit && <span className="text-sm text-muted">{unit}</span>}
+              {scales ? (
+                <select
+                  aria-label="Unité de la réponse"
+                  value={answerPower ?? scales.referencePower}
+                  onChange={(e) => setAnswerPower(Number(e.target.value))}
+                  disabled={checked || pending}
+                  className="max-w-full border border-line bg-panel px-2 py-3 text-sm text-fg focus:border-accent focus:outline-none disabled:opacity-60"
+                >
+                  {scales.options.map(({ power, label }) => <option key={power} value={power}>{label}</option>)}
+                </select>
+              ) : unit && <span className="text-sm text-muted">{unit}</span>}
             </div>
           )}
           {allowsEstimate && !checked && <p className="text-xs text-muted">Réponse approchée acceptée</p>}

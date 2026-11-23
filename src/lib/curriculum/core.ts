@@ -66,9 +66,10 @@ export const coreQuestions = [
   ]),
   ...block("i1", "mental-math", [
     n("variation", "Un prix passe de 80 à 100 €. Quelle est la variation en % ?", 25, "%", "La hausse est de 20 sur une base de 80. Un quart correspond à 25 %."),
+    n("variation-baisse", "Un prix passe de 200 à 180 €. Quelle est sa variation signée en % ?", -10, "%", "Il perd 20 € sur 200 €. Comme 20 est un dixième de 200, la variation est de −10 %."),
     n("taux-pb", "Un taux de 3,10 % monte de 35 pb. Quel est le nouveau taux en % ?", 3.45, "%", "35 pb = 0,35 point. Ajoute 0,35 à 3,10."),
-    n("compose-deux-ans", "1 000 € sont placés à 10 % par an pendant deux ans. Quel capital final avec intérêts composés ?", 1210, "€", "1 000 × 1,10 × 1,10 = 1 210 €. Les intérêts de la première année produisent aussi des intérêts."),
-    n("deux-baisses", "Un prix augmente de 20 %, puis baisse de 10 %. Quelle variation totale en % par rapport au prix initial ?", 8, "%", "1,20 × 0,90 = 1,08, soit une hausse de 8 %."),
+    n("compose-deux-ans", "1 000 € sont placés à 10 % par an pendant deux ans. Quel capital final avec intérêts composés ?", 1210, "€", "Pour 10 %, divise par 10. Ajoute 100 € la première année, puis 110 € la seconde, calculés sur 1 100 €. Tu obtiens 1 210 €."),
+    n("deux-baisses", "Un prix augmente de 20 %, puis baisse de 10 %. Quelle variation totale en % par rapport au prix initial ?", 8, "%", "Pars de 100. La hausse donne 120. Enlève ensuite 12, soit 10 % de 120. Il reste 108, donc le prix a gagné 8 %."),
     n("retrouver", "Après une baisse de 20 %, de combien doit monter le prix pour revenir à sa valeur de départ ?", 25, "%", "En partant de 100 €, le prix tombe à 80 €. Il faut 20 / 80 = 25 % pour revenir à 100 €."),
     n("inverse-pourcent", "18 € représentent 15 % d’un panier. Quel est le montant du panier ?", 120, "€", "15 % égale 3 parts de 5 %. Une part vaut 6 €, donc 100 % vaut 20 × 6 = 120 €."),
   ]),

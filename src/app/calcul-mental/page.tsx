@@ -10,8 +10,8 @@ import { mentalSeconds } from "@/lib/quizSession";
 
 const LEVELS = [
   ["1", "Niveau 1", "10 %, 50 %, ×5, ×11, bps simples"],
-  ["2", "Niveau 2", "15 %, variations, règle de 72, devises"],
-  ["3", "Niveau 3", "Carrés, taux composés, spreads"],
+  ["2", "Niveau 2", "Variations simples, intérêts sur deux ans, devises"],
+  ["3", "Niveau 3", "Deux variations simples, intérêts composés, spreads"],
   ["4", "Niveau 4", "Produits à deux chiffres, duration, DV01"],
   ["5", "Niveau 5", "Fractions de %, composition, ratios complexes"],
 ];
@@ -52,7 +52,7 @@ function CalculMentalContent() {
         <p className="font-mono text-xs text-accent">calcul mental · questions infinies</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Calcul mental</h1>
         <p className="mt-3 max-w-xl text-muted">
-          Des séries de 12 questions générées à la volée, qui deviennent plus dures au fil de la série. Après chaque réponse, tu vois la méthode rapide.
+          Des séries de 12 questions avec une méthode rapide après chaque réponse. Les niveaux 2 et 3 restent en Intermédiaire pendant la série.
           Le cours de référence est <Link href="/cours/calcul-mental" className="text-fg underline underline-offset-4">ici</Link>.
         </p>
 

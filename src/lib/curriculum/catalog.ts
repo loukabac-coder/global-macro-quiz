@@ -20,7 +20,8 @@ const mentalExamples = mentalStages.flatMap(([moduleId, level, topics]): Curricu
   return topics.flatMap((topic) => Array.from({ length: 4 }, (_, i) => {
     const id = `course:${moduleId}:mental-math:${topic}-${i + 1}`;
     const question = mentalQuestion(level, mulberry32(hashString(id)), topic);
-    return { ...question, id, moduleId };
+    const revised = moduleId === "i1" && (topic === "interets" || topic === "variations");
+    return { ...question, id: revised ? `${id}-v2` : id, moduleId };
   })).filter(({ prompt }) => {
     if (seen.has(prompt)) return false;
     seen.add(prompt);

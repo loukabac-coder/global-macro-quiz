@@ -11,7 +11,9 @@ registerHooks({
   },
 });
 const { parseNumber, checkNumeric, correctLabel } = await import("../src/lib/quiz.ts");
-const { mentalQuestion } = await import("../src/lib/mental.ts");
+const { mentalDifficulty, mentalQuestion, mentalSession, TOPICS } = await import("../src/lib/mental.ts");
+const { answerScales, parseNumericAnswer } = await import("../src/lib/quizUnits.ts");
+const { mulberry32 } = await import("../src/lib/rng.ts");
 const { dailyQuestions, guestQuick } = await import("../src/lib/guest.ts");
 const { LEVELS, MODULES, computeStatuses } = await import("../src/lib/modules.ts");
 const { moduleQuestions } = await import("../src/lib/moduleQuestions.ts");
@@ -28,8 +30,82 @@ const { loadQuick, loadGame, loadPlacement, loadTraining, loadTrainingByHistory,
 const { CURRICULUM, curriculumQuestions, isCurrentFavorite } = await import("../src/lib/curriculum/catalog.ts");
 const { CHAPTERS, getChapter } = await import("../src/lib/courses.ts");
 const { buildLiveQuestions } = await import("../src/lib/liveQuestions.ts");
-const { mentalDifficulty } = await import("../src/lib/mental.ts");
 const { CATS } = await import("../src/lib/categories.ts");
+
+test("le sélecteur normalise les montants avant d’appliquer la tolérance", () => {
+  const euros = { type: "numeric", options: { unit: "€" }, correct: 2_500_000, tolerance_pct: 0 };
+  const millions = { ...euros, options: { unit: "M€" }, correct: 2.5 };
+  const milliards = { ...euros, options: { unit: "Md€" }, correct: 0.0025 };
+  for (const q of [euros, millions, milliards]) {
+    for (const [raw, power] of [["2 500 000", 0], ["2 500", 3], ["2,5", 6], ["0,0025", 9]]) {
+      assert.equal(parseNumericAnswer(q, raw, power), q.correct);
+      assert.equal(checkNumeric(q, parseNumericAnswer(q, raw, power)), true);
+    }
+  }
+  assert.equal(parseNumericAnswer(millions, "2,5", null), 2.5);
+  assert.equal(parseNumericAnswer(euros, "10 %", 0), null);
+  assert.equal(parseNumericAnswer(euros, "2 5", 6), null);
+  assert.equal(parseNumericAnswer(euros, "1", 12), null);
+  assert.equal(parseNumericAnswer(euros, "9".repeat(400), 9), null);
+  assert.equal(parseNumericAnswer(euros, "−2,5", 6), -2_500_000);
+  assert.equal(parseNumericAnswer(euros, "4,56789123", 6), 4_567_891.23);
+  assert.deepEqual(answerScales(millions).options.map((option) => option.label), ["€", "milliers d’€", "millions d’€", "milliards d’€"]);
+
+  const estimate = { type: "guesstimate", options: { unit: "Md$" }, correct: 4123, tolerance_pct: 100 * 500 / 4123 };
+  assert.equal(checkNumeric(estimate, parseNumericAnswer(estimate, "3 623 000", 6)), true);
+  assert.equal(checkNumeric(estimate, parseNumericAnswer(estimate, "3 622 000", 6)), false);
+  assert.equal(parseNumericAnswer({ ...euros, options: { unit: "milliers" } }, "1,5", 6), 1500);
+  assert.equal(parseNumericAnswer({ ...euros, options: { unit: "T$" } }, "2500", 9), 2.5);
+  assert.equal(answerScales({ ...euros, options: { unit: "T$" } }).referencePower, 12);
+  for (const unit of ["%", "pb", "points", "×", "ans", "USD par EUR", "$/baril", "€ par baril", ""]) {
+    assert.equal(answerScales({ ...euros, options: { unit } }), null, unit);
+  }
+  assert.equal(parseNumericAnswer({ ...euros, options: { unit: "%" } }, "4,5 %", null), 4.5);
+  assert.equal(answerScales({ ...euros, type: "mcq" }), null);
+});
+
+test("le calcul mental intermédiaire reste au bon niveau et corrige des exercices courts", () => {
+  const checkInterest = (q) => {
+    const match = q.prompt.match(/([\d  ]+) € à (\d+) % par an en intérêts (simples|composés) pendant deux ans/);
+    assert.ok(match, q.prompt);
+    const principal = Number(match[1].replace(/\s/g, ""));
+    const rate = Number(match[2]) / 100;
+    const expected = match[3] === "simples" ? 2 * principal * rate : principal * (1 + rate) ** 2;
+    assert.ok(Math.abs(q.correct - expected) < 1e-8, q.prompt);
+    assert.match(q.explanation, /10 %|deux fois|Divise par 10/);
+  };
+  const checkVariation = (q) => {
+    const amounts = q.prompt.match(/passe de ([\d  ]+) à ([\d  ]+)/);
+    if (amounts) {
+      const [before, after] = amounts.slice(1).map((n) => Number(n.replace(/\s/g, "")));
+      assert.ok(Number.isInteger(before) && Number.isInteger(after));
+      assert.ok(Math.abs(q.correct - (after - before) / before * 100) < 1e-9);
+      assert.ok([5, 10, 20, 25, 50].includes(Math.abs(q.correct)));
+    } else {
+      const steps = [...q.prompt.matchAll(/([+-]\d+) %/g)].map((match) => Number(match[1]));
+      assert.equal(steps.length, 2);
+      assert.ok(Math.abs(q.correct - (steps.reduce((total, n) => total * (1 + n / 100), 1) - 1) * 100) < 1e-9);
+      assert.match(q.explanation, /Pars de 100/);
+    }
+  };
+  for (const level of [2, 3]) {
+    for (const { id } of TOPICS) {
+      for (const seed of [18, 73, 101]) {
+        const questions = mentalSession(12, level, mulberry32(seed), id);
+        assert.equal(questions.length, 12, id);
+        assert.ok(questions.every((q) => q.difficulty === "intermediate"), id);
+        if (id === "interets") questions.forEach(checkInterest);
+        if (id === "variations") questions.forEach(checkVariation);
+      }
+    }
+  }
+  assert.doesNotMatch(mentalQuestion(2, () => 0, "variations").prompt, /puis/);
+  assert.match(mentalQuestion(5, () => 0, "interets").prompt, /10 ans/);
+  const fixed = CURRICULUM.filter((q) => q.moduleId === "i1");
+  assert.ok(fixed.filter((q) => q.id.includes("interets")).every((q) => q.prompt.includes("deux ans")));
+  assert.equal(fixed.find((q) => q.id.endsWith(":compose-deux-ans")).correct, 1210);
+  assert.equal(fixed.find((q) => q.id.endsWith(":variation-baisse")).correct, -10);
+});
 
 test("un examen couvre les sept thèmes en donnant la priorité aux questions nouvelles", () => {
   const subjects = [
