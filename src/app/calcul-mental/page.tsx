@@ -9,11 +9,9 @@ import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
 import { mentalSeconds } from "@/lib/quizSession";
 
 const LEVELS = [
-  ["1", "Niveau 1", "10 %, 50 %, ×5, ×11, bps simples"],
-  ["2", "Niveau 2", "Variations simples, intérêts sur deux ans, devises"],
-  ["3", "Niveau 3", "Deux variations simples, intérêts composés, spreads"],
-  ["4", "Niveau 4", "Produits à deux chiffres, duration, DV01"],
-  ["5", "Niveau 5", "Fractions de %, composition, ratios complexes"],
+  ["1", "Débutant", "Pourcentages usuels, produits et points de base"],
+  ["2", "Intermédiaire", "Variations simples, intérêts sur deux ans, devises"],
+  ["4", "Avancé", "Ratios, raccourcis et choix de méthode"],
 ];
 
 export default function CalculMental() {
@@ -28,13 +26,14 @@ function CalculMentalContent() {
   const [timed, setTimed] = useState(false);
   const [started, setStarted] = useState(0);
 
-  const lv = level ?? (fromUrl && /^[1-5]$/.test(fromUrl) ? Number(fromUrl) : 2);
+  const lv = level ?? (fromUrl === "1" ? 1 : fromUrl === "4" || fromUrl === "5" ? 4 : 2);
+  const name = LEVELS.find(([value]) => Number(value) === lv)?.[1];
 
   if (started > 0) {
     return (
       <QuizRunner
         key={started}
-        title={`Calcul mental · niveau ${lv}${topic ? " · " + TOPICS.find((t) => t.id === topic)?.label : ""}`}
+        title={`Calcul mental · ${name}${topic ? " · " + TOPICS.find((t) => t.id === topic)?.label : ""}`}
         activity={{ type: "mental", level: lv, topic, timed }}
         timePerQuestion={timed ? mentalSeconds(lv) : undefined}
         backHref="/calcul-mental"
@@ -52,12 +51,11 @@ function CalculMentalContent() {
         <p className="font-mono text-xs text-accent">calcul mental · questions infinies</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Calcul mental</h1>
         <p className="mt-3 max-w-xl text-muted">
-          Des séries de 12 questions avec une méthode rapide après chaque réponse. Les niveaux 2 et 3 restent en Intermédiaire pendant la série.
-          Le cours de référence est <Link href="/cours/calcul-mental" className="text-fg underline underline-offset-4">ici</Link>.
+          Travaille par séries de 12 questions avec une méthode rapide après chaque réponse. <Link href="/cours/mental" className="text-fg underline underline-offset-4">Voir les cours de calcul mental</Link>.
         </p>
 
-        <h2 className="mt-8 text-sm font-semibold">Niveau de départ</h2>
-        <div className="mt-3 grid gap-px border border-line bg-line sm:grid-cols-5">
+        <h2 className="mt-8 text-sm font-semibold">Difficulté</h2>
+        <div className="mt-3 grid gap-px border border-line bg-line sm:grid-cols-3">
           {LEVELS.map(([v, name, text]) => (
             <button
               key={v}

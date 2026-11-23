@@ -10,8 +10,12 @@ export type Question = {
   explanation: string;
   wrong_explanations: unknown;
   source: string | null;
+  source_url?: string;
   kind: string;
   reference_date: string | null;
+  family?: string;
+  competency?: string;
+  max_seconds?: number;
 };
 
 export type ModuleExercise = Pick<Question, "prompt" | "type" | "correct" | "options" | "explanation" | "tolerance_pct">

@@ -53,7 +53,7 @@ test("migration en mémoire, correction, historique et modules", async () => {
   const db = new PGlite();
   try {
     await db.exec(initialSchema);
-    for (const name of ["lot-1-progression", "lot-4-modules", "lot-4-modules", "lot-5-examen-et-questions", "lot-5-examen-et-questions", "lot-6-recommencer-quiz", "lot-6-recommencer-quiz"]) {
+    for (const name of ["lot-1-progression", "lot-4-modules", "lot-4-modules", "lot-5-examen-et-questions", "lot-5-examen-et-questions", "lot-6-recommencer-quiz", "lot-6-recommencer-quiz", "lot-7-parcours", "lot-7-parcours"]) {
       await db.exec(readFileSync(new URL(`../sql/${name}.sql`, import.meta.url), "utf8"));
     }
     const row = (await db.query(`
@@ -100,6 +100,23 @@ test("migration en mémoire, correction, historique et modules", async () => {
     assert.equal((await db.query("select count(*)::int as n from quiz_sessions")).rows[0].n, 0);
     assert.equal((await db.query("select count(*)::int as n from module_progress")).rows[0].n, 0);
     assert.equal((await db.query("select count(*)::int as n from profiles")).rows[0].n, 1);
+
+    await assert.rejects(session(db, first, "training", "module", questions, 0, "p:b:01:pib"), /quiz_runs_module_format/);
+    for (const [stage, size, correctCount, passed] of [
+      ["p:b:01:pib", 5, 3, false], ["p:b:01:pib", 5, 4, true],
+      ["p:b:01:synthese", 8, 5, false], ["p:b:01:synthese", 8, 6, true],
+    ]) {
+      const draw = Array.from({ length: size }, (_, i) => ({ ...base, correct: 100, id: `course:test:${stage}:${i}` }));
+      const run = await session(db, first, "training", "module", draw, 0, stage);
+      for (let i = 0; i < size; i++) await answer(db, run, i, i < correctCount ? 100 : 42);
+      const { rows } = await db.query("select finish_quiz_run($1)->>'module_passed' as passed", [run]);
+      assert.equal(rows[0].passed, String(passed));
+    }
+    assert.deepEqual((await db.query("select module_id, best_pct, attempts from module_progress order by module_id")).rows, [
+      { module_id: "d1", best_pct: 70, attempts: 1 },
+      { module_id: "p:b:01:pib", best_pct: 80, attempts: 2 },
+      { module_id: "p:b:01:synthese", best_pct: 75, attempts: 2 },
+    ]);
   } finally {
     await db.close();
   }

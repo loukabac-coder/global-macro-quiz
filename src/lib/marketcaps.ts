@@ -1,4 +1,4 @@
-import { observationAge, wasRecentlyChecked } from "@/lib/dataFreshness";
+import { CHECK_MAX_HOURS, observationAge, wasRecentlyChecked } from "@/lib/dataFreshness";
 
 export type Company = {
   ticker: string;
@@ -10,6 +10,7 @@ export type Company = {
   fx_date?: string | null;
   currency?: string;
   fx_source?: string | null;
+  retrieved_at?: string;
 };
 
 export type MarketCaps = {
@@ -33,13 +34,20 @@ export async function fetchMarketCaps(): Promise<MarketCaps | null> {
   }
 }
 
-export function hasFreshMarketCaps(data: MarketCaps, nowMs: number): boolean {
-  const dated = (date?: string | null) => {
+export function verifiedCompanies(data: MarketCaps, nowMs: number): Company[] {
+  function dated(date?: string | null) {
     const age = date ? observationAge(date, nowMs) : NaN;
     return age >= 0 && age <= 7;
-  };
-  return !!data.checked_at && !data.refresh_failed && wasRecentlyChecked(data.updated_at, nowMs, 4, true)
-    && data.items.length >= 10 && data.items.every((row) => dated(row.price_date) && (row.currency === "USD" || dated(row.fx_date)));
+  }
+  return data.items.filter((row) => {
+    const retrieved = row.retrieved_at ?? (data.failed.includes(row.ticker) ? null : data.updated_at);
+    return dated(row.price_date) && (row.currency === "USD" || dated(row.fx_date))
+      && wasRecentlyChecked(retrieved, nowMs, CHECK_MAX_HOURS);
+  });
+}
+
+export function hasFreshMarketCaps(data: MarketCaps, nowMs: number): boolean {
+  return verifiedCompanies(data, nowMs).length > 0;
 }
 
 // 5 120 Md$ -> "5,12 T$" ; 842 Md$ -> "842 Md$"

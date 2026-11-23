@@ -589,7 +589,9 @@ export default function QuizRunner(props: RunnerProps) {
                   <p>{r.q.explanation}</p>
                   {(r.q.source || r.q.reference_date) && (
                     <p className="font-mono text-xs">
-                      {r.q.source && <>Source : {r.q.source}</>}
+                      {r.q.source && (r.q.source_url?.startsWith("https://")
+                        ? <a className="underline hover:text-accent" href={r.q.source_url} target="_blank" rel="noreferrer">{r.q.source}</a>
+                        : r.q.source)}
                       {r.q.kind === "conjunctural" && r.q.reference_date && (
                         <span className="ml-3 text-warn">Donnée au {frDate(r.q.reference_date)}</span>
                       )}
@@ -679,7 +681,12 @@ export default function QuizRunner(props: RunnerProps) {
 
       <div className="mt-8">
         <div className="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap sm:gap-4">
-          <h1 className="grow text-lg font-medium leading-snug sm:text-xl">{q.prompt}</h1>
+          <div className="grow">
+            <h1 className="text-lg font-medium leading-snug sm:text-xl">{q.prompt}</h1>
+            {allowsEstimate && !/\bmarge\b|à \d+[\d\s,.]*\s*[^ ]+ près/i.test(q.prompt) && (
+              <p className="mt-2 text-sm text-muted">Marge relative acceptée · ±{(q.tolerance_pct ?? 0).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %</p>
+            )}
+          </div>
           {!exam && (
             <button type="button" onClick={restart} disabled={pending} className="min-h-9 shrink-0 border border-line px-2.5 text-xs text-muted hover:border-muted hover:text-fg disabled:opacity-50">
               {restarting ? "Redémarrage…" : "Recommencer"}
@@ -752,7 +759,9 @@ export default function QuizRunner(props: RunnerProps) {
             <p className="mt-2 text-muted">{q.explanation}</p>
             {(q.source || (q.kind === "conjunctural" && q.reference_date)) && (
               <p className="mt-3 font-mono text-xs text-muted">
-                {q.source && <>Source : {q.source}</>}
+                {q.source && (q.source_url?.startsWith("https://")
+                  ? <a className="underline hover:text-accent" href={q.source_url} target="_blank" rel="noreferrer">{q.source}</a>
+                  : q.source)}
                 {q.kind === "conjunctural" && q.reference_date && <span className="ml-3 text-warn">Donnée au {frDate(q.reference_date)}</span>}
               </p>
             )}

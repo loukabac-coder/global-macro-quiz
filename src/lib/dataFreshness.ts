@@ -2,6 +2,7 @@ const HOUR_MS = 3_600_000;
 const DAY_MS = HOUR_MS * 24;
 
 export const DATA_REFRESH_MS = 120_000;
+export const CHECK_MAX_HOURS = 48;
 export const dataTimestamp = new Intl.DateTimeFormat("fr-FR", {
   dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris",
 });

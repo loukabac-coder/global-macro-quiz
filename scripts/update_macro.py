@@ -12,6 +12,7 @@ import csv, io, json, math, os, sys, datetime, time, urllib.error, urllib.reques
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from functools import lru_cache
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "public", "data", "macro.json")
 UA = {"User-Agent": "Mozilla/5.0 (global-macro-quiz robot)"}
@@ -22,6 +23,7 @@ class Observation:
     value: float
     source: str
     status: str | None = None
+    published_at: str | None = None
 
 
 def http_get(url):
@@ -48,6 +50,23 @@ def ecb_last(path):
         raise ValueError("série BCE vide")
     row = rows[-1]
     return Observation(norm_date(row["TIME_PERIOD"]), float(row["OBS_VALUE"]), f"BCE ({path})", row.get("OBS_STATUS"))
+
+
+@lru_cache(maxsize=1)
+def ecb_daily_exchange():
+    root = ET.fromstring(http_get("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"))
+    fixing = root.find(".//{*}Cube[@time]")
+    if fixing is None:
+        raise ValueError("fixing BCE introuvable")
+    return fixing.attrib["time"], {row.attrib["currency"]: float(row.attrib["rate"]) for row in fixing}
+
+
+def ecb_exchange(currency):
+    try:
+        return ecb_last(f"EXR/D.{currency}.EUR.SP00.A")
+    except Exception:
+        date, rates = ecb_daily_exchange()
+        return Observation(date, rates[currency], f"BCE (fixing EUR/{currency})")
 
 
 def norm_date(s):
@@ -217,29 +236,51 @@ def first_ok(*fns):
     raise last
 
 
+GDP_COUNTRIES = {
+    "fra": "France", "usa": "États-Unis", "chn": "Chine", "deu": "Allemagne",
+    "jpn": "Japon", "ind": "Inde", "gbr": "Royaume-Uni", "ita": "Italie",
+    "bra": "Brésil", "can": "Canada", "kor": "Corée du Sud", "esp": "Espagne",
+}
+
+
+def world_bank_gdp(country):
+    series = "NY.GDP.MKTP.CD"
+    url = f"https://api.worldbank.org/v2/country/{country.upper()}/indicator/{series}?format=json&per_page=10"
+    _, rows = json.loads(http_get(url))
+    latest = max((row for row in rows if row["value"] is not None), key=lambda row: row["date"])
+    return Observation(f"{latest['date']}-01-01", float(latest["value"]) / 1e9,
+                       f"Banque mondiale · PIB en dollars courants ({series})")
+
+
 # clé : (libellé, unité, fréquence, max_age_days, fonction de récupération)
 INDICATORS = {
     "ecb_deposit_rate": ("Taux de la facilité de dépôt de la BCE", "%", "daily", 120,
         lambda: first_ok(lambda: ecb_last("FM/D.U2.EUR.4F.KR.DFR.LEV"), lambda: ecb_last("FM/B.U2.EUR.4F.KR.DFR.LEV"))),
     "fed_target_upper": ("Fed funds : borne haute de la fourchette cible", "%", "daily", 120,
         lambda: fred_last("DFEDTARU", "Réserve fédérale")),
-    "us_cpi_yoy": ("Inflation IPC-U américaine sur 12 mois, non désaisonnalisée", "%", "monthly", 100,
-        lambda: first_ok(fred_cpi_yoy, bls_cpi_yoy)),
-    "ez_hicp_yoy": ("Inflation IPCH de la zone euro sur 12 mois", "%", "monthly", 100,
+    "us_cpi_yoy": ("Inflation IPC-U américaine sur 12 mois, non désaisonnalisée", "%", "monthly", 65,
+        lambda: freshest(fred_cpi_yoy, bls_cpi_yoy)),
+    "ez_hicp_yoy": ("Inflation IPCH de la zone euro sur 12 mois", "%", "monthly", 65,
         lambda: freshest(eurostat_v2, lambda: eurostat_v2("EA21"),
                          lambda: ecb_last("HICP/M.U2.N.000000.4.ANR"), lambda: ecb_last("HICP/M.U2.N.TOTAL.4.ANR"),
                          eurostat_json, lambda: ecb_last("ICP/M.U2.N.000000.4.ANR"))),
-    "us_unrate": ("Taux de chômage américain", "%", "monthly", 100,
-        lambda: first_ok(lambda: fred_last("UNRATE", "BLS"), bls_unemployment)),
+    "us_unrate": ("Taux de chômage américain", "%", "monthly", 65,
+        lambda: freshest(lambda: fred_last("UNRATE", "BLS"), bls_unemployment)),
     "us_10y": ("Rendement du Treasury américain à 10 ans", "%", "daily", 7,
-        lambda: first_ok(treasury_10y, lambda: fred_last("DGS10", "Réserve fédérale"))),
+        lambda: freshest(treasury_10y, lambda: fred_last("DGS10", "Réserve fédérale"))),
     "eurusd": ("EUR/USD (taux de référence BCE)", "", "daily", 7,
-        lambda: ecb_last("EXR/D.USD.EUR.SP00.A")),
+        lambda: ecb_exchange("USD")),
     "brent": ("Brent, prix au comptant", "$/baril", "daily", 7,
         lambda: fred_last("DCOILBRENTEU", "EIA")),
     "wti": ("WTI, prix au comptant", "$/baril", "daily", 7,
         lambda: fred_last("DCOILWTICO", "EIA")),
     "gold": ("Or (once troy, contrat à terme)", "$/once", "daily", 7, lambda: yahoo_last("GC=F")),
+    "copper": ("Cuivre (livre, contrat à terme)", "$/livre", "daily", 7, lambda: yahoo_last("HG=F")),
+    "copper_imf": ("Cuivre, moyenne mensuelle FMI", "$/tonne", "monthly", 80, lambda: fred_last("PCOPPUSDM", "FMI")),
+    "eurjpy": ("EUR/JPY (taux de référence BCE)", "¥/€", "daily", 7, lambda: ecb_exchange("JPY")),
+    "eurgbp": ("EUR/GBP (taux de référence BCE)", "£/€", "daily", 7, lambda: ecb_exchange("GBP")),
+    **{f"gdp_{key}": (f"PIB nominal · {name}", "Md$", "annual", 1100, lambda code=key: world_bank_gdp(code))
+       for key, name in GDP_COUNTRIES.items()},
 }
 
 
@@ -254,9 +295,10 @@ def main():
 
     failed = []
     indicators = dict(old)
-    with ThreadPoolExecutor(max_workers=5) as workers:
-        futures = {key: workers.submit(spec[-1]) for key, spec in INDICATORS.items()}
-        for key, (label, unit, frequency, max_age, _) in INDICATORS.items():
+    specs = {key: spec for key, spec in INDICATORS.items() if "--intraday" not in sys.argv or spec[2] == "daily"}
+    with ThreadPoolExecutor(max_workers=6) as workers:
+        futures = {key: workers.submit(spec[-1]) for key, spec in specs.items()}
+        for key, (label, unit, frequency, max_age, _) in specs.items():
             try:
                 quote = futures[key].result()
                 now = datetime.datetime.now(datetime.timezone.utc)
@@ -268,20 +310,22 @@ def main():
                 indicators[key] = {"label": label, "value": quote.value, "unit": unit, "ref_date": quote.date,
                                    "source": quote.source, "max_age_days": max_age, "frequency": frequency,
                                    "retrieved_at": now.isoformat(timespec="seconds"), "status": quote.status}
+                if quote.published_at:
+                    indicators[key]["published_at"] = quote.published_at
                 print("OK ", key, quote.value, quote.date)
             except Exception as e:  # noqa: BLE001
                 failed.append(key)
                 print("KO ", key, e)
 
     checked_at = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-    successes = len(INDICATORS) - len(failed)
+    successes = len(specs) - len(failed)
     out = {"updated_at": checked_at if successes else data.get("updated_at"),
-           "checked_at": checked_at, "failed": failed, "indicators": indicators}
+           "checked_at": checked_at, "failed": sorted(set(failed) | (set(data.get("failed", [])) - set(specs))), "indicators": indicators}
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT + ".tmp", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     os.replace(OUT + ".tmp", OUT)
-    print(f"{successes}/{len(INDICATORS)} indicateurs récupérés")
+    print(f"{successes}/{len(specs)} indicateurs récupérés")
     if failed:
         print("::warning::Séries sans nouvelle récupération : " + ", ".join(failed))
     if not successes:

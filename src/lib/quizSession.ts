@@ -47,9 +47,9 @@ export type ResumedQuiz = {
 };
 
 export function mentalSeconds(level: number): number {
-  return level >= 4 ? 30 : 20;
+  return level === 1 ? 75 : level >= 4 ? 45 : 60;
 }
 
 export function gameSeconds(game: Game, level: number): number {
-  return game === "calcul" ? mentalSeconds(level) : game === "ordres" ? 30 : 15;
+  return game === "calcul" ? (level >= 4 ? 30 : 20) : game === "ordres" ? 30 : 15;
 }

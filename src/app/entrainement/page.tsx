@@ -13,7 +13,6 @@ const LEVELS: [string, string][] = [
   ["beginner", "Débutant"],
   ["intermediate", "Intermédiaire"],
   ["advanced", "Avancé"],
-  ["expert", "Expert"],
 ];
 
 function Card({ href, title, text, tag, locked }: { href: string; title: string; text: string; tag?: string; locked?: boolean }) {

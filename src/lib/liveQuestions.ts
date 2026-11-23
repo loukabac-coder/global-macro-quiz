@@ -1,162 +1,92 @@
-import { shuffle, type Question } from "@/lib/quiz";
-import { fmtCap, type Company, type MarketCaps } from "@/lib/marketcaps";
-import { dataTimestamp } from "@/lib/dataFreshness";
+import { fmt, type Question } from "@/lib/quiz";
+import { fmtCap, verifiedCompanies, type Company, type MarketCaps } from "@/lib/marketcaps";
 
-const FRENCH_ISSUERS = new Set(["MC.PA", "OR.PA", "AI.PA", "SU.PA", "RMS.PA", "TTE.PA", "SAN.PA", "SAF.PA", "BNP.PA"]);
+export const FRENCH_ISSUERS = new Set([
+  "MC.PA", "OR.PA", "AI.PA", "SU.PA", "RMS.PA", "TTE.PA", "SAN.PA", "SAF.PA", "BNP.PA", "DG.PA", "EL.PA", "DSY.PA", "CS.PA",
+]);
 
-// Questions générées à partir des capitalisations du jour : leurs réponses
-// se mettent à jour toutes seules chaque fois que le robot actualise les données.
+type RankPanel = { key: string; title: string; companies: Company[]; date: string };
 
-function md(c: Company): number {
-  return Math.round(c.market_cap_usd / 1e9);
-}
-
-function top(list: Company[], n: number): string {
-  return list
-    .slice(0, n)
-    .map((c, i) => `${i + 1}. ${c.name} (${fmtCap(c.market_cap_usd)})`)
-    .join(" ; ");
-}
-
-export function buildLiveQuestions(data: MarketCaps): Question[] {
-  if (!data.updated_at || !Number.isFinite(Date.parse(data.updated_at))) return [];
-  const collectedAt = new Date(data.updated_at);
-  const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Paris" }).format(collectedAt);
-  const collection = dataTimestamp.format(collectedAt);
-  const world = [...data.items].sort((a, b) => b.market_cap_usd - a.market_cap_usd);
-  const europe = world.filter((c) => c.region === "Europe");
-  const out: Question[] = [];
-  let n = 0;
-
-  const base = (diff: string, prompt: string, explanation: string) => ({
-    id: `live:${day}:${n++}`,
-    category_id: "market-caps",
-    difficulty: diff,
-    prompt: `${prompt} (collecte du ${collection}, heure de Paris)`,
-    explanation,
-    tolerance_pct: null as number | null,
-    wrong_explanations: null,
-    source: data.source,
-    kind: "conjunctural",
-    reference_date: day,
+export function comparablePanels(companies: Company[]): RankPanel[] {
+  const countries = [...new Set(companies.map((company) => company.country))];
+  const scopes = [
+    ["fr", "des groupes français suivis selon le domicile de l’émetteur", companies.filter((c) => FRENCH_ISSUERS.has(c.ticker))],
+    ["europe", "des grandes valeurs européennes suivies", companies.filter((c) => c.region === "Europe")],
+    ["us", "des grandes valeurs américaines suivies", companies.filter((c) => c.country === "États-Unis")],
+    ["world", "des grandes valeurs mondiales suivies", companies],
+    ...countries.filter((country) => country !== "France" && country !== "États-Unis").map((country) =>
+      [`pays:${country}`, `des entreprises suivies · ${country}`, companies.filter((company) => company.country === country)] as const),
+  ] as const;
+  return scopes.flatMap(([key, title, rows]) => {
+    const sessions = new Map<string, Company[]>();
+    for (const row of rows) {
+      const session = row.price_date;
+      if (!session || (row.currency !== "USD" && row.fx_date !== session)) continue;
+      sessions.set(session, [...(sessions.get(session) ?? []), row]);
+    }
+    const latest = [...sessions].filter(([, list]) => list.length >= 2).sort(([a], [b]) => b.localeCompare(a))[0];
+    if (!latest) return [];
+    const [date, sameSession] = latest;
+    return [{ key, title, date, companies: sameSession.toSorted((a, b) => b.market_cap_usd - a.market_cap_usd) }];
   });
+}
 
-  function mcq(diff: string, prompt: string, right: Company, wrong: Company[], explanation: string) {
-    if (new Set([right.name, ...wrong.map((company) => company.name)]).size !== wrong.length + 1) return;
-    out.push({
-      ...base(diff, prompt, explanation),
-      type: "mcq",
-      options: [right.name, ...wrong.map((w) => w.name)],
-      correct: 0,
-    });
-  }
+function base(id: string, family: string, competency: string, date: string, source: string, difficulty: string): Omit<Question, "type" | "prompt" | "options" | "correct" | "tolerance_pct" | "explanation"> {
+  return {
+    id: `live:${id}:${date}`, family: `capitalisations:${family}`, competency, category_id: "market-caps",
+    difficulty, source, kind: "conjunctural", reference_date: date, wrong_explanations: null, max_seconds: 45,
+  };
+}
 
-  const apple = world.find((company) => company.ticker === "AAPL");
-  if (apple?.price_date && md(apple) >= 500) {
-    const correct = md(apple);
-    out.push({
-      ...base("intermediate", "Estime la capitalisation d’Apple en milliards de dollars, à 500 Md$ près.",
-        `La collecte donne environ ${fmtCap(apple.market_cap_usd)} pour la séance du ${apple.price_date}.`),
-      type: "numeric", options: { unit: "Md$" }, correct, tolerance_pct: 100 * 500 / correct,
-      reference_date: apple.price_date,
-    });
-  }
-
-  const french = world.filter((c) => FRENCH_ISSUERS.has(c.ticker)).slice(0, 4);
-  if (french.length === 4 && french[0].market_cap_usd > french[1].market_cap_usd) {
-    mcq("intermediate", "Parmi ces quatre valeurs françaises du panel, laquelle a la plus grande capitalisation ?",
-      french[0], french.slice(1), `Classement de la sélection : ${top(french, 4)}.`);
-  }
-
-  if (world.length >= 8) {
-    mcq(
-      "intermediate",
-      "Quelle entreprise a la plus grande capitalisation boursière parmi les grandes valeurs suivies ?",
-      world[0],
-      shuffle(world.slice(1, 8)).slice(0, 3),
-      `Classement du panel : ${top(world, 5)}.`,
-    );
-    // Intrus : une entreprise qui n'est PAS dans le top 5
-    const intruder = shuffle(world.slice(8, 20))[0];
-    if (intruder) {
-      mcq(
-        "intermediate",
-        "Laquelle de ces entreprises ne fait pas partie des cinq premières capitalisations du panel suivi ?",
-        intruder,
-        shuffle(world.slice(0, 5)).slice(0, 3),
-        `Top 5 du panel : ${top(world, 5)}. ${intruder.name} est n°${world.indexOf(intruder) + 1} (${fmtCap(intruder.market_cap_usd)}).`,
-      );
-    }
-    // Capitalisation d'une grande valeur, en Md$
-    const pick = shuffle(world.slice(0, 5))[0];
-    out.push({
-      ...base("intermediate", `Quelle est la capitalisation boursière de ${pick.name} ? (ordre de grandeur, en milliards de dollars)`,
-        `${pick.name} : environ ${fmtCap(pick.market_cap_usd)}. Classement du jour : ${top(world, 5)}.`),
-      type: "numeric",
-      options: { unit: "Md$" },
-      correct: md(pick),
-      tolerance_pct: 20,
-    });
-    // Comparaison de 4 entreprises éloignées dans le classement
-    const spread = [0, 4, 9, 14, 19, 24].filter((i) => i < world.length);
-    const four = shuffle(spread).slice(0, 4).map((i) => world[i]);
-    const best = [...four].sort((a, b) => b.market_cap_usd - a.market_cap_usd);
-    if (four.length === 4) {
-      mcq(
-        "intermediate",
-        "Parmi ces quatre entreprises, laquelle a la plus grande capitalisation ?",
-        best[0],
-        best.slice(1),
-        best.map((c) => `${c.name} : ${fmtCap(c.market_cap_usd)}`).join(" ; ") + ".",
-      );
-    }
-  }
-
-  if (europe.length >= 8) {
-    mcq(
-      "intermediate",
-      "Quelle est la plus grande capitalisation boursière d’Europe (parmi les grandes valeurs suivies) ?",
-      europe[0],
-      shuffle(europe.slice(1, 8)).slice(0, 3),
-      `Top Europe du jour : ${top(europe, 5)}.`,
-    );
-    const top3 = europe.slice(0, 3);
-    const intruder = shuffle(europe.slice(5, 15))[0];
-    if (intruder) {
-      mcq(
-        "intermediate",
-        "Laquelle de ces entreprises ne fait pas partie des trois premières capitalisations européennes du panel ?",
-        intruder,
-        top3,
-        `Top 3 Europe du jour : ${top(europe, 3)}. ${intruder.name} est n°${europe.indexOf(intruder) + 1} en Europe.`,
-      );
-    }
-    const e = shuffle(europe.slice(0, 5))[0];
-    out.push({
-      ...base("intermediate", `Quelle est la capitalisation boursière de ${e.name} ? (ordre de grandeur, en milliards de dollars)`,
-        `${e.name} : environ ${fmtCap(e.market_cap_usd)}. Top Europe : ${top(europe, 5)}.`),
-      type: "numeric",
-      options: { unit: "Md$" },
-      correct: md(e),
-      tolerance_pct: 25,
-    });
-  }
-
-  // Meilleure entreprise d'un pays (parmi quatre du même pays)
-  const byCountry = new Map<string, Company[]>();
-  for (const c of world) byCountry.set(c.country, [...(byCountry.get(c.country) ?? []), c]);
-  const eligible = [...byCountry.entries()].filter(([, l]) => l.length >= 4);
-  if (eligible.length) {
-    const [country, list] = shuffle(eligible)[0];
-    const four = shuffle(list).slice(0, 4);
-    const best = [...four].sort((a, b) => b.market_cap_usd - a.market_cap_usd);
-    mcq(
-      "intermediate",
-      `Parmi ces quatre entreprises (${country}), laquelle a la plus grande capitalisation ?`,
-      best[0],
-      best.slice(1),
-      best.map((c) => `${c.name} : ${fmtCap(c.market_cap_usd)}`).join(" ; ") + ".",
-    );
-  }
-  return out;
+export function buildLiveQuestions(data: MarketCaps, nowMs = Date.now()): Question[] {
+  const verified = verifiedCompanies(data, nowMs);
+  const individual: Question[] = verified.map((company) => {
+    const md = company.market_cap_usd / 1e9;
+    const absolute = ["AAPL", "NVDA"].includes(company.ticker) && md >= 1000 ? 500 : Math.max(1, Math.round(md * 0.2));
+    const date = company.price_date!;
+    const source = [data.source, company.fx_date ? `change ${company.fx_date} · ${company.fx_source ?? "source de conversion"}` : null].filter(Boolean).join(" · ");
+    return {
+      ...base(company.ticker, "estimation", "Estimer une capitalisation datée", date, source, "intermediate"),
+      type: "numeric", options: { unit: "Md$" }, correct: md, tolerance_pct: 100 * absolute / md,
+      prompt: `Estime la capitalisation de ${company.name} en milliards de dollars pour la séance du ${date}. Marge de ±${fmt(absolute)} Md$.`,
+      explanation: `${company.name} représente environ ${fmtCap(company.market_cap_usd)}. La valeur est exprimée en dollars américains pour la séance indiquée.`,
+    };
+  });
+  const rankings: Question[] = comparablePanels(verified).flatMap(({ key, title, date, companies }) => {
+    if (companies.length < 5) return [];
+    const first = companies[0];
+    if (first.market_cap_usd === companies[1].market_cap_usd || companies[2].market_cap_usd === companies[3].market_cap_usd) return [];
+    const top = companies.slice(0, 5).map((c, i) => `${i + 1}. ${c.name} (${fmtCap(c.market_cap_usd)})`).join(" · ");
+    const scope = `Panel ${title}, ${companies.length} entreprises comparables en dollars américains au ${date}`;
+    const source = `${data.source} · ${scope}`;
+    const labels = companies.slice(0, 5).map((c) => c.name);
+    const candidate = key === "fr" || key === "us" ? 1 : 3;
+    return [
+      {
+        ...base(`${key}:leader`, "rang", "Identifier une entreprise en tête", date, source, "intermediate"),
+        type: "mcq", options: [labels[1], labels[0], labels[3]], correct: 1, tolerance_pct: null,
+        prompt: `${scope}. Quelle entreprise a la plus grande capitalisation ?`,
+        explanation: `Voici les cinq premières entreprises de ce panel. ${top}.`,
+      },
+      {
+        ...base(`${key}:top-three`, "trio", "Identifier trois grandes capitalisations", date, source, "intermediate"),
+        type: "mcq", options: [[0, 1, 3], [0, 2, 4], [0, 1, 2]].map((indexes) => indexes.map((i) => labels[i]).join(", ")), correct: 2, tolerance_pct: null,
+        prompt: `${scope}. Quelles sont les trois premières capitalisations ?`,
+        explanation: `La comparaison porte sur les entreprises du panel à la même date. ${top}.`,
+      },
+      {
+        ...base(`${key}:presence`, "presence", "Vérifier l’appartenance à un trio de tête", date, source, "advanced"),
+        type: "true_false", options: null, correct: candidate < 3, tolerance_pct: null,
+        prompt: `${scope}. ${labels[candidate]} figure parmi les trois premières capitalisations.`,
+        explanation: `${labels[candidate]} est au rang ${candidate + 1} dans le panel. ${top}.`,
+      },
+      {
+        ...base(`${key}:order`, "classement", "Classer plusieurs sociétés par valeur", date, source, "advanced"),
+        type: "mcq", options: [[2, 1, 0], [0, 1, 2], [1, 0, 2]].map((indexes) => indexes.map((i) => labels[i]).join(" → ")), correct: 1, tolerance_pct: null,
+        prompt: `${scope}. Quel ordre place ces sociétés de la plus grande capitalisation à la plus petite ?`,
+        explanation: `Du premier au cinquième, le panel donne ${top}.`,
+      },
+    ];
+  });
+  return [...individual, ...rankings];
 }

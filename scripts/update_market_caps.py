@@ -2,7 +2,7 @@
 Collecte automatique des capitalisations boursières dans public/data/market-caps.json.
 Lancée par GitHub Actions (voir .github/workflows/donnees-du-jour.yml).
 Source : Yahoo Finance via la bibliothèque yfinance (donnée de marché gratuite, non officielle).
-Sécurité : si trop de valeurs manquent, l'ancien fichier est conservé (on n'écrase jamais avec des données cassées).
+Une observation manquante garde son dernier horodatage de vérification.
 """
 import json, sys, datetime, math, os
 import urllib.request
@@ -26,19 +26,19 @@ COMPANIES = [
     ("BAC","Bank of America","États-Unis","Amérique"),("AMD","AMD","États-Unis","Amérique"),
     ("GS","Goldman Sachs","États-Unis","Amérique"),("MS","Morgan Stanley","États-Unis","Amérique"),
     # Asie / Moyen-Orient
-    ("TSM","TSMC","Taïwan","Asie"),("2222.SR","Saudi Aramco","Arabie saoudite","Moyen-Orient"),
+    ("2330.TW","TSMC","Taïwan","Asie"),("2222.SR","Saudi Aramco","Arabie saoudite","Moyen-Orient"),
     ("005930.KS","Samsung Electronics","Corée du Sud","Asie"),("0700.HK","Tencent","Chine","Asie"),
-    ("BABA","Alibaba","Chine","Asie"),("600519.SS","Kweichow Moutai","Chine","Asie"),
+    ("9988.HK","Alibaba","Chine","Asie"),("600519.SS","Kweichow Moutai","Chine","Asie"),
     ("7203.T","Toyota","Japon","Asie"),("8306.T","Mitsubishi UFJ","Japon","Asie"),
     ("RELIANCE.NS","Reliance Industries","Inde","Asie"),("HDFCBANK.NS","HDFC Bank","Inde","Asie"),
     ("1398.HK","ICBC","Chine","Asie"),
     # Europe (zone euro, Royaume-Uni, Suisse, Nordiques)
-    ("ASML","ASML","Pays-Bas","Europe"),("SAP.DE","SAP","Allemagne","Europe"),
+    ("ASML.AS","ASML","Pays-Bas","Europe"),("SAP.DE","SAP","Allemagne","Europe"),
     ("NESN.SW","Nestlé","Suisse","Europe"),("NOVO-B.CO","Novo Nordisk","Danemark","Europe"),
     ("ROG.SW","Roche","Suisse","Europe"),("NOVN.SW","Novartis","Suisse","Europe"),
     ("MC.PA","LVMH","France","Europe"),("OR.PA","L'Oréal","France","Europe"),
     ("RMS.PA","Hermès","France","Europe"),("TTE.PA","TotalEnergies","France","Europe"),
-    ("SAN.PA","Sanofi","France","Europe"),("AIR.PA","Airbus","France","Europe"),
+    ("SAN.PA","Sanofi","France","Europe"),("AIR.PA","Airbus","Pays-Bas","Europe"),
     ("SU.PA","Schneider Electric","France","Europe"),("BNP.PA","BNP Paribas","France","Europe"),
     ("AI.PA","Air Liquide","France","Europe"),("SAF.PA","Safran","France","Europe"),
     ("AZN.L","AstraZeneca","Royaume-Uni","Europe"),("SHEL.L","Shell","Royaume-Uni","Europe"),
@@ -50,6 +50,11 @@ COMPANIES = [
     ("ISP.MI","Intesa Sanpaolo","Italie","Europe"),("ENEL.MI","Enel","Italie","Europe"),
     ("UBSG.SW","UBS","Suisse","Europe"),("ABBN.SW","ABB","Suisse","Europe"),
     ("CFR.SW","Richemont","Suisse","Europe"),
+    ("DG.PA","Vinci","France","Europe"),("EL.PA","EssilorLuxottica","France","Europe"),
+    ("DSY.PA","Dassault Systèmes","France","Europe"),("CS.PA","AXA","France","Europe"),
+    ("RY.TO","Banque Royale du Canada","Canada","Amérique"),("SHOP.TO","Shopify","Canada","Amérique"),
+    ("BHP.AX","BHP","Australie","Océanie"),("CBA.AX","Commonwealth Bank","Australie","Océanie"),
+    ("VALE3.SA","Vale","Brésil","Amérique"),("PETR4.SA","Petrobras","Brésil","Amérique"),
 ]
 
 def latest_close(ticker):
@@ -108,6 +113,13 @@ def publish(data, path):
 
 def main():
     out_path = os.path.join(os.path.dirname(__file__), "..", "public", "data", "market-caps.json")
+    try:
+        with open(out_path, encoding="utf-8") as f:
+            previous = json.load(f)
+    except (OSError, ValueError):
+        previous = {}
+    universe = {sym for sym, *_ in COMPANIES}
+    retained = {row["ticker"]: row for row in previous.get("items", []) if row["ticker"] in universe}
     items, fx, failed = [], {}, []
     collected = datetime.datetime.now(datetime.timezone.utc)
     for sym, name, country, region in COMPANIES:
@@ -128,39 +140,32 @@ def main():
             _, price_date = latest_close(ticker)
             if not recent(price_date, collected.date()):
                 raise ValueError("séance absente ou ancienne")
+            if price_date < retained.get(sym, {}).get("price_date", ""):
+                raise ValueError("séance antérieure à la précédente")
             items.append({"ticker": sym, "name": name, "country": country, "region": region,
                           "market_cap_usd": round(cap * r), "price_date": price_date,
-                          "fx_date": fx_date, "fx_source": fx_source, "currency": cur})
+                          "fx_date": fx_date, "fx_source": fx_source, "currency": cur,
+                          "retrieved_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")})
         except Exception as e:
             failed.append(sym); print("KO", sym, e)
 
     ok_ratio = len(items) / len(COMPANIES)
     print(f"{len(items)}/{len(COMPANIES)} valeurs récupérées")
-    # Garde-fous : assez de valeurs, et les grandes valeurs de référence présentes
-    names = {i["ticker"] for i in items}
     checked_at = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-    if ok_ratio < 0.8 or not {"AAPL", "MSFT", "NVDA"} <= names:
-        try:
-            with open(out_path, encoding="utf-8") as f:
-                previous = json.load(f)
-        except (OSError, ValueError):
-            previous = {"updated_at": None, "source": "Yahoo Finance", "items": []}
-        publish({**previous, "checked_at": checked_at, "refresh_failed": True, "failed": failed}, out_path)
-        print("::warning::Capitalisations insuffisantes, instantané précédent conservé.")
-        sys.exit(1)
-
-    items.sort(key=lambda i: i["market_cap_usd"], reverse=True)
+    retained.update({row["ticker"]: row for row in items})
     data = {
-        "updated_at": checked_at,
+        "updated_at": checked_at if items else previous.get("updated_at"),
         "checked_at": checked_at,
-        "refresh_failed": False,
+        "refresh_failed": ok_ratio < 0.8,
         "source": "Estimations Yahoo Finance, taux de conversion Yahoo Finance ou BCE",
         "failed": failed,
-        "items": items,
+        "items": sorted(retained.values(), key=lambda i: i["market_cap_usd"], reverse=True),
     }
     publish(data, out_path)
     if failed:
         print("::warning::Valeurs non récupérées : " + ", ".join(failed))
+    if not items:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

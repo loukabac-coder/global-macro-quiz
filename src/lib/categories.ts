@@ -6,6 +6,7 @@ export const CATS: [string, string][] = [
   ["central-banks", "Banques centrales"],
   ["monetary-policy", "Politique monétaire"],
   ["macroeconomics", "Macroéconomie"],
+  ["geopolitics", "Géopolitique"],
   ["fx", "Change"],
   ["commodities", "Matières premières"],
   ["macro-guesstimates", "Ordres de grandeur"],

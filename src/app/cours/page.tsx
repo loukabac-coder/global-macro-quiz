@@ -1,29 +1,23 @@
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import CourseSearch, { type CourseSearchEntry } from "@/components/CourseSearch";
-import { CHAPTERS } from "@/lib/courses";
-import { MODULES } from "@/lib/modules";
-import { DIFFICULTY_FR } from "@/lib/quiz";
+import { lessonHref, lessonsFor } from "@/lib/courseTree";
+import { GROUPS, LEVELS, TRACKS, unitCode } from "@/lib/program";
 import { searchText } from "@/lib/searchText";
 
 export const metadata = { title: "Cours — Global Macro Quiz" };
 
 const entries: CourseSearchEntry[] = [
-  ...CHAPTERS.map((chapter) => ({
-    href: `/cours/${chapter.slug}`, code: chapter.code, title: chapter.title, intro: chapter.intro, level: chapter.level,
-    index: searchText([
-      chapter.title, chapter.intro, chapter.code, chapter.category, chapter.level, ...chapter.remember, ...(chapter.interview ?? []),
-      ...chapter.sections.flatMap((section) => [
+  ...GROUPS.flatMap((group) => group.units.flatMap((unit) => lessonsFor(group, unit).map((page, i) => ({
+    href: lessonHref(group, unit, page), code: `${unitCode(group, unit)}.${i + 1}`, title: page.title, intro: unit.title,
+    level: LEVELS.find(({ id }) => id === page.level)!.name,
+    index: searchText([group.title, unit.title, page.title, ...page.sections.flatMap((section) => [
         section.title, ...(section.paragraphs ?? []), ...(section.bullets ?? []), ...(section.formulas ?? []),
         section.example ?? "", ...(section.table?.head ?? []), ...(section.table?.rows.flat() ?? []),
       ]),
     ].join(" ")),
-  })),
-  ...MODULES.filter((module) => module.ready).map((module) => ({
-    href: `/module?id=${module.id}`, code: "Module", title: module.title, intro: module.goal, level: DIFFICULTY_FR[module.level],
-    index: searchText([module.title, module.goal, ...module.points, ...module.categories].join(" ")),
     onlyInSearch: true,
-  })),
+  })))),
 ];
 
 export default function CoursIndex() {
@@ -32,6 +26,22 @@ export default function CoursIndex() {
       <main className="fade-in py-10">
         <h1 className="text-3xl font-semibold tracking-tight">Cours</h1>
         <CourseSearch entries={entries}>
+          {TRACKS.map((track) => (
+            <section key={track.id} className="mt-9">
+              <h2 className="text-xl font-semibold">{track.title}</h2>
+              <ul className="mt-4 divide-y divide-line border-y border-line">
+                {GROUPS.filter((group) => group.track === track.id).map((group) => (
+                  <li key={group.no}>
+                    <Link href={`/cours/${group.slug}`} className="flex flex-wrap items-center gap-3 py-4 hover:bg-panel">
+                      <span className="font-mono text-accent">{group.no}</span>
+                      <span className="font-semibold">{group.title}</span>
+                      <span className="text-sm text-muted sm:ml-auto">{group.units.length} sous-modules</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
           <h2 className="mt-12 text-xl font-semibold tracking-tight">Chiffres du jour</h2>
           <p className="mt-2 max-w-xl text-sm text-muted">Les chiffres à connaître en ce moment, mis à jour chaque jour, avec leur date de référence.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -44,9 +54,6 @@ export default function CoursIndex() {
               <span className="mt-1 block text-sm text-muted">Taux directeurs, inflation, change, pétrole, or.</span>
             </Link>
           </div>
-          <p className="mt-8 text-sm text-muted">
-            Contenu pédagogique rédigé à partir de notions standards. Il ne remplace pas les textes officiels (traités, rapports des banques centrales) cités dans les corrections des questions.
-          </p>
         </CourseSearch>
       </main>
     </AppShell>

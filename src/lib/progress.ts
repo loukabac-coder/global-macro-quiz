@@ -10,14 +10,14 @@ export function xpForLevel(level: number): number {
 }
 
 const NAMES = [
-  "Étudiant",
-  "Stagiaire",
-  "Analyste junior",
-  "Analyste",
-  "Associate",
-  "Vice-président",
-  "Directeur",
-  "Managing Director",
+  "Découverte",
+  "Premiers pas",
+  "En progression",
+  "Régulier",
+  "Assidu",
+  "Très assidu",
+  "Habitué",
+  "Confirmé",
 ];
 
 export function levelName(level: number): string {

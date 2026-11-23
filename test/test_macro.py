@@ -7,7 +7,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from scripts import update_macro
+from scripts import update_macro, update_news
 
 
 class MacroTests(unittest.TestCase):
@@ -72,6 +72,50 @@ class MacroTests(unittest.TestCase):
         with patch.object(update_market_caps, "ecb_reference_rates", return_value=rates):
             result = update_market_caps.usd_rate("GBP", {}, datetime.date(2026, 11, 22))
         self.assertEqual(result, (1.25, "2026-11-20", "BCE"))
+
+    def test_world_bank_picks_latest_published_gdp_in_billions(self):
+        response = json.dumps([{}, [
+            {"date": "2026", "value": None}, {"date": "2024", "value": 1_700_000_000_000},
+            {"date": "2025", "value": 2_000_000_000_000},
+        ]])
+        with patch.object(update_macro, "http_get", return_value=response):
+            quote = update_macro.world_bank_gdp("fra")
+        self.assertEqual((quote.date, quote.value), ("2025-01-01", 2000))
+
+    def test_exchange_fallback_keeps_the_same_fixing_and_date(self):
+        with patch.object(update_macro, "ecb_last", side_effect=TimeoutError), patch.object(
+            update_macro, "ecb_daily_exchange", return_value=("2026-11-20", {"JPY": 150})
+        ):
+            quote = update_macro.ecb_exchange("JPY")
+        self.assertEqual((quote.date, quote.value), ("2026-11-20", 150))
+
+    def test_council_feed_uses_official_day_and_preserves_publication(self):
+        now = datetime.datetime(2026, 11, 23, 10, tzinfo=datetime.timezone.utc)
+        xml = """<rss><channel>
+        <item><title>Accord sur le méthane</title><description>Accord provisoire entre les deux institutions.</description>
+        <link>https://www.consilium.europa.eu/fr/press/press-releases/2026/11/19/methane</link>
+        <pubDate>Thu, 19 Nov 2026 09:05:00 GMT</pubDate></item>
+        <item><title>Accord sur le méthane</title><description>Autre source.</description>
+        <link>https://example.org/fr/press/press-releases/2026/11/19/a</link></item>
+        </channel></rss>"""
+        rows = update_news.parse_feed(xml, now, update_news.COUNCIL, r"^/fr/press/press-releases", "Consilium")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["date"], "2026-11-19")
+        self.assertEqual(rows[0]["published_at"], "2026-11-19T09:05:00+00:00")
+        self.assertEqual(rows[0]["retrieved_at"], "2026-11-23T10:00:00+00:00")
+
+    def test_leader_parsers_read_current_offices_and_reject_missing_markers(self):
+        data = {
+            "fr": ("<a>Prénom Exemple <span>Mandat en cours</span></a>", "Prénom Exemple"),
+            "uk": ("Current role holder: <a>The Rt Hon Given Example MP</a> <h2>Contents</h2>", "Given Example"),
+            "de": ("The current Federal Government consists of Federal Chancellor Given Example and 17 Federal Ministers.", "Given Example"),
+            "ca": ("<title>Given Example - Prime Minister of Canada | Prime Minister of Canada</title>", "Given Example"),
+            "eu": ("<h1>Prénom Exemple</h1> Président du Conseil européen", "Prénom Exemple"),
+        }
+        for code, (html, name) in data.items():
+            self.assertEqual(update_news.parse_leader(code, html), name)
+            with self.assertRaises(ValueError):
+                update_news.parse_leader(code, "<html>Page indisponible</html>")
 
 
 if __name__ == "__main__":

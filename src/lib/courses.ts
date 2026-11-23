@@ -143,9 +143,9 @@ const referenceChapters: Chapter[] = [
           "Règle de 72 : temps de doublement ≈ 72 / taux en %      (à 6 % → 12 ans ; à 4 % → 18 ans ; à 3 % → 24 ans)",
           "Intérêt simple = capital × taux × durée en années",
           "Valeur future = capital × (1 + taux)ⁿ",
-          "Composition rapide sur 2 ans : (1 + a)² ≈ 1 + 2a + a²      7 % sur 2 ans : 7 + 7 + 0,49 = 14,49 %",
+          "Composition rapide sur 2 ans. (1 + a)² = 1 + 2a + a²      À 7 %, 7 + 7 + 0,49 = 14,49 %.",
         ],
-        example: "5 % pendant 10 ans : 1,05¹⁰ ≈ 1,63, soit environ +63 % (et non +50 %).",
+        example: "À 5 % pendant deux ans, deux intérêts de 5 % auxquels on ajoute 0,25 % donnent 10,25 %.",
       },
       {
         title: "9. Points de base, P&L, change",

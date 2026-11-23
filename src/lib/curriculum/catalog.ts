@@ -8,6 +8,21 @@ import { coreQuestions } from "@/lib/curriculum/core";
 import { fxQuestions } from "@/lib/curriculum/fx";
 import { scenarioQuestions } from "@/lib/curriculum/scenarios";
 import type { CurriculumQuestion } from "@/lib/curriculum/question";
+import type { ProgramQuestion } from "@/lib/curriculum/editorial";
+import { questionFamily, questionLocation } from "@/lib/curriculum/legacyMapping";
+import { macroBank } from "@/lib/curriculum/macroBank";
+import { macroCases } from "@/lib/curriculum/macroCases";
+import { banksBank } from "@/lib/curriculum/banksBank";
+import { geopoliticsBank } from "@/lib/curriculum/geopoliticsBank";
+import { geopoliticsCases } from "@/lib/curriculum/geopoliticsCases";
+import { marketsBank } from "@/lib/curriculum/marketsBank";
+import { referenceBank } from "@/lib/curriculum/referenceBank";
+import { marketPractice } from "@/lib/curriculum/marketPractice";
+import { mentalBank } from "@/lib/curriculum/mentalBank";
+import { mentalCases } from "@/lib/curriculum/mentalCases";
+import { interviewBank } from "@/lib/curriculum/interviewBank";
+import { financePractice } from "@/lib/curriculum/financePractice";
+import { productsPractice } from "@/lib/curriculum/productsPractice";
 
 const mentalStages: [string, number, Topic[]][] = [
   ["i1", 3, ["variations", "interets", "bps", "ratios"]],
@@ -20,7 +35,7 @@ const mentalExamples = mentalStages.flatMap(([moduleId, level, topics]): Curricu
   return topics.flatMap((topic) => Array.from({ length: 4 }, (_, i) => {
     const id = `course:${moduleId}:mental-math:${topic}-${i + 1}`;
     const question = mentalQuestion(level, mulberry32(hashString(id)), topic);
-    const revised = moduleId === "i1" && (topic === "interets" || topic === "variations");
+    const revised = topic === "interets" || topic === "variations";
     return { ...question, id: revised ? `${id}-v2` : id, moduleId };
   })).filter(({ prompt }) => {
     if (seen.has(prompt)) return false;
@@ -29,11 +44,25 @@ const mentalExamples = mentalStages.flatMap(([moduleId, level, topics]): Curricu
   });
 });
 
-export const CURRICULUM: CurriculumQuestion[] = [
+const original: CurriculumQuestion[] = [
   ...coreQuestions, ...centralBanks, ...fxQuestions, ...commodities, ...applicationQuestions, ...scenarioQuestions, ...mentalExamples,
 ];
 
-const curriculumIds = new Set(CURRICULUM.map((question) => question.id));
+const variants = new Set([...scenarioQuestions, ...mentalExamples].map((q) => q.id));
+export const LEGACY_CURRICULUM = original.map((q): ProgramQuestion => ({
+  ...q,
+  ...questionLocation(q),
+  difficulty: (q.difficulty === "expert" ? "advanced" : q.difficulty) as ProgramQuestion["difficulty"],
+  family: questionFamily(q),
+  competency: questionFamily(q),
+  origin: variants.has(q.id) ? "variant" : "editorial",
+}));
+export const CURRICULUM: ProgramQuestion[] = [
+  ...LEGACY_CURRICULUM, ...macroBank, ...macroCases, ...banksBank, ...geopoliticsBank, ...geopoliticsCases,
+  ...referenceBank, ...marketPractice, ...marketsBank, ...interviewBank, ...financePractice, ...productsPractice, ...mentalBank, ...mentalCases,
+];
+
+const curriculumIds = new Set(CURRICULUM.flatMap((question) => [question.id, question.id.replace(/-v2$/, "")]));
 
 export function isCurrentFavorite(question: Question): boolean {
   if (typeof question.id !== "string") return false;

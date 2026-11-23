@@ -1,11 +1,11 @@
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import Cta from "@/components/Cta";
-import { LEVELS, MODULES } from "@/lib/modules";
+import { GROUPS } from "@/lib/program";
 
 const modes: [string, string][] = [
   ["Finance Games", "Séries chronométrées de 10 questions rapides : calcul éclair, ordres de grandeur, culture marchés. Points selon ta vitesse."],
-  ["Calcul mental infini", "Pourcentages, variations, intérêts composés, devises, bps, règle de 72. Générés à la volée, niveaux 1 à 5."],
+  ["Calcul mental infini", "Pourcentages, variations, intérêts composés, devises et points de base. Trois niveaux et des séries générées à la volée."],
   ["Daily Challenge", "Les mêmes 10 questions pour tout le monde, chaque jour. Une série à tenir."],
   ["Weakness Training", "Les questions que tu rates reviennent au bon moment (répétition espacée)."],
   ["Training par catégorie", "Banques centrales, taux, change, matières premières, capitalisations, marchés."],
@@ -22,7 +22,7 @@ export default function Home() {
               Prépare les questions techniques et les finance games de tes entretiens.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-muted">
-              Calcul mental, culture marchés, macro. Des questions rapides comme à l’oral, {MODULES.length} modules progressifs et des chiffres de marché datés.
+              Calcul mental, culture marchés, macro. Six modules à travailler à trois niveaux et des chiffres de marché datés.
             </p>
             <Cta />
             <p className="mt-4 font-mono text-xs text-muted">Gratuit · sans carte bancaire · du niveau L2 au niveau entretien</p>
@@ -53,8 +53,8 @@ export default function Home() {
           <h2 className="text-2xl font-semibold tracking-tight">Comment ça marche</h2>
           <ol className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-3">
             {[
-              ["01", "Test de niveau", "12 questions pour trouver ton point de départ dans le parcours."],
-              ["02", "Parcours en 4 niveaux", "Chaque module propose un cours court, un mini-check et un quiz de validation."],
+              ["01", "Test de niveau", "12 questions pour repérer ce que tu connais déjà."],
+              ["02", "Parcours en 3 niveaux", "Lis les cours, valide les sous-modules, puis passe les six synthèses du niveau."],
               ["03", "Finance Games", "Des séries chronométrées pour t’entraîner à répondre vite, à l’oral comme en entretien."],
             ].map(([n, t, d]) => (
               <li key={n} className="bg-ink p-5">
@@ -69,10 +69,10 @@ export default function Home() {
         <section className="border-t border-line py-14">
           <h2 className="text-2xl font-semibold tracking-tight">Le parcours, des bases à l’entretien</h2>
           <ol className="mt-8 divide-y divide-line border-y border-line">
-            {LEVELS.map((level) => (
-              <li key={level.id} className="grid gap-1 py-4 sm:grid-cols-[10rem_1fr]">
-                <span className="font-semibold">{level.name}</span>
-                <span className="text-sm text-muted">{level.tagline}</span>
+            {GROUPS.map((group) => (
+              <li key={group.no} className="flex gap-4 py-4">
+                <span className="font-mono text-accent">{group.no}</span>
+                <Link href={`/cours/${group.slug}`} className="font-semibold hover:text-accent">{group.title}</Link>
               </li>
             ))}
           </ol>

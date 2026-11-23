@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import NewsSnapshot from "@/components/NewsSnapshot";
 import { dataTimestamp } from "@/lib/dataFreshness";
 import { fetchMacro, fmtValue, isDatedObservation, isVerifiedMacro, referenceLabel } from "@/lib/macro";
 import { useDataSnapshot } from "@/lib/useDataSnapshot";
@@ -10,6 +11,7 @@ export default function Donnees() {
   const { data, loading, unreachable, now } = useDataSnapshot(fetchMacro);
 
   const rows = data ? Object.entries(data.indicators) : [];
+  const pending = data?.failed?.filter((series) => !data.indicators[series]) ?? [];
 
   return (
     <AppShell width="max-w-4xl">
@@ -29,6 +31,8 @@ export default function Donnees() {
         {data?.checked_at && (
           <p className="mt-4 text-sm text-muted">Dernier passage du robot le {dataTimestamp.format(new Date(data.checked_at))}.</p>
         )}
+        {unreachable && rows.length > 0 && <p role="status" className="mt-3 text-sm text-warn">Le site affiche la dernière publication chargée. Nouvelle tentative automatique.</p>}
+        {!!pending.length && <p className="mt-3 text-sm text-warn">Séries en attente d’une première valeur vérifiée · {pending.join(", ")}.</p>}
         {data && rows.length > 0 && (
           <div className="mt-8 overflow-x-auto border border-line">
             <table className="w-full text-sm">
@@ -43,7 +47,7 @@ export default function Donnees() {
               <tbody>
                 {rows.map(([key, ind]) => {
                   const dated = isDatedObservation(key, ind);
-                  const fresh = !unreachable && isVerifiedMacro(data, key, now);
+                  const fresh = isVerifiedMacro(data, key, now);
                   return (
                     <tr key={key} className="border-b border-line last:border-0">
                       <td className="px-3 py-2.5">
@@ -56,11 +60,11 @@ export default function Donnees() {
                       </td>
                       <td className="px-3 py-2.5 font-mono text-xs">
                         {dated ? referenceLabel(key, ind) : "Date de séance indisponible"}
-                        {ind.retrieved_at && <p className="mt-1 text-muted">Collectée le {dataTimestamp.format(new Date(ind.retrieved_at))}</p>}
+                        {ind.retrieved_at && <p className="mt-1 text-muted">Vérifiée le {dataTimestamp.format(new Date(ind.retrieved_at))}</p>}
                         {ind.published_at && <p className="mt-1 text-muted">Publiée le {dataTimestamp.format(new Date(ind.published_at))}</p>}
                         {ind.status && <p className="mt-1 text-muted">Code fournisseur : {ind.status}</p>}
                         {data.failed?.includes(key) && <p className="mt-1 text-warn">Observation conservée après un échec de collecte</p>}
-                        {!fresh && <p className="mt-1 text-warn">Fraîcheur non vérifiée · question désactivée</p>}
+                        {fresh ? <p className="mt-1 text-accent">Utilisable en quiz</p> : <p className="mt-1 text-warn">Fraîcheur non vérifiée · questions de cette série suspendues</p>}
                       </td>
                       <td className="hidden px-3 py-2.5 text-xs text-muted sm:table-cell">{ind.source}</td>
                     </tr>
@@ -72,8 +76,9 @@ export default function Donnees() {
         )}
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/capitalisations" className="border border-line px-5 py-3 text-sm hover:border-muted">Capitalisations du jour</Link>
-          <Link href="/quiz?categorie=monetary-policy,macroeconomics,fx,commodities" className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">S’entraîner sur ces données</Link>
+          <Link href="/quiz?categorie=monetary-policy,macroeconomics,fx,commodities,geopolitics" className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">S’entraîner sur ces données</Link>
         </div>
+        <NewsSnapshot />
       </main>
     </AppShell>
   );

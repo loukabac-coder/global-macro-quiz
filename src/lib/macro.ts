@@ -1,4 +1,4 @@
-import { observationAge, wasRecentlyChecked } from "@/lib/dataFreshness";
+import { CHECK_MAX_HOURS, observationAge, wasRecentlyChecked } from "@/lib/dataFreshness";
 
 export type Indicator = {
   label: string;
@@ -7,7 +7,7 @@ export type Indicator = {
   ref_date: string; // date de l'observation (AAAA-MM-JJ)
   source: string;
   max_age_days: number; // au-delà, la donnée n'est plus utilisée dans les questions
-  frequency?: "daily" | "monthly";
+  frequency?: "daily" | "monthly" | "annual";
   retrieved_at?: string;
   published_at?: string;
   status?: string | null;
@@ -45,12 +45,13 @@ export function isDatedObservation(key: string, ind: Indicator): boolean {
 export function isVerifiedMacro(data: MacroData, key: string, nowMs: number): boolean {
   const ind = data.indicators[key];
   return !!ind && isDatedObservation(key, ind) && isFresh(ind, nowMs)
-    && !data.failed?.includes(key) && wasRecentlyChecked(ind.retrieved_at, nowMs, 3);
+    && wasRecentlyChecked(ind.retrieved_at, nowMs, CHECK_MAX_HOURS);
 }
 
 export function referenceLabel(key: string, ind: Indicator): string {
   const date = new Date(ind.ref_date + "T00:00:00Z");
   if (!Number.isFinite(date.getTime())) return "Date indisponible";
+  if (ind.frequency === "annual") return date.getUTCFullYear().toString();
   const monthly = ind.frequency === "monthly" || ["us_cpi_yoy", "ez_hicp_yoy", "us_unrate"].includes(key);
   return new Intl.DateTimeFormat("fr-FR", monthly
     ? { month: "long", year: "numeric", timeZone: "UTC" }

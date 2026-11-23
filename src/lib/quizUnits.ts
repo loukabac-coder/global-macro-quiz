@@ -6,7 +6,7 @@ const CURRENCIES = {
   "€": "d’€", "$": "de $", "£": "de £", "¥": "de ¥",
   EUR: "d’EUR", USD: "d’USD", GBP: "de GBP", JPY: "de JPY", CHF: "de CHF", CAD: "de CAD", AUD: "d’AUD",
 } as const;
-const COUNTS = new Set(["appareils", "bacs", "barils", "colis", "foyers", "habitants", "litres", "places", "tonnes", "trajets", "unités", "ventes"]);
+const COUNTS = new Set(["appareils", "bacs", "barils", "billets", "colis", "foyers", "habitants", "kg", "litres", "nuitées", "personnes", "places", "tonnes", "trajets", "unités", "ventes", "vélos"]);
 
 function referenceUnit(unit: string): { power: number; base: string; suffix: string } | null {
   const currency = /^(Md|M|k|T)?\s*(€|\$|£|¥|EUR|USD|GBP|JPY|CHF|CAD|AUD)$/.exec(unit);
@@ -14,11 +14,14 @@ function referenceUnit(unit: string): { power: number; base: string; suffix: str
     const [, prefix, code] = currency;
     return { power: POWERS[prefix as keyof typeof POWERS] ?? 0, base: code, suffix: CURRENCIES[code as keyof typeof CURRENCIES] };
   }
-  const count = /^(milliers|millions|milliards|billions)(?:\s+(?:de |d[’'])(.+))?$/.exec(unit);
-  if (count) {
-    const [, scale, base = "unités"] = count;
+  const written = /^(milliers de milliards|milliers|millions|milliards|billions)(?:\s+(?:de |d[’'])(.+))?$/.exec(unit);
+  if (written) {
+    const [, scale, base = "unités"] = written;
+    const power = scale === "milliers de milliards" ? 12 : SCALE_LABELS.findIndex((label) => label === scale) * 3;
+    const suffix = CURRENCIES[base as keyof typeof CURRENCIES];
+    if (suffix) return { power, base, suffix };
     if (!COUNTS.has(base)) return null;
-    return { power: SCALE_LABELS.findIndex((label) => label === scale) * 3, base,
+    return { power, base,
       suffix: base === "unités" ? "" : base.startsWith("a") ? `d’${base}` : `de ${base}` };
   }
   if (COUNTS.has(unit)) return { power: 0, base: unit, suffix: unit === "unités" ? "" : unit.startsWith("a") ? `d’${unit}` : `de ${unit}` };

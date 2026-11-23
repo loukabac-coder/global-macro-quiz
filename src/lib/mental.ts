@@ -2,6 +2,7 @@
 // (jamais écrite à la main) et vient avec une explication de la méthode rapide.
 
 import { NUMERIC_TOLERANCE, type Question } from "@/lib/quiz";
+import { hashString, seededShuffle } from "@/lib/rng";
 
 export type Topic =
   | "pourcentages"
@@ -11,7 +12,8 @@ export type Topic =
   | "bps"
   | "multiplications"
   | "ratios"
-  | "ordres";
+  | "ordres"
+  | "estimations";
 
 export const TOPICS: { id: Topic; label: string }[] = [
   { id: "pourcentages", label: "Pourcentages" },
@@ -22,6 +24,7 @@ export const TOPICS: { id: Topic; label: string }[] = [
   { id: "multiplications", label: "Multiplications rapides" },
   { id: "ratios", label: "Ratios (PER, rendement, marge)" },
   { id: "ordres", label: "Ordres de grandeur" },
+  { id: "estimations", label: "Estimations guidées" },
 ];
 
 export type Rng = () => number;
@@ -75,8 +78,8 @@ function pourcentages(level: number, r: Rng): Gen {
 // ---------- Variations ----------
 function variations(level: number, r: Rng): Gen {
   if (level >= 4 && r() < 0.5) {
-    const pct = pick(r, level >= 5 ? [-35, -40, 35, -15, 60] : [20, 25, -20, 50, -25]);
-    const start = pick(r, [80, 100, 120, 140, 200, 240]);
+    const pct = pick(r, [20, 25, -20, 50, -25]);
+    const start = pick(r, [80, 100, 120, 160, 200, 240]);
     const end = r4(start * (1 + pct / 100));
     return {
       prompt: `Après une variation de ${sign(pct)} %, un prix vaut ${nf(end)}. Quel était le prix de départ ?`,
@@ -112,7 +115,7 @@ function variations(level: number, r: Rng): Gen {
         ? [10, 20, 25, 50, -10, -20, -25, -50]
         : level === 3
           ? [5, 10, 20, 25, 50, -5, -10, -20, -25, -50]
-          : [8, 12, 35, 60, -8, -35, -60, 75, -40];
+          : [5, 10, 20, 25, 50, 75, -5, -10, -20, -25, -50];
   const pct = pick(r, pcts);
   const a = pick(r, level === 2 ? [100, 200, 400, 500, 1000] : [40, 80, 100, 160, 200, 240, 400, 800]);
   const b = r4(a * (1 + pct / 100));
@@ -144,7 +147,7 @@ function interets(level: number, r: Rng): Gen {
     };
   }
   if (level <= 3) {
-    const cap = pick(r, [100, 200, 400, 1000, 2000]);
+    const cap = pick(r, [100, 200, 400, 1000, 2000, 4000]);
     const rate = pick(r, level === 2 ? [10, 20] : [5, 10, 20]);
     const interest = cap * rate / 100;
     const first = cap + interest;
@@ -179,15 +182,17 @@ function interets(level: number, r: Rng): Gen {
       explanation: `Intérêt annuel = ${nf((cap * rate) / 100)} €. Pour ${months} mois : × ${months}/12 = ${nf(ans)} €.`,
     };
   }
-  const rate = pick(r, [6, 7, 8]);
-  const n = 10;
-  const ans = r4(100 * Math.pow(1 + rate / 100, n));
+  const cap = pick(r, [400, 1000, 2000, 4000, 10000]);
+  const rate = pick(r, [5, 10, 20, 25]);
+  const interest = (cap * rate) / 100;
+  const extra = r4((interest * rate) / 100);
+  const ans = r4(2 * interest + extra);
   return {
-    prompt: `100 € à ${rate} % par an, intérêts composés, pendant ${n} ans : quelle valeur à peu près ?`,
+    prompt: `${nf(cap)} € à ${rate} % par an en intérêts composés pendant deux ans. Combien d’euros d’intérêts au total ?`,
     answer: ans,
-    tol: NUMERIC_TOLERANCE.estimate,
+    tol: 0,
     unit: "€",
-    explanation: `La règle de 72 estime le temps de doublement à ${nf(72 / rate)} ans. Le calcul 100 × ${nf(1 + rate / 100)}^${n} donne ${nf(ans)} €.`,
+    explanation: `Double l’intérêt de la première année, ${nf(interest)} €, puis ajoute ${nf(extra)} € d’intérêt sur cet intérêt. Total ${nf(ans)} €.`,
   };
 }
 
@@ -439,6 +444,40 @@ function ordres(level: number, r: Rng): Gen {
   return { prompt: `Dans un indice de ${total} T$ de capitalisation, une entreprise vaut ${nf(part * 100)} Md$. Estime son poids en %.`, answer: r4(((part * 100) / (total * 1000)) * 100), tol: NUMERIC_TOLERANCE.weight, unit: "%", explanation: `${nf(total)} T$ = ${nf(total * 1000)} Md$. Poids = ${part * 100} / ${nf(total * 1000)} = ${nf(((part * 100) / (total * 1000)) * 100)} %.` };
 }
 
+function estimations(level: number, r: Rng): Gen {
+  const tolerance = level === 1 ? 15 : level >= 4 ? 8 : 10;
+  const size = pick(r, [200, 300, 400, 500, 600, 800, 1000]);
+  const events = pick(r, [10, 20, 25, 30, 40, 50, 100]);
+  const variant = ri(r, 0, level === 1 ? 1 : 2);
+  if (variant === 0) {
+    const share = level === 1 ? 100 : pick(r, [20, 25, 50, 75, 80]);
+    const sold = size * share / 100;
+    return {
+      prompt: `Une salle de ${nf(size)} places remplit environ ${share} % de ses sièges à chacune de ${events} séances. Estime le nombre de billets. Marge de ±${tolerance} %.`,
+      answer: sold * events, tol: tolerance, unit: "billets",
+      explanation: `Compte environ ${nf(sold)} billets par séance. Sur ${events} séances, cela donne ${nf(sold * events)}.`,
+    };
+  }
+  if (variant === 1) {
+    const perHome = pick(r, [2, 2.5, 4, 5]);
+    const households = size * 1000;
+    const shortcut = perHome === 2.5 ? "Pour diviser par 2,5, multiplie par quatre puis divise par dix." : `Divise la population par ${nf(perHome)}.`;
+    return {
+      prompt: `Dans une ville fictive de ${nf(households * perHome)} habitants, la taille moyenne d’un foyer est ${nf(perHome)}. Estime le nombre de foyers. Marge de ±${tolerance} %.`,
+      answer: households, tol: tolerance, unit: "foyers",
+      explanation: `${shortcut} Résultat ${nf(households)} foyers.`,
+    };
+  }
+  const price = pick(r, [5, 10, 20, 25]);
+  const extraPrice = price * (level >= 4 ? 3 : 2);
+  const total = size * price + events * extraPrice;
+  return {
+    prompt: `Un salon estime recevoir ${nf(size)} visiteurs à ${price} € et ${events} exposants à ${extraPrice} €. Estime la recette totale. Marge de ±${tolerance} %.`,
+    answer: total, tol: tolerance, unit: "€",
+    explanation: `Calcule les deux lignes. ${nf(size * price)} € et ${nf(events * extraPrice)} € donnent environ ${nf(total)} €.`,
+  };
+}
+
 const GENERATORS: Record<Topic, (level: number, r: Rng) => Gen> = {
   pourcentages,
   variations,
@@ -448,27 +487,27 @@ const GENERATORS: Record<Topic, (level: number, r: Rng) => Gen> = {
   multiplications,
   ratios,
   ordres,
+  estimations,
 };
 
-const DIFF_BY_LEVEL = ["beginner", "intermediate", "intermediate", "advanced", "expert"];
+const DIFF_BY_LEVEL = ["beginner", "intermediate", "intermediate", "advanced", "advanced"];
 export const MENTAL_QUESTION_PREFIX = "gen:mental:v2:";
 
 export function mentalDifficulty(level: number): string {
   return DIFF_BY_LEVEL[Math.min(5, Math.max(1, Math.round(level))) - 1];
 }
 
-let counter = 0;
-
 export function mentalQuestion(level: number, r: Rng, topic?: Topic | null): Question {
   const lv = Math.min(5, Math.max(1, Math.round(level)));
   const t = topic ?? pick(r, TOPICS).id;
   const g = GENERATORS[t](lv, r);
-  counter += 1;
   return {
-    id: `${MENTAL_QUESTION_PREFIX}${t}:${lv}:${counter}`,
+    id: `${MENTAL_QUESTION_PREFIX}${t}:${lv}:${hashString(g.prompt + "|" + g.answer).toString(36)}`,
     category_id: "mental-math",
-    type: "numeric",
+    type: t === "estimations" ? "guesstimate" : "numeric",
     difficulty: mentalDifficulty(lv),
+    family: `mental:${t}`,
+    competency: TOPICS.find((entry) => entry.id === t)?.label,
     prompt: g.prompt,
     options: g.unit ? { unit: g.unit } : null,
     correct: g.answer,
@@ -488,17 +527,19 @@ export function mentalSession(count: number, startLevel: number, r: Rng, topic?:
   let guard = 0;
   let duplicates = 0;
   const intermediate = startLevel === 2 || startLevel === 3;
-  const maxLevel = intermediate ? 3 : 5;
+  const maxLevel = intermediate || startLevel === 1 ? 3 : 5;
+  const order = seededShuffle(TOPICS, r);
   while (out.length < count && guard < count * 20) {
     guard += 1;
     const level = intermediate && duplicates >= 6 ? 2 : Math.min(maxLevel, startLevel + Math.floor(out.length / step));
-    const q = mentalQuestion(level, r, topic);
+    const selected = topic ?? order[(out.length + duplicates) % order.length].id;
+    const q = mentalQuestion(startLevel === 1 && selected === "estimations" ? 1 : level, r, selected);
     if (seen.has(q.prompt)) {
       duplicates += 1;
       continue;
     }
     seen.add(q.prompt);
-    out.push(q);
+    out.push(startLevel === 1 ? { ...q, difficulty: "beginner" } : q);
     duplicates = 0;
   }
   return out;

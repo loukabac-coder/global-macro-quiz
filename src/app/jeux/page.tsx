@@ -24,7 +24,7 @@ function JeuxContent() {
   const params = new URLSearchParams(search);
   const game = params.get("mode");
   const lvParam = params.get("niveau");
-  const level = lvParam && /^[1-5]$/.test(lvParam) ? Number(lvParam) : 2;
+  const level = lvParam === "1" ? 1 : lvParam === "4" || lvParam === "5" ? 4 : 2;
   const [lv, setLv] = useState<number | null>(null);
   const chosen = lv ?? level;
 
@@ -52,14 +52,13 @@ function JeuxContent() {
         </p>
 
         <h2 className="mt-8 text-sm font-semibold">Difficulté des jeux</h2>
-        <div className="mt-3 flex gap-2 text-sm">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} onClick={() => setLv(n)} aria-pressed={chosen === n} className={`size-11 border font-mono ${chosen === n ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"}`}>
-              {n}
+        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+          {[1, 2, 4].map((n) => (
+            <button key={n} onClick={() => setLv(n)} aria-pressed={chosen === n} className={`min-h-11 border px-3 ${chosen === n ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"}`}>
+              {DIFFICULTY_FR[mentalDifficulty(n)]}
             </button>
           ))}
         </div>
-        <p className="mt-2 text-sm text-muted">Niveau {chosen} · {DIFFICULTY_FR[mentalDifficulty(chosen)]}</p>
 
         <ul className="mt-8 space-y-3">
           {GAMES.map((g) => (

@@ -1,8 +1,10 @@
 import macroFallback from "../../public/data/macro.json" with { type: "json" };
 import capsFallback from "../../public/data/market-caps.json" with { type: "json" };
+import newsFallback from "../../public/data/actualite.json" with { type: "json" };
 import { isAtLeastAsRecent, observationAge, type SnapshotDates } from "@/lib/dataFreshness";
 import type { MacroData } from "@/lib/macro";
 import type { MarketCaps } from "@/lib/marketcaps";
+import type { NewsData } from "@/lib/news";
 
 const PUBLISHED_DATA = "https://raw.githubusercontent.com/loukabac-coder/global-macro-quiz/data-live/public/data";
 
@@ -38,14 +40,26 @@ function isMacro(value: unknown, now: number): value is MacroData {
 function isMarketCaps(value: unknown, now: number): value is MarketCaps {
   if (!object(value) || typeof value.source !== "string" || !textList(value.failed) || !Array.isArray(value.items)) return false;
   if (value.refresh_failed !== undefined && typeof value.refresh_failed !== "boolean") return false;
-  if (value.items.length < 10 && (!value.refresh_failed || value.items.length !== 0)) return false;
   return value.items.every(
     (row) => object(row) && typeof row.ticker === "string" && typeof row.name === "string"
       && typeof row.country === "string" && typeof row.region === "string"
       && typeof row.market_cap_usd === "number" && Number.isFinite(row.market_cap_usd) && row.market_cap_usd > 0
       && (row.price_date === undefined || validDay(row.price_date, now))
+      && (row.retrieved_at === undefined || validTimestamp(row.retrieved_at, now))
       && (row.fx_date === null || row.fx_date === undefined || validDay(row.fx_date, now)),
   ) && new Set(value.items.map((row) => row.ticker)).size === value.items.length;
+}
+
+function isNews(value: unknown, now: number): value is NewsData {
+  if (!object(value) || !textList(value.failed) || !Array.isArray(value.events) || !Array.isArray(value.leaders)) return false;
+  function fact(row: unknown): row is Record<string, unknown> {
+    return object(row) && typeof row.id === "string" && typeof row.source === "string"
+      && typeof row.url === "string" && row.url.startsWith("https://")
+      && validDay(row.date, now) && validTimestamp(row.retrieved_at, now);
+  }
+  return value.events.every((row) => fact(row) && typeof row.title === "string" && typeof row.context === "string" &&
+    typeof row.topic === "string" && (row.published_at == null || validTimestamp(row.published_at, now)))
+    && value.leaders.every((row) => fact(row) && typeof row.name === "string" && typeof row.office === "string");
 }
 
 async function newest<T extends SnapshotDates>(
@@ -73,4 +87,8 @@ export function readMacroSnapshot(): Promise<MacroData> {
 
 export function readMarketCapsSnapshot(): Promise<MarketCaps> {
   return newest<MarketCaps>("market-caps.json", capsFallback, isMarketCaps);
+}
+
+export function readNewsSnapshot(): Promise<NewsData> {
+  return newest<NewsData>("actualite.json", newsFallback, isNews);
 }

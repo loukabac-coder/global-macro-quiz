@@ -1,275 +1,128 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import { getSupabase, supabaseConfigured } from "@/lib/supabase";
-import { levelName, levelProgress } from "@/lib/progress";
-import { todayParis } from "@/lib/rng";
 import { PASS_THRESHOLD } from "@/lib/config";
-import {
-  GUEST_MODULE,
-  LEVELS,
-  MODULES,
-  computeStatuses,
-  nextOpenModule,
-  previousModule,
-  modulePosition,
-  type Module,
-  type Progress,
-  type Status,
-} from "@/lib/modules";
+import { moduleById, type Progress } from "@/lib/modules";
+import { levelName, levelProgress } from "@/lib/progress";
+import { GROUPS, LEVELS, TRACKS, GUEST_MILESTONE, canAttempt, getMilestone, hasPassed, levelOpen, milestone, milestoneHref, unitCode, unitsAt, type Milestone } from "@/lib/program";
+import { useProgramProgress } from "@/lib/useProgramProgress";
 
-type Profile = {
-  display_name: string | null;
-  xp: number;
-  level: number;
-  streak_days: number;
-  placement_level: string | null;
-  last_daily_date: string | null;
-};
+function QuizLink({ item, progress, guest }: { item: Milestone; progress: Progress; guest: boolean }) {
+  const { group, unit } = item;
+  const done = hasPassed(item, progress);
+  const canStart = guest ? item.id === GUEST_MILESTONE : canAttempt(item, progress);
+  const label = unit ? `${unitCode(group, unit)} · ${unit.title}` : "Quiz de synthèse";
+  const attempt = progress[item.id];
+  const best = attempt?.best_pct;
+  const status = done ? attempt?.passed ? `Réussi · ${attempt.best_pct} %` : "Acquis repris"
+    : guest ? canStart ? "Essai invité" : "Compte requis"
+      : canStart ? best === undefined ? "À faire" : `Meilleur score · ${best} %` : "Verrouillé";
 
-function Dot({ status, n }: { status: Status | "guest-open"; n: string }) {
-  const base = "flex size-11 shrink-0 items-center justify-center rounded-full font-mono text-sm font-bold";
-  if (status === "validated" || status === "placed") return <span className={`${base} bg-accent text-ink`}>✓</span>;
-  if (status === "open" || status === "guest-open") return <span className={`${base} border-[3px] border-accent text-accent`}>{n}</span>;
-  return <span className={`${base} bg-line text-muted`}>{n}</span>;
+  return (
+    <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-line py-3 text-sm">
+      {canStart ? <Link className="font-medium underline decoration-line underline-offset-4 hover:text-accent" href={milestoneHref(item)}>{label}</Link>
+        : <span className="font-medium">{label}</span>}
+      <span className={`font-mono text-xs ${done ? "text-accent" : "text-muted"}`}>{status}</span>
+    </li>
+  );
 }
 
 export default function Parcours() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [progress, setProgress] = useState<Progress>({});
-  const [due, setDue] = useState(0);
-  const [today, setToday] = useState("");
-  const [setupMissing, setSetupMissing] = useState(false);
-  const [modulesMissing, setModulesMissing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [guest, setGuest] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      try {
-        if (!supabaseConfigured()) {
-          if (active) setGuest(true);
-          return;
-        }
-        const supabase = getSupabase();
-        const { data } = await supabase.auth.getSession();
-        const user = data.session?.user;
-        if (!user) {
-          if (active) setGuest(true);
-          return;
-        }
-        const iso = new Date().toISOString();
-        const [p, mp, dueRes] = await Promise.all([
-          supabase.from("profiles").select("display_name, xp, level, streak_days, placement_level, last_daily_date").eq("id", user.id).maybeSingle(),
-          supabase.from("module_progress").select("module_id, passed, best_pct, attempts").eq("user_id", user.id),
-          supabase.from("question_reviews").select("question_id", { count: "exact", head: true }).eq("user_id", user.id).lte("due_at", iso),
-        ]);
-        if (!active) return;
-        if (p.error) {
-          const base = await supabase.from("profiles").select("display_name, xp, level, streak_days").eq("id", user.id).maybeSingle();
-          if (!active) return;
-          if (base.error) setError("Impossible de charger ton profil : " + base.error.message);
-          else setProfile({ ...(base.data as Profile), placement_level: null, last_daily_date: null });
-          setSetupMissing(true);
-        } else setProfile(p.data as Profile | null);
-        if (mp.error) setModulesMissing(true);
-        else {
-          const pr: Progress = {};
-          for (const r of (mp.data ?? []) as { module_id: string; passed: boolean; best_pct: number; attempts: number }[]) {
-            pr[r.module_id] = { passed: r.passed, best_pct: r.best_pct, attempts: r.attempts };
-          }
-          setProgress(pr);
-        }
-        setDue(dueRes.count ?? 0);
-        setToday(todayParis());
-      } catch (e) {
-        if (active) setError(e instanceof Error ? e.message : "Erreur inconnue.");
-      }
-    }
-    load();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const placement = profile?.placement_level ?? null;
-  const statuses = computeStatuses(progress, guest ? null : placement);
-  const next = nextOpenModule(statuses);
-  const lp = profile ? levelProgress(profile.xp ?? 0) : null;
-  const dailyDone = !!profile && profile.last_daily_date === today && today !== "";
-  const validatedCount = MODULES.filter((m) => statuses[m.id] === "validated" || statuses[m.id] === "placed").length;
-  const readyCount = MODULES.filter((m) => m.ready).length;
-
-  function renderRow(m: Module) {
-    const st = statuses[m.id];
-    const prog = progress[m.id];
-    const isGuestOpen = guest && m.id === GUEST_MODULE && m.ready;
-    const isGuestLocked = guest && !isGuestOpen && m.ready;
-    const n = String(modulePosition(m));
-
-    let tag = "";
-    let tagClass = "text-muted";
-    if (guest) {
-      tag = isGuestOpen ? "Sans compte" : m.ready ? "Compte requis" : "En préparation";
-      if (isGuestOpen) tagClass = "text-accent";
-    } else if (st === "validated") {
-      tag = `VALIDÉ · ${prog?.best_pct ?? ""} %`;
-      tagClass = "text-accent";
-    } else if (st === "placed") {
-      tag = "VALIDÉ · test de niveau";
-      tagClass = "text-accent";
-    } else if (st === "open") {
-      tag = prog ? `EN COURS · meilleur ${prog.best_pct} %` : "À FAIRE";
-      tagClass = "text-warn";
-    } else if (st === "soon") tag = "En préparation";
-    else tag = "Verrouillé";
-
-    const clickable = guest ? isGuestOpen || isGuestLocked : st === "open" || st === "validated" || st === "placed";
-    const href = guest && !isGuestOpen ? "/inscription" : `/module?id=${m.id}`;
-    const body = (
-      <div className={`flex items-center gap-4 rounded-2xl px-3 py-3 ${st === "open" || isGuestOpen ? "bg-panel ring-2 ring-accent" : ""} ${!clickable ? "opacity-55" : ""}`}>
-        <Dot status={isGuestOpen ? "guest-open" : guest ? "locked" : st} n={n} />
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold">{m.title}</p>
-          <p className="truncate text-sm text-muted">
-            {!guest && st === "locked" ? `Valide d’abord « ${previousModule(m.id, statuses)?.title} »` : m.goal}
-          </p>
-        </div>
-        <span className={`hidden shrink-0 font-mono text-xs sm:block ${tagClass}`}>{tag}</span>
-      </div>
-    );
-    return <li key={m.id}>{clickable ? <Link href={href} className="block">{body}</Link> : body}</li>;
-  }
+  const { status, progress, profile, due, today } = useProgramProgress(true);
+  const guest = status === "guest";
+  const lp = profile ? levelProgress(profile.xp) : undefined;
+  const stages = LEVELS.flatMap(({ id }) => GROUPS.map((group) => milestone(group, id, null)));
+  const complete = stages.filter((item) => hasPassed(item, progress)).length;
+  const todo = LEVELS.flatMap(({ id }) => GROUPS.flatMap((group) =>
+    [...unitsAt(group, id).map((unit) => milestone(group, id, unit)), milestone(group, id, null)]))
+    .find((item) => canAttempt(item, progress) && !hasPassed(item, progress));
+  const archive = Object.entries(progress).filter(([id, row]) => !id.startsWith("p:") && row.passed);
+  const links = [
+    ["/examen-blanc", "Examen blanc", "20 questions · 45 s par question"],
+    ["/quiz?mode=daily", "Défi du jour", today && profile?.last_daily_date === today ? "Fait aujourd’hui ✓" : "10 questions"],
+    ["/quiz?mode=weakness", "Questions à revoir", due ? `${due} à revoir` : "Révision ciblée"],
+    ["/entrainement", "Entraînement libre", "Quiz, filtres et jeux"],
+    ["/favoris", "Favoris", "Questions enregistrées"],
+    ["/test-niveau", "Test de niveau", "12 questions"],
+  ];
 
   return (
     <AppShell>
       <main className="py-8 sm:py-10">
-        <h1 className="mb-6 text-3xl font-semibold tracking-tight">Parcours</h1>
-        {error && <div role="alert" className="border-l-2 border-danger bg-panel px-3 py-2.5 text-sm">{error}</div>}
-        {!profile && !error && !guest && <p className="text-sm text-muted">Chargement…</p>}
-
+        <h1 className="text-3xl font-semibold tracking-tight">Parcours</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">Réussis les quiz des sous-modules pour débloquer chacune des six synthèses. Il faut {PASS_THRESHOLD} % pour réussir un quiz. Les six synthèses ouvrent le niveau suivant.</p>
+        {status === "loading" && <p className="mt-6 text-sm text-muted">Chargement de ta progression…</p>}
+        {status === "error" && <p role="alert" className="mt-6 border-l-2 border-danger bg-panel p-4 text-sm">Ta progression n’a pas pu être chargée. Actualise la page pour réessayer.</p>}
         {guest && (
-          <div className="fade-in">
-            <p className="max-w-xl text-muted">
-              4 niveaux, 22 modules à valider dans l’ordre : un cours court, un mini-check, puis un quiz noté ({PASS_THRESHOLD} % pour valider).
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link href={`/module?id=${GUEST_MODULE}`} className="bg-accent px-6 py-4 text-center text-sm font-semibold text-ink hover:brightness-110">
-                Essayer le module 1 sans compte →
-              </Link>
-              <Link href="/invite" className="border border-line px-5 py-4 text-center text-sm hover:border-muted">Quiz rapide : 5 questions</Link>
-              <Link href="/examen-blanc" className="border border-line px-5 py-4 text-center text-sm hover:border-muted">Examen blanc</Link>
-              <Link href="/inscription" className="border border-line px-5 py-4 text-center text-sm hover:border-muted">Créer un compte</Link>
-            </div>
+          <div className="mt-6 flex flex-wrap gap-3 text-sm">
+            <Link href={milestoneHref(getMilestone(GUEST_MILESTONE)!)} className="bg-accent px-5 py-3 font-semibold text-ink">Essayer le calcul mental</Link>
+            <Link href="/invite" className="border border-line px-5 py-3 hover:border-accent">Quiz rapide</Link>
+            <Link href="/inscription" className="border border-line px-5 py-3 hover:border-accent">Créer un compte</Link>
           </div>
         )}
-
-        {setupMissing && profile && (
-          <div role="status" className="mb-6 border-l-2 border-warn bg-panel px-4 py-3 text-sm leading-relaxed">
-            Ta progression (XP, série) n’est pas encore activée : exécute le fichier <span className="font-mono">lot-1-progression.sql</span> dans Supabase (SQL Editor).
-          </div>
-        )}
-        {modulesMissing && profile && (
-          <div role="status" className="mb-6 border-l-2 border-warn bg-panel px-4 py-3 text-sm leading-relaxed">
-            Les modules ne sont pas encore activés : exécute le fichier <span className="font-mono">lot-4-modules.sql</span> dans Supabase (SQL Editor).
-          </div>
-        )}
-
         {profile && lp && (
-          <div className="fade-in">
-            <section className="border border-line bg-panel p-5 sm:p-6">
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <div>
-                  <p className="font-mono text-xs text-muted">NIVEAU {lp.level}</p>
-                  <p className="mt-1 text-2xl font-semibold tracking-tight">{levelName(lp.level)}</p>
-                </div>
-                <div className="flex gap-6 font-mono text-sm">
-                  <div><span className="text-2xl">{profile.streak_days}</span> <span className="text-muted">j de série</span></div>
-                  <div><span className="text-2xl">{profile.xp}</span> <span className="text-muted">XP</span></div>
-                  <div><span className="text-2xl">{validatedCount}/{MODULES.length}</span> <span className="text-muted">modules</span></div>
-                </div>
-              </div>
-              <div className="mt-4 h-1.5 w-full bg-line">
-                <div className="bar-fill h-full bg-accent" style={{ width: `${lp.pct}%` }} />
-              </div>
-              <p className="mt-1.5 font-mono text-xs text-muted">{lp.into} / {lp.span} XP vers le niveau {lp.level + 1}</p>
-
-              {next ? (
-                <Link href={`/module?id=${next.id}`} className="mt-6 block bg-accent px-5 py-4 text-ink hover:brightness-110">
-                  <span className="block text-base font-semibold">Continuer : {next.title} →</span>
-                  <span className="mt-0.5 block text-sm opacity-80">
-                    {LEVELS.find((l) => l.id === next.level)?.name} · module {modulePosition(next)} · {next.goal}
-                  </span>
-                </Link>
-              ) : (
-                <p className="mt-6 border-l-2 border-accent bg-ink px-4 py-3 text-sm">
-                  {validatedCount >= readyCount ? "Tous les modules disponibles sont validés. De nouveaux modules arrivent bientôt." : "Aucun module à continuer pour le moment."}
-                </p>
-              )}
-            </section>
-
-            {!placement && validatedCount === 0 && (
-              <Link href="/test-niveau" className="mt-4 block border border-line p-4 hover:border-accent">
-                <p className="font-mono text-xs text-muted">TU CONNAIS DÉJÀ LES BASES ?</p>
-                <p className="mt-1 font-semibold">Test de niveau : 8 questions, sauter les modules que tu maîtrises →</p>
-              </Link>
-            )}
-
-            <section className="mt-4 grid gap-3 sm:grid-cols-3">
-              <Link href="/quiz?mode=daily" className="border border-line p-4 hover:border-accent">
-                <p className="font-mono text-xs text-muted">DAILY CHALLENGE</p>
-                <p className="mt-1 font-semibold">{dailyDone ? "Fait aujourd’hui ✓" : "À faire : +25 XP"}</p>
-              </Link>
-              <Link href="/quiz?mode=weakness" className="border border-line p-4 hover:border-accent">
-                <p className="font-mono text-xs text-muted">À REVOIR</p>
-                <p className="mt-1 font-semibold">{due > 0 ? `${due} question${due > 1 ? "s" : ""} à revoir` : "Rien à revoir pour l’instant"}</p>
-              </Link>
-              <Link href="/entrainement" className="border border-line p-4 hover:border-accent">
-                <p className="font-mono text-xs text-muted">ENTRAÎNEMENT LIBRE</p>
-                <p className="mt-1 font-semibold">Quiz, jeux chronométrés, cours</p>
-              </Link>
-              <Link href="/examen-blanc" className="border border-line p-4 hover:border-accent">
-                <p className="font-mono text-xs text-muted">20 QUESTIONS · 45 S PAR QUESTION</p>
-                <p className="mt-1 font-semibold">Examen blanc</p>
-              </Link>
-              <Link href="/favoris" className="border border-line p-4 hover:border-accent">
-                <p className="mt-1 font-semibold">Mes questions favorites</p>
-              </Link>
-            </section>
-          </div>
+          <section className="mt-6 border border-line bg-panel p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <h2 className="text-xl font-semibold"><Link href="/profil" className="hover:text-accent">{levelName(lp.level)}</Link></h2>
+              <p className="font-mono text-sm text-muted">{profile.xp} XP · {profile.streak_days} j de série</p>
+            </div>
+            <div className="mt-3 h-1.5 bg-line"><div className="h-full bg-accent" style={{ width: `${lp.pct}%` }} /></div>
+            <p className="mt-3 text-sm">{complete}/18 synthèses réussies</p>
+            {todo && <Link href={milestoneHref(todo)} className="mt-4 inline-block bg-accent px-4 py-3 text-sm font-semibold text-ink">Continuer · {todo.unit?.title ?? todo.group.title}</Link>}
+          </section>
         )}
-
-        {(profile || guest) && (
+        <nav aria-label="Modes d’entraînement" className="mt-6 grid gap-2 sm:grid-cols-3">
+          {links.map(([href, label, detail]) => (
+            <Link key={href} className="border border-line px-4 py-3 text-sm hover:border-accent" href={href}>
+              <span className="font-semibold">{label}</span><span className="mt-1 block text-xs text-muted">{detail}</span>
+            </Link>
+          ))}
+        </nav>
+        {(status === "ready" || guest) && (
           <div className="mt-10 space-y-10">
-            {LEVELS.map((l, li) => {
-              const mods = MODULES.filter((m) => m.level === l.id);
-              const done = mods.filter((m) => statuses[m.id] === "validated" || statuses[m.id] === "placed").length;
-              return (
-                <section key={l.id}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-2">
-                    <h2 className="text-xl font-semibold">
-                      <span className="mr-2 font-mono text-sm text-accent">NIVEAU {li + 1}</span>
-                      {l.name}
-                    </h2>
-                    <span className="font-mono text-xs text-muted">{guest ? `${mods.length} modules` : `${done}/${mods.length} validés`}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-muted">{l.tagline}</p>
-                  <ol className="mt-3 space-y-1">
-                    {mods.map((m) => renderRow(m))}
-                  </ol>
-                </section>
-              );
-            })}
+            {LEVELS.map(({ id, name }) => (
+              <section key={id}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
+                  <h2 className="text-2xl font-semibold">{name}</h2>
+                  <span className="font-mono text-sm text-muted">{!levelOpen(id, progress) ? "Niveau verrouillé" : `${stages.filter((item) => item.level === id && hasPassed(item, progress)).length}/6 modules validés`}</span>
+                </div>
+                {TRACKS.map((track) => (
+                  <section key={track.id} className="mt-5">
+                    <h3 className="mb-2 text-sm font-semibold text-muted">{track.title}</h3>
+                    <div className="space-y-2">
+                      {GROUPS.filter((group) => group.track === track.id).map((group) => {
+                        const synthesis = milestone(group, id, null);
+                        const units = unitsAt(group, id);
+                        const done = units.filter((unit) => hasPassed(milestone(group, id, unit), progress)).length;
+                        return (
+                          <details key={group.no} id={`${id}-${group.no}`} className="scroll-mt-5 border border-line bg-panel" open={todo?.group.no === group.no && todo.level === id || undefined}>
+                            <summary className="cursor-pointer px-4 py-4 hover:text-accent">
+                              <span className="mr-2 font-mono text-accent">{group.no}</span><span className="font-semibold">{group.title}</span>
+                              <span className="ml-3 text-xs text-muted">{hasPassed(synthesis, progress) ? "Validé ✓" : `${done}/${units.length} sous-modules`}</span>
+                            </summary>
+                            <ul className="px-4">
+                              {units.map((unit) => <QuizLink key={unit.slug} item={milestone(group, id, unit)} progress={progress} guest={guest} />)}
+                              <QuizLink item={synthesis} progress={progress} guest={guest} />
+                            </ul>
+                            <Link className="mx-4 mb-4 inline-block text-sm underline underline-offset-4 hover:text-accent" href={`/cours/${group.slug}`}>Tous les cours du module</Link>
+                          </details>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </section>
+            ))}
           </div>
         )}
-
-        {profile && (
-          <p className="mt-10 text-sm text-muted">
-            Tes statistiques et tes badges sont dans ton <Link href="/profil" className="text-fg underline underline-offset-4 hover:text-accent">Profil</Link>.
-          </p>
+        {!!archive.length && (
+          <details className="mt-10 border border-line px-4 py-3">
+            <summary className="cursor-pointer font-semibold">Anciennes validations · {archive.length}</summary>
+            <ul className="mt-3 space-y-2 text-sm text-muted">
+              {archive.map(([id, row]) => <li key={id}>{moduleById(id)?.title ?? id} · {row.best_pct} %</li>)}
+            </ul>
+          </details>
         )}
       </main>
     </AppShell>

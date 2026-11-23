@@ -3,7 +3,8 @@ import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { shuffle, type Question } from "@/lib/quiz";
 import { mentalDifficulty, mentalQuestion } from "@/lib/mental";
 import type { Game, HistoryFilter } from "@/lib/quizSession";
-import { LEVELS } from "@/lib/modules";
+import { LEVELS } from "@/lib/program";
+import { diverseDraw } from "@/lib/drawQuestions";
 
 export const SIZE = 10;
 type LiveQuestions = () => Promise<Question[]>;
@@ -14,18 +15,7 @@ export function parseList(v: string | null): string[] {
 
 // Tire n questions en variant les catégories (tourniquet).
 export function balanced(pool: Question[], n: number): Question[] {
-  const byCat = new Map<string, Question[]>();
-  for (const q of shuffle(pool)) byCat.set(q.category_id, [...(byCat.get(q.category_id) ?? []), q]);
-  const lists = shuffle([...byCat.values()]);
-  const out: Question[] = [];
-  let i = 0;
-  while (out.length < n && lists.some((l) => l.length > i)) {
-    for (const l of lists) {
-      if (l[i] && out.length < n) out.push(l[i]);
-    }
-    i += 1;
-  }
-  return out;
+  return diverseDraw(shuffle(pool), n);
 }
 
 export async function loadQuick(mixed: boolean, liveQuestions: LiveQuestions): Promise<Question[]> {
@@ -35,7 +25,7 @@ export async function loadQuick(mixed: boolean, liveQuestions: LiveQuestions): P
   const dedicated = [
     ...balanced(curriculumQuestions({ levels: ["beginner"] }), 6),
     ...balanced(curriculumQuestions({ levels: ["intermediate"] }), 3 - live.length),
-    ...balanced(curriculumQuestions({ levels: ["advanced", "expert"] }), 1),
+    ...balanced(curriculumQuestions({ levels: ["advanced"] }), 1),
   ];
   return [...shuffle(dedicated.filter((q) => q.difficulty === "beginner")), ...shuffle([...live, ...dedicated.filter((q) => q.difficulty !== "beginner")])];
 }
@@ -64,6 +54,7 @@ export async function loadTraining(categories: string[], levels: string[], liveQ
 
 export async function loadTrainingByHistory(
   supabase: SupabaseClient, categories: string[], levels: string[], history: Exclude<HistoryFilter, "all">,
+  liveQuestions?: LiveQuestions,
 ): Promise<Question[]> {
   const last = new Map<string, boolean>();
   const pageSize = 500;
@@ -74,7 +65,10 @@ export async function loadTrainingByHistory(
     for (const row of data as { question_key: string; was_correct: boolean }[]) last.set(row.question_key, row.was_correct);
     offset += data.length;
   }
-  const questions = curriculumQuestions({ categories, levels }).filter((q) => {
+  const dated = liveQuestions && (!levels.length || levels.some((level) => level !== "beginner")) ? (await liveQuestions())
+    .filter((q) => q.reference_date && q.difficulty !== "beginner"
+      && (!categories.length || categories.includes(q.category_id)) && (!levels.length || levels.includes(q.difficulty))) : [];
+  const questions = [...curriculumQuestions({ categories, levels }), ...dated].filter((q) => {
     const answer = last.get(q.id);
     return history === "unseen" ? answer === undefined : answer === (history === "correct");
   });
@@ -101,7 +95,7 @@ export async function loadWeakness(
   const needsPractice = balanced(pool.filter((q) => !seen.has(q.id) && weakKeys.has(`${q.category_id}:${q.difficulty}`)), SIZE - due.length);
   for (const q of needsPractice) seen.add(q.id);
 
-  const fallbackLevel = weak[0]?.difficulty ?? "beginner";
+  const fallbackLevel = weak[0]?.difficulty === "expert" ? "advanced" : weak[0]?.difficulty ?? "beginner";
   const rest = [...balanced(pool.filter((q) => !seen.has(q.id) && q.difficulty === fallbackLevel), SIZE - seen.size)];
   for (const q of rest) seen.add(q.id);
   const remaining = balanced(pool.filter((q) => !seen.has(q.id)), SIZE - seen.size);

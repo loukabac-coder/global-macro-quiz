@@ -32,9 +32,9 @@ Les tests Node exécutent les migrations dans PostgreSQL en mémoire avec un sch
 
 ## Publier sur Vercel
 
-1. Dans Supabase, vérifie que le projet cible contient déjà les tables `profiles`, `questions`, `quiz_sessions` et `attempts` utilisées par le site. Sur une base de test, applique les migrations dans l’ordre, [Lot 1](sql/lot-1-progression.sql), [Lot 4](sql/lot-4-modules.sql), [Lot 5](sql/lot-5-examen-et-questions.sql), puis [Lot 6](sql/lot-6-recommencer-quiz.sql). Vérifie un quiz connecté jusqu’à l’apparition du score dans le profil.
+1. Dans Supabase, vérifie que le projet cible contient les tables `profiles`, `questions`, `quiz_sessions` et `attempts`. Sur une base de test, applique les migrations dans l’ordre [Lot 1](sql/lot-1-progression.sql), [Lot 4](sql/lot-4-modules.sql), [Lot 5](sql/lot-5-examen-et-questions.sql), [Lot 6](sql/lot-6-recommencer-quiz.sql), puis [Lot 7](sql/lot-7-parcours.sql).
 2. Dans Vercel, ouvre **Settings → Environment Variables**. Conserve les variables publiques et ajoute `SUPABASE_SECRET_KEY` à **Production**. Pour une Preview testée sur une autre base, renseigne les trois variables de cette base pour la Preview.
-3. Avant de publier, applique les migrations manquantes dans **Supabase → SQL Editor** sur le projet de production. Si les lots 1, 4 et 5 sont en place, ouvre une nouvelle requête, copie [lot-6-recommencer-quiz.sql](sql/lot-6-recommencer-quiz.sql), puis clique sur **Run**. Cette migration permet de recommencer un quiz connecté avec le même tirage.
+3. Avant de publier le nouveau parcours, ouvre **Supabase → SQL Editor → New query** sur le projet cible. Si les lots précédents sont déjà appliqués, copie [lot-7-parcours.sql](sql/lot-7-parcours.sql), puis clique sur **Run**.
 4. Publie le commit sur la branche Production de Vercel, habituellement `main`. Les commandes suivantes supposent que cette branche est bien `main` et que tu travailles dessus.
 
 ```powershell
@@ -53,10 +53,10 @@ git push origin main
 
 ## Données et progression
 
-- Les modules et les autres quiz partagent la banque versionnée dans `src/lib/curriculum`. La refonte du contenu est activée au déploiement du code. Les RPC des lots existants enregistrent toujours la progression et les révisions dans Supabase. L’[audit du Parcours](docs/audit-parcours.md) détaille le nouveau contenu, et le [script d’inventaire](sql/inventaire-banque-historique.sql) permet de comparer la banque historique en lecture seule.
+- Le parcours propose les six grands modules à trois niveaux. Le [bilan du lot 7](docs/parcours-lot-7.md) donne les volumes de la banque, les règles de validation et la reprise des acquis. Le [script d’inventaire](sql/inventaire-banque-historique.sql) interroge la banque Supabase historique en lecture seule.
 - L’examen blanc tire 20 questions corrigées de niveau intermédiaire ou avancé dans cette banque. La page indique les thèmes manquants si le tirage est impossible. Les signalements des comptes connectés sont consultables dans la table `question_reports` du projet Supabase.
 - La reprise d’un quiz classique est disponible pendant quatre heures sur le même navigateur. Le chronomètre d’une question déjà démarrée continue de courir pendant l’interruption.
 - Le défi quotidien utilise la date de Paris et le même jeu de questions pour les visiteurs et les comptes. Les cours, les mini-checks et les corrections immédiates restent accessibles selon le niveau du parcours.
-- GitHub Actions contrôle la macro et l’or toutes les 30 minutes. Le panel de capitalisations est contrôlé chaque heure en semaine. Le calendrier GitHub et les délais de publication des fournisseurs peuvent décaler la disponibilité.
-- Les tableaux et les quiz lisent la même publication via `data-live`. Vercel ne redéploie pas sur cette branche. Les tableaux ouverts vérifient toutes les deux minutes s’il y a une nouvelle publication.
-- Un échec conserve l’ancienne observation et sa date. Le site identifie les valeurs dont la fraîcheur n’a pas pu être établie et les retire des nouveaux quiz. Les capitalisations converties en dollars indiquent la séance boursière et le taux de change Yahoo Finance ou BCE réellement utilisé.
+- GitHub Actions contrôle toutes les sources chaque jour à 7 h 11 et 18 h 41, heure de Paris. En semaine, les séries de marché bénéficient de passages supplémentaires. Les horaires de GitHub et de publication des fournisseurs peuvent décaler la disponibilité.
+- Les tableaux et les quiz lisent la même publication via `data-live`. Les tableaux ouverts cherchent une nouvelle publication toutes les deux minutes. Le code du site est déployé depuis la branche principale.
+- Lors d’un échec de collecte, la dernière observation conserve sa date et son dernier contrôle réussi. Les questions restent utilisables tant que les deux dates passent le contrôle de fraîcheur. Les capitalisations en dollars indiquent la séance et le taux de change utilisé.

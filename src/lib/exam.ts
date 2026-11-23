@@ -16,7 +16,7 @@ const THEMES = {
 type Theme = keyof typeof THEMES;
 
 const BY_CATEGORY: Record<string, Theme> = {
-  macroeconomics: "macro", "macro-guesstimates": "macro", fx: "fx",
+  macroeconomics: "macro", geopolitics: "macro", fx: "fx",
   "central-banks": "monetary", "monetary-policy": "monetary",
   "market-caps": "equities", equities: "equities", stocks: "equities",
   rates: "rates", "interest-rates": "rates", bonds: "bonds", derivatives: "derivatives",
@@ -39,8 +39,15 @@ export function drawExam(bank: Question[], previous: string[]) {
   const ids = new Set<string>();
   const prompts = new Set<string>();
   const pools = new Map(themes.map((theme) => [theme, { fresh: [] as Question[], repeated: [] as Question[] }]));
-  for (const q of shuffle(bank).sort((a, b) => Number(recent.has(a.id)) - Number(recent.has(b.id)))) {
+  function priority(q: Question) {
+    const theme = examTheme(q);
+    const culture = theme === "macro" || theme === "monetary" || q.kind === "conjunctural";
+    return (recent.has(q.id) ? 2 : 0) + (culture && q.difficulty === "advanced" ? 1 : 0);
+  }
+  for (const q of shuffle(bank).sort((a, b) => priority(a) - priority(b))) {
     if (q.difficulty !== "intermediate" && q.difficulty !== "advanced") continue;
+    if ((q.max_seconds ?? EXAM_SECONDS) > EXAM_SECONDS) continue;
+    if (q.difficulty === "advanced" && q.type === "numeric" && q.id.startsWith("course:e")) continue;
     const theme = examTheme(q);
     const prompt = searchText(q.prompt);
     if (!theme || !prompt || typeof q.explanation !== "string" || !q.explanation.trim() || ids.has(q.id) || prompts.has(prompt)) continue;

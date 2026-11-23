@@ -1,0 +1,47 @@
+{
+  "updated_at": "2026-11-23T17:46:14Z",
+  "checked_at": "2026-11-23T17:46:14Z",
+  "failed": [],
+  "events": [
+    {
+      "id": "joint-statement-eu-united-kingdom-summit-20-november-2026",
+      "title": "Sommet UE–Royaume-Uni à Bruxelles",
+      "context": "L’Union européenne et le Royaume-Uni ont publié une déclaration commune à leur deuxième sommet. Ils ont réaffirmé leur engagement à appliquer l’accord de retrait.",
+      "topic": "Commerce et coopération internationale",
+      "date": "2026-11-20",
+      "published_at": "2026-11-20T14:07:00+01:00",
+      "source": "Consilium · service de presse",
+      "url": "https://www.consilium.europa.eu/en/meetings/international-summit/2026/11/20/",
+      "retrieved_at": "2026-11-23T17:46:14Z"
+    },
+    {
+      "id": "methane-regulation-eu-agrees-targeted-amendment-to-safeguard-security-of-supply",
+      "title": "Accord provisoire sur les importations d’énergies fossiles et le méthane",
+      "context": "Le Conseil de l’UE et le Parlement européen ont annoncé un accord provisoire reportant de deux ans certaines obligations liées au méthane. Le report couvre des importations de gaz naturel, de pétrole brut et de charbon. L’adoption formelle constitue une étape distincte.",
+      "topic": "Énergie et approvisionnement",
+      "date": "2026-11-19",
+      "published_at": "2026-11-19T03:45:00+01:00",
+      "source": "Consilium · service de presse",
+      "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/19/methane-regulation-eu-agrees-targeted-amendment-to-safeguard-security-of-supply/",
+      "retrieved_at": "2026-11-23T17:46:14Z"
+    },
+    {
+      "id": "sustainability-council-and-parliament-strike-deal-on-simpler-transparency-rules-for-financial-product",
+      "title": "Accord provisoire sur la transparence des produits financiers durables",
+      "context": "Le Conseil de l’UE et le Parlement européen ont annoncé un accord provisoire sur la révision des obligations d’information relatives à la durabilité des produits financiers vendus dans l’Union.",
+      "topic": "Réglementation financière",
+      "date": "2026-11-19",
+      "published_at": "2026-11-19T21:01:00+01:00",
+      "source": "Consilium · service de presse",
+      "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/19/sustainability-council-and-parliament-strike-deal-on-simpler-transparency-rules-for-financial-product/pdf/",
+      "retrieved_at": "2026-11-23T17:46:14Z"
+    }
+  ],
+  "leaders": [
+    { "id": "fr", "office": "Présidence de la République française", "name": "Emmanuel Macron", "source": "Élysée", "url": "https://www.elysee.fr/la-presidence/les-presidents-de-la-republique", "date": "2026-11-23", "retrieved_at": "2026-11-23T17:46:14Z" },
+    { "id": "uk", "office": "Primature du Royaume-Uni", "name": "Andy Burnham", "source": "GOV.UK", "url": "https://www.gov.uk/government/ministers/prime-minister", "date": "2026-11-23", "retrieved_at": "2026-11-23T17:46:14Z" },
+    { "id": "de", "office": "Chancellerie fédérale allemande", "name": "Friedrich Merz", "source": "Gouvernement fédéral allemand", "url": "https://www.bundesregierung.de/breg-en/federal-government/federal-cabinet", "date": "2026-11-23", "retrieved_at": "2026-11-23T17:46:14Z" },
+    { "id": "ca", "office": "Primature du Canada", "name": "Mark Carney", "source": "Gouvernement du Canada", "url": "https://www.pm.gc.ca/en", "date": "2026-11-23", "retrieved_at": "2026-11-23T17:46:14Z" },
+    { "id": "eu", "office": "Présidence du Conseil européen", "name": "António Costa", "source": "Conseil européen", "url": "https://www.consilium.europa.eu/fr/european-council/president/", "date": "2026-11-23", "retrieved_at": "2026-11-23T17:46:14Z" }
+  ]
+}
