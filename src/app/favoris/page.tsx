@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { CAT_NAME } from "@/lib/categories";
+import { isCurrentFavorite } from "@/lib/curriculum/catalog";
 import { correctLabel, DIFFICULTY_FR, type Question } from "@/lib/quiz";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 
@@ -80,7 +81,7 @@ export default function Favoris() {
           <ul className="mt-6 divide-y divide-line border-y border-line">
             {rows.map(({ question_key: key, question: q }) => (
               <li key={key} className="space-y-2 py-4">
-                <details>
+                {isCurrentFavorite(q) ? <details>
                   <summary className="cursor-pointer">
                     <span className="font-mono text-xs text-muted">{CAT_NAME[q.category_id] ?? q.category_id} · {DIFFICULTY_FR[q.difficulty] ?? q.difficulty}</span>
                     <span className="mt-1 block font-medium">{q.prompt}</span>
@@ -90,7 +91,7 @@ export default function Favoris() {
                     <p>{q.explanation}</p>
                     {(q.source || q.reference_date) && <p className="font-mono text-xs">{[q.source, q.reference_date].filter(Boolean).join(" · ")}</p>}
                   </div>
-                </details>
+                </details> : <p className="text-sm text-muted">Cette question a été retirée du parcours.</p>}
                 <button type="button" disabled={!!removing} onClick={() => remove(key)} className="min-h-9 text-xs text-muted underline underline-offset-4 hover:text-fg disabled:opacity-50">
                   {removing === key ? "Retrait…" : "Retirer des favoris"}
                 </button>

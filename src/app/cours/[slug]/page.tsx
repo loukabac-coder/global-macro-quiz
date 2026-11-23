@@ -14,6 +14,8 @@ export default async function Chapitre({ params }: { params: Promise<{ slug: str
   if (!chapter) notFound();
   const index = CHAPTERS.findIndex((c) => c.slug === slug);
   const next = CHAPTERS[index + 1];
+  const training = `/quiz?categorie=${chapter.category}`;
+  const chapterTraining = chapter.difficulty ? `${training}&niveau=${chapter.difficulty}` : training;
 
   return (
     <AppShell width="max-w-3xl">
@@ -26,7 +28,7 @@ export default async function Chapitre({ params }: { params: Promise<{ slug: str
         <p className="mt-4 leading-relaxed text-muted">{chapter.intro}</p>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href={`/quiz?categorie=${chapter.category}`} className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">
+          <Link href={chapterTraining} className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">
             S’entraîner sur ce chapitre
           </Link>
           {chapter.category === "market-caps" && (
@@ -34,9 +36,11 @@ export default async function Chapitre({ params }: { params: Promise<{ slug: str
               Voir le classement du jour
             </Link>
           )}
-          <Link href={`/quiz?categorie=${chapter.category}&niveau=beginner`} className="border border-line px-5 py-3 text-sm hover:border-muted">
-            Niveau débutant seulement
-          </Link>
+          {!chapter.difficulty && (
+            <Link href={`${training}&niveau=beginner`} className="border border-line px-5 py-3 text-sm hover:border-muted">
+              Niveau débutant seulement
+            </Link>
+          )}
         </div>
 
         <div className="mt-12 space-y-10">
@@ -120,6 +124,15 @@ export default async function Chapitre({ params }: { params: Promise<{ slug: str
             </ul>
           </section>
         )}
+
+        {chapter.sources?.length ? (
+          <section className="mt-8">
+            <h2 className="text-sm font-semibold">Sources</h2>
+            <ul className="mt-2 space-y-2 text-sm text-muted">
+              {chapter.sources.map(({ url, label }) => <li key={url}><a href={url} className="underline underline-offset-4 hover:text-accent">{label}</a></li>)}
+            </ul>
+          </section>
+        ) : null}
 
         {next && (
           <p className="mt-10 text-sm">

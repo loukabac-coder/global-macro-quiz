@@ -1,3 +1,6 @@
+import { curriculumChapters } from "@/lib/curriculum/chapters";
+import type { LevelId } from "@/lib/modules";
+
 // Contenu du Cours. Notions durables uniquement : les chiffres qui bougent
 // (classements, niveaux de taux, cours) sont dans les questions datées et la page Capitalisations.
 
@@ -16,14 +19,15 @@ export type Chapter = {
   code: string;
   title: string;
   level: string;
-  minutes: number;
+  difficulty?: LevelId;
+  sources?: { label: string; url: string }[];
   intro: string;
   sections: Section[];
   remember: string[];
   interview?: string[];
 };
 
-export const CHAPTERS: Chapter[] = [
+const referenceChapters: Chapter[] = [
   // ------------------------------------------------------------------ CALCUL MENTAL
   {
     slug: "calcul-mental",
@@ -31,12 +35,12 @@ export const CHAPTERS: Chapter[] = [
     code: "H",
     title: "Calcul mental",
     level: "À commencer par là",
-    minutes: 20,
     intro:
-      "En salle de marché, on calcule vite, à peu près juste, sans calculatrice. Ce chapitre donne toutes les techniques utiles : pourcentages, produits, carrés, fractions, conversions et ordres de grandeur.",
+      "Commence par multiplier, diviser et lire un pourcentage. Les sections suivantes traitent les variations successives, les intérêts composés, les conversions et les ordres de grandeur.",
     sections: [
       {
         title: "1. Les pourcentages en trois gestes",
+        paragraphs: ["Le signe % veut dire pour cent. 10 % = 10 / 100. Pour diviser par 8, divise trois fois par 2 : 1 000 → 500 → 250 → 125."],
         bullets: [
           "10 % : on décale la virgule d’un rang. 10 % de 350 = 35.",
           "1 % : on décale de deux rangs. 1 % de 4 200 = 42.",
@@ -70,7 +74,7 @@ export const CHAPTERS: Chapter[] = [
         formulas: ["Hausse nécessaire = x / (1 − x)    (x = la baisse, ici −50 % → 0,5 / 0,5 = +100 %)", "Baisse qui annule une hausse y : y / (1 + y)    (+50 % → 0,5 / 1,5 = 33,3 %)"],
       },
       {
-        title: "4. Fractions à connaître par cœur",
+        title: "4. Fractions utiles",
         table: {
           head: ["Fraction", "En %", "Fraction", "En %"],
           rows: [
@@ -195,18 +199,15 @@ export const CHAPTERS: Chapter[] = [
     category: "market-caps",
     code: "I",
     title: "Capitalisations boursières",
-    level: "Débutant",
-    minutes: 15,
-    intro:
-      "La capitalisation sert à comparer la taille des entreprises et à pondérer les indices. Les classements changent chaque jour : les questions de ce chapitre sont alimentées par un robot qui met les chiffres à jour toutes les 24 heures (voir la page Capitalisations).",
+    level: "Débutant à Expert",
+    intro: "Commence par le prix d’une action et le nombre d’actions. Poursuis avec la pondération, la valeur d’entreprise et le risque de concentration. Les classements et les estimations datés se trouvent sur la page Capitalisations.",
     sections: [
       {
         title: "1. Définition",
         formulas: [
           "Capitalisation = cours de l’action × nombre d’actions en circulation",
-          "Poids dans un indice = capitalisation de l’entreprise / capitalisation totale de l’indice",
         ],
-        example: "Cours 50 $, 2 Md d’actions : capitalisation 100 Md$. Dans un indice de 10 000 Md$, elle pèse 1 %.",
+        example: "Une action cote 50 $ et l’entreprise a 2 milliards d’actions. Sa capitalisation vaut 100 milliards de dollars.",
         paragraphs: [
           "Le prix d’une action seul ne dit rien de la taille d’une entreprise : une action à 500 $ avec 200 M d’actions (100 Md$) est plus petite qu’une action à 50 $ avec 10 Md d’actions (500 Md$).",
         ],
@@ -215,11 +216,11 @@ export const CHAPTERS: Chapter[] = [
         title: "2. Capitalisation, valeur d’entreprise et valeur comptable",
         bullets: [
           "Capitalisation boursière : valeur de marché des fonds propres (ce que valent les actionnaires).",
-          "Valeur d’entreprise (EV) = capitalisation + dette nette + intérêts minoritaires + actions de préférence. C’est le prix pour acheter toute l’activité.",
+          "La valeur d’entreprise estime la valeur des activités financées par les actionnaires et les prêteurs. Le calcul simplifié additionne capitalisation et dette nette. Selon le périmètre, on ajuste aussi les intérêts minoritaires ou les actions de préférence.",
           "Valeur comptable : fonds propres dans les comptes de l’entreprise. Le ratio cours / valeur comptable (P/B) compare les deux.",
         ],
         formulas: ["EV = capitalisation + dette − trésorerie (+ minoritaires)", "EV / EBITDA : multiple très utilisé en valorisation"],
-        example: "Capitalisation 100, dette 30, trésorerie 10 : EV = 120. Avec un EBITDA de 12, EV / EBITDA = 10.",
+        example: "La capitalisation vaut 100, la dette 30 et la trésorerie 10 dans la même unité. L’EV simplifiée vaut 120. Avec un EBITDA de 12, le multiple vaut 10.",
       },
       {
         title: "3. Flottant et classes d’actions",
@@ -233,7 +234,7 @@ export const CHAPTERS: Chapter[] = [
       {
         title: "4. Tailles d’entreprises",
         table: {
-          head: ["Catégorie", "Repère courant"],
+          head: ["Catégorie", "Exemple de convention de taille"],
           rows: [["Mega cap", "plus de 200 Md$"], ["Large cap", "plus de 10 Md$"], ["Mid cap", "environ 2 à 10 Md$"], ["Small cap", "environ 300 M$ à 2 Md$"], ["Micro cap", "moins de 300 M$"]],
         },
         paragraphs: ["Ces seuils sont des conventions qui varient selon les fournisseurs d’indices et évoluent avec le temps."],
@@ -255,23 +256,25 @@ export const CHAPTERS: Chapter[] = [
           "Dans un indice pondéré par la capitalisation, quelques géantes peuvent peser une très grande part : c’est le risque de concentration.",
           "Dow Jones : une action chère pèse plus, même si l’entreprise est petite.",
         ],
+        formulas: ["Poids dans un indice = capitalisation retenue de l’entreprise / total des capitalisations retenues"],
+        example: "Une valeur ajustée de 100 Md$ pour un total de 10 000 Md$ pèse 1 %.",
       },
       {
         title: "6. Ce qui fait bouger une capitalisation",
         bullets: [
           "Le cours de l’action (résultats, taux, anticipations de croissance).",
           "Le nombre d’actions : émissions, rachats d’actions, scissions.",
-          "Le PER : quand les taux baissent, les investisseurs paient plus cher chaque dollar de bénéfice, donc les capitalisations montent.",
+          "Des taux d’actualisation plus bas peuvent augmenter la valeur des bénéfices futurs. Leur effet dépend aussi des anticipations de bénéfice et du risque.",
           "Les opérations : fusions, introductions en bourse, sorties de cote.",
         ],
       },
       {
         title: "7. Repères structurels",
         bullets: [
-          "Les États-Unis représentent de très loin la plus grande part de la capitalisation mondiale, et plus de 60 % du MSCI World.",
+          "La répartition par pays d’un indice pondéré par capitalisation évolue avec les cours et la composition. La fiche du MSCI World donne le poids de chaque pays à une date indiquée.",
           "Les « Magnificent Seven » : Apple, Microsoft, Alphabet, Amazon, Nvidia, Meta, Tesla.",
           "En Europe, les grandes capitalisations se répartissent entre luxe, santé, technologies, finance et énergie.",
-          "Pour les chiffres du jour (top 5 mondial, top 3 européen, capitalisation de Nvidia…), utilise la page Capitalisations : elle est actualisée chaque jour.",
+          "Pour comparer les valeurs suivies ou estimer la capitalisation de Nvidia, utilise la date d’observation affichée sur la page Capitalisations.",
         ],
       },
     ],
@@ -287,113 +290,6 @@ export const CHAPTERS: Chapter[] = [
     ],
   },
 
-  // ------------------------------------------------------------------ BANQUES CENTRALES
-  {
-    slug: "banques-centrales",
-    category: "central-banks",
-    code: "A",
-    title: "Banques centrales",
-    level: "Débutant",
-    minutes: 20,
-    intro:
-      "Les banques centrales fixent le coût de l’argent. Savoir qui décide, avec quel mandat, quels outils et quel vocabulaire est la base de toute lecture macro.",
-    sections: [
-      {
-        title: "1. À quoi sert une banque centrale",
-        bullets: [
-          "Fixer la politique monétaire : le niveau des taux et la quantité de liquidité.",
-          "Garantir la stabilité des prix (inflation faible et stable).",
-          "Prêteur en dernier ressort : elle prête aux banques en cas de crise de liquidité.",
-          "Superviser ou soutenir la stabilité financière, gérer les systèmes de paiement, émettre les billets.",
-          "Indépendance : elle décide sans instructions du gouvernement, ce qui ancre la crédibilité anti-inflation.",
-        ],
-      },
-      {
-        title: "2. Les grandes banques centrales",
-        table: {
-          head: ["Banque", "Mandat principal", "Organe de décision"],
-          rows: [
-            ["BCE (Francfort)", "Stabilité des prix (cible 2 % à moyen terme)", "Conseil des gouverneurs"],
-            ["Fed (États-Unis)", "Double mandat : plein emploi et stabilité des prix (2 %, mesure PCE)", "FOMC (12 membres votants)"],
-            ["Bank of England", "Stabilité des prix (2 % IPC)", "MPC (9 membres)"],
-            ["Banque du Japon", "Stabilité des prix", "Comité de politique monétaire"],
-            ["SNB (Suisse)", "Stabilité des prix, en tenant compte de la conjoncture", "Direction générale"],
-            ["PBoC (Chine)", "Stabilité de la monnaie et soutien à la croissance", "Comité de politique monétaire"],
-          ],
-        },
-        bullets: [
-          "BCE : le Conseil des gouverneurs réunit les 6 membres du Directoire et les gouverneurs des banques centrales nationales de la zone euro. Huit réunions de politique monétaire par an.",
-          "Fed : 7 gouverneurs au Conseil, 12 banques régionales ; le FOMC compte 7 gouverneurs + le président de New York + 4 présidents régionaux en rotation. Huit réunions par an.",
-          "Traité sur le fonctionnement de l’UE, article 127 : objectif principal de la BCE = stabilité des prix.",
-        ],
-      },
-      {
-        title: "3. Les taux directeurs",
-        bullets: [
-          "BCE : trois taux. Le taux de la facilité de dépôt (rémunération des dépôts des banques) est le principal repère depuis que le système est abondant en liquidité. Les deux autres : taux des opérations principales de refinancement et taux de la facilité de prêt marginal.",
-          "Fed : le taux directeur est une fourchette cible pour le taux des fonds fédéraux (federal funds rate), taux au jour le jour entre banques. La Fed l’influence en réglant les taux administrés (intérêt sur réserves, reverse repo).",
-          "Taux au jour le jour de référence : €STR (euro), SOFR (dollar), SONIA (livre), TONA (yen).",
-          "Le taux directeur se transmet à tous les taux : prêts, crédits immobiliers, obligations, change.",
-        ],
-      },
-      {
-        title: "4. Les outils",
-        bullets: [
-          "Taux directeur : l’outil principal, ajusté à chaque réunion.",
-          "QE (quantitative easing, assouplissement quantitatif) : achats massifs de titres (obligations d’État…) financés par création de monnaie de banque centrale. Il fait baisser les taux longs et soutient les prix d’actifs.",
-          "QT (quantitative tightening, resserrement quantitatif) : réduction du bilan, en laissant les titres arriver à échéance ou en les vendant.",
-          "Forward guidance : communiquer sur la trajectoire future des taux pour piloter les anticipations.",
-          "Prêts à long terme aux banques (TLTRO à la BCE) et facilités de liquidité.",
-          "Contrôle de la courbe des taux (YCC) : cibler un taux long, comme l’a fait la Banque du Japon de 2016 à 2024.",
-          "Interventions de change et réserves obligatoires, plus rarement utilisées.",
-        ],
-      },
-      {
-        title: "5. Programmes et dates marquantes",
-        table: {
-          head: ["Repère", "Contenu"],
-          rows: [
-            ["2008 – 2009", "Crise financière : taux proches de zéro, premiers QE (Fed, BoE)"],
-            ["2012", "Mario Draghi : « whatever it takes » ; création de l’OMT à la BCE"],
-            ["2015", "APP : QE de la BCE"],
-            ["2016", "BoJ : taux négatifs et contrôle de la courbe des taux"],
-            ["2020", "COVID : PEPP (BCE), QE massifs, taux à zéro"],
-            ["2022", "Retour de l’inflation : cycle de hausses de taux rapide et QT ; création du TPI à la BCE"],
-            ["2024", "BoJ : fin des taux négatifs et du contrôle de la courbe des taux"],
-          ],
-        },
-        paragraphs: ["Ce sont des repères historiques stables. Pour les niveaux de taux actuels, consulte les sites officiels : ils changent à chaque réunion."],
-      },
-      {
-        title: "6. Le vocabulaire des marchés",
-        bullets: [
-          "Hawkish (faucon) : plutôt favorable à des taux plus élevés pour lutter contre l’inflation.",
-          "Dovish (colombe) : plutôt favorable à des taux plus bas pour soutenir l’activité.",
-          "Pivot : changement de cap de la politique monétaire. Taper : ralentir le rythme des achats.",
-          "Dot plot : graphique trimestriel où chaque membre du FOMC indique où il voit le taux dans le futur.",
-          "Data-dependent : la décision dépend des prochaines données (inflation, emploi).",
-          "Jackson Hole : symposium annuel des banquiers centraux, où la Fed donne souvent des signaux.",
-        ],
-      },
-      {
-        title: "7. Lecture rapide",
-        paragraphs: [
-          "Taux qui montent = politique restrictive : on freine l’inflation et l’activité, la monnaie tend à s’apprécier, les prix des obligations baissent. Taux qui baissent = politique accommodante : on soutient l’activité, la monnaie tend à se déprécier, les prix des obligations montent.",
-        ],
-      },
-    ],
-    remember: [
-      "BCE : stabilité des prix. Fed : emploi + prix. Cible 2 % pour les deux.",
-      "QE = achats de titres, bilan qui gonfle. QT = bilan qui se réduit.",
-      "Le taux directeur est l’outil central, le bilan est l’outil de renfort.",
-      "Hawkish = taux plus hauts, dovish = taux plus bas.",
-    ],
-    interview: [
-      "« Quelle est la différence entre le mandat de la BCE et celui de la Fed ? »",
-      "« Que fait la banque centrale d’un QE sur les taux longs ? »",
-      "« Comment s’appelle le taux de référence au jour le jour en euro ? » → €STR.",
-    ],
-  },
 
   // ------------------------------------------------------------------ POLITIQUE MONETAIRE
   {
@@ -402,7 +298,6 @@ export const CHAPTERS: Chapter[] = [
     code: "B",
     title: "Politique monétaire",
     level: "Intermédiaire",
-    minutes: 20,
     intro:
       "Comment une décision de taux se transmet à l’économie, comment on lit la courbe des taux et comment on évalue si une politique est restrictive ou accommodante.",
     sections: [
@@ -494,7 +389,6 @@ export const CHAPTERS: Chapter[] = [
     code: "C",
     title: "Macroéconomie",
     level: "Débutant",
-    minutes: 20,
     intro: "Les grands indicateurs qui résument l’état d’une économie, comment on les lit et comment ils influencent les marchés.",
     sections: [
       {
@@ -596,7 +490,6 @@ export const CHAPTERS: Chapter[] = [
     code: "C2",
     title: "Inflation",
     level: "Débutant",
-    minutes: 15,
     intro: "Ce qu’est l’inflation, comment on la mesure, d’où elle vient et pourquoi elle pilote les taux et les marchés.",
     sections: [
       {
@@ -679,201 +572,7 @@ export const CHAPTERS: Chapter[] = [
     ],
   },
 
-  // ------------------------------------------------------------------ CHANGE
-  {
-    slug: "change",
-    category: "fx",
-    code: "D",
-    title: "Marché des changes",
-    level: "Débutant",
-    minutes: 20,
-    intro: "Comment lire un cours de change, comment calculer, et ce qui fait bouger une devise.",
-    sections: [
-      {
-        title: "1. Lire un cours",
-        bullets: [
-          "Une paire A/B donne le prix d’une unité de A (devise de base) en unités de B (devise cotée).",
-          "EUR/USD = 1,10 : 1 euro vaut 1,10 dollar. Si EUR/USD monte, l’euro s’apprécie et le dollar se déprécie.",
-          "Bid : prix auquel la banque achète la devise de base. Ask (offer) : prix auquel elle la vend. Le spread = ask − bid.",
-          "Pip : 4e décimale (0,0001) pour la plupart des paires ; 2e décimale (0,01) pour les paires avec le yen.",
-          "Paires majeures : EUR/USD, USD/JPY, GBP/USD, USD/CHF, AUD/USD, USD/CAD, NZD/USD. Croisées : EUR/GBP, EUR/JPY…",
-        ],
-        formulas: [
-          "Inverser une paire : USD/EUR = 1 / (EUR/USD)",
-          "Si l’euro prend x %, le dollar perd x / (1 + x)      +10 % → −9,09 %",
-          "Cours croisé : EUR/GBP = (EUR/USD) / (GBP/USD)",
-        ],
-        example: "EUR/USD = 1,10 et GBP/USD = 1,25 : EUR/GBP = 1,10 / 1,25 = 0,88.",
-      },
-      {
-        title: "2. Les parités à connaître",
-        table: {
-          head: ["Notion", "Formule", "Idée"],
-          rows: [
-            ["Parité couverte des taux (CIP)", "F = S × (1 + i cotée) / (1 + i base)", "Le change à terme reflète l’écart de taux"],
-            ["Parité non couverte (UIP)", "E[ΔS] ≈ écart de taux", "En théorie, rend le carry nul en moyenne"],
-            ["Parité de pouvoir d’achat (PPA)", "S = P / P*", "À long terme, les prix convergent"],
-          ],
-        },
-        example: "EUR/USD spot = 1,10, taux USD 5 %, taux EUR 3 % : cours à 1 an = 1,10 × 1,05 / 1,03 ≈ 1,1214. L’euro (taux plus bas) se traite à prime à terme.",
-        paragraphs: ["Règle : la devise au taux d’intérêt le plus élevé se traite à terme avec une décote ; la devise au taux le plus bas, avec une prime."],
-      },
-      {
-        title: "3. Ce qui fait bouger une devise",
-        bullets: [
-          "Écarts de taux d’intérêt : une devise à taux élevé attire les capitaux (surtout les taux réels).",
-          "Croissance relative et flux d’investissement étranger.",
-          "Inflation relative : à long terme, la devise du pays à forte inflation se déprécie (PPA).",
-          "Balance courante et flux de capitaux.",
-          "Appétit pour le risque : en période de stress, les valeurs refuges (dollar, yen, franc suisse) montent souvent.",
-          "Prix des matières premières pour les devises liées (CAD, NOK, AUD).",
-          "Interventions et communication des banques centrales.",
-        ],
-      },
-      {
-        title: "4. Carry trade",
-        paragraphs: [
-          "Emprunter une devise à taux bas (la devise de financement : yen, franc suisse) pour placer dans une devise à taux élevé. Le gain vient de l’écart de taux, tant que la devise ne s’inverse pas.",
-          "Risque : un retour brutal de l’aversion pour le risque ou un resserrement dans le pays à taux bas fait remonter la devise de financement, et les positions se dénouent en chaîne (débouclage du carry).",
-        ],
-        formulas: ["Gain du carry ≈ taux de la devise placée − taux de la devise empruntée ± variation du change"],
-      },
-      {
-        title: "5. Régimes de change",
-        bullets: [
-          "Flottant : le marché fixe le cours (euro, dollar, yen, livre).",
-          "Fixe (peg) ou rattaché : la banque centrale défend une parité (certaines devises du Golfe sont liées au dollar).",
-          "Flottement géré : le cours évolue dans une marge, avec interventions.",
-          "Union monétaire : l’euro.",
-          "Intervention : achat ou vente de devises par la banque centrale pour influencer le cours.",
-        ],
-      },
-      {
-        title: "6. Marché et acteurs",
-        bullets: [
-          "Marché le plus liquide du monde : de l’ordre de 7 à 10 T$ échangés par jour selon les enquêtes triennales de la BRI. Le dollar est présent dans près de 9 transactions sur 10.",
-          "Ouvert 24 h sur 24, du lundi au vendredi : sessions de Sydney, Tokyo, Londres, New York.",
-          "Acteurs : banques (market makers), fonds, entreprises (couverture), banques centrales, particuliers.",
-          "Au comptant (spot) : règlement en général à J + 2 (J + 1 pour USD/CAD). À terme (forward) : règlement plus tard. Swap de change : achat au comptant + vente à terme.",
-          "Indice du dollar (DXY) : le dollar contre un panier de six devises, dominé par l’euro (plus de la moitié), puis yen, livre, dollar canadien, couronne suédoise, franc suisse.",
-          "Taux de change effectif réel (REER) : un cours pondéré par les échanges et corrigé de l’inflation.",
-        ],
-      },
-      {
-        title: "7. Noms usuels",
-        table: {
-          head: ["Paire", "Surnom"],
-          rows: [["EUR/USD", "fiber"], ["GBP/USD", "cable"], ["USD/JPY", "dollar-yen"], ["AUD/USD", "aussie"], ["NZD/USD", "kiwi"], ["USD/CAD", "loonie"]],
-        },
-      },
-    ],
-    remember: [
-      "Le cours dit combien de devise cotée coûte une unité de devise de base.",
-      "Taux d’intérêt, croissance et appétit pour le risque pilotent beaucoup de mouvements.",
-      "Une hausse de x % d’une devise est une baisse inférieure à x % de l’autre.",
-      "Forward : la devise à taux élevé se traite avec une décote à terme.",
-    ],
-    interview: [
-      "« Pourquoi le yen monte-t-il en période de stress ? » (débouclage du carry, valeur refuge)",
-      "« Calcule EUR/GBP à partir de EUR/USD et GBP/USD. »",
-      "« Quel est l’effet d’une hausse de taux de la Fed sur le dollar ? »",
-    ],
-  },
 
-  // ------------------------------------------------------------------ MATIERES PREMIERES
-  {
-    slug: "matieres-premieres",
-    category: "commodities",
-    code: "E",
-    title: "Matières premières",
-    level: "Débutant",
-    minutes: 20,
-    intro: "Pétrole, gaz, or, cuivre, agricoles : ce qui pilote les prix, comment on les cote et leur lien avec le dollar et l’inflation.",
-    sections: [
-      {
-        title: "1. Les grandes familles",
-        table: {
-          head: ["Famille", "Exemples", "Référence"],
-          rows: [
-            ["Énergie", "Pétrole, gaz, charbon", "Brent, WTI, TTF, Henry Hub"],
-            ["Métaux précieux", "Or, argent, platine", "Once troy (31,1 g)"],
-            ["Métaux industriels", "Cuivre, aluminium, nickel", "LME, COMEX"],
-            ["Agriculture", "Blé, maïs, soja, café, sucre", "CBOT, ICE"],
-          ],
-        },
-      },
-      {
-        title: "2. Pétrole",
-        bullets: [
-          "Brent : référence internationale, issue de la mer du Nord. WTI : référence américaine (West Texas Intermediate), livrée à Cushing, Oklahoma.",
-          "Unités : un baril = 159 litres. Production et demande se comptent en millions de barils par jour (mb/d), de l’ordre de 100 mb/d au niveau mondial.",
-          "OPEP : organisation des pays producteurs ; OPEP+ : OPEP plus des partenaires dont la Russie. Elle ajuste ses quotas pour influencer les prix.",
-          "Grands producteurs : États-Unis, Arabie saoudite, Russie. Les États-Unis sont devenus un producteur majeur grâce au pétrole de schiste.",
-          "Un dollar plus fort rend le pétrole plus cher pour les acheteurs hors zone dollar, ce qui pèse sur la demande.",
-          "Avril 2020 : le WTI est passé brièvement sous zéro, faute de capacités de stockage au moment de l’échéance du contrat.",
-        ],
-      },
-      {
-        title: "3. Gaz naturel",
-        bullets: [
-          "Marchés régionaux : Henry Hub (États-Unis), TTF (Europe), JKM (Asie).",
-          "GNL (gaz naturel liquéfié) : transport par bateau, qui rend le marché plus mondial.",
-          "Forte saisonnalité : demande élevée l’hiver pour le chauffage.",
-          "Unités : MWh, MMBtu. Un choc d’offre sur le gaz se répercute vite sur l’électricité et l’inflation en Europe.",
-        ],
-      },
-      {
-        title: "4. Or et métaux précieux",
-        bullets: [
-          "Or : valeur refuge, protection contre l’inflation et l’incertitude. Ne verse ni coupon ni dividende.",
-          "L’or est très sensible aux taux réels : taux réels plus bas → or plus attractif.",
-          "Dollar plus faible → or souvent plus haut (il est coté en dollars).",
-          "Les banques centrales détiennent de l’or dans leurs réserves et sont des acheteuses importantes.",
-          "Argent : à la fois métal précieux et industriel, plus volatil que l’or.",
-        ],
-      },
-      {
-        title: "5. Cuivre et métaux industriels",
-        bullets: [
-          "Le cuivre est surnommé « Dr Copper » : son prix reflète la santé de l’économie mondiale.",
-          "La Chine est le premier consommateur : son activité (immobilier, infrastructures) pèse beaucoup.",
-          "Transition énergétique : forte demande en cuivre, lithium, nickel (véhicules électriques, réseaux).",
-        ],
-      },
-      {
-        title: "6. Marché à terme : contango et backwardation",
-        bullets: [
-          "Les matières premières se négocient surtout via des contrats à terme (futures).",
-          "Contango : prix à terme > prix comptant. Courbe pentue vers le haut : stockage abondant, offre confortable.",
-          "Backwardation : prix à terme < prix comptant. Tension sur l’offre immédiate : stocks bas.",
-          "Roll yield : gain ou perte à chaque renouvellement d’un contrat. En contango, rouler coûte ; en backwardation, il rapporte.",
-        ],
-        formulas: ["Prix à terme ≈ prix comptant × (1 + taux sans risque) + coût de stockage − rendement de convenance"],
-      },
-      {
-        title: "7. Ce qui pilote les prix",
-        bullets: [
-          "Offre : quotas, grèves, météo, géopolitique, découvertes.",
-          "Demande : croissance mondiale, Chine, saisons.",
-          "Stocks : niveaux bas → prix qui montent et backwardation.",
-          "Dollar : la plupart des matières premières sont cotées en dollars.",
-          "Devises de matières premières : CAD, NOK, AUD, CLP profitent de la hausse de leurs exportations.",
-          "Inflation : l’énergie et l’alimentation pèsent sur l’inflation totale, mais sont exclues de l’inflation sous-jacente.",
-        ],
-      },
-    ],
-    remember: [
-      "Brent = référence internationale du pétrole, WTI = référence américaine.",
-      "Dollar fort = pression sur les prix des matières premières.",
-      "Contango : terme > comptant. Backwardation : terme < comptant.",
-      "L’or réagit aux taux réels, au dollar et au stress de marché.",
-    ],
-    interview: [
-      "« Que signifie la backwardation sur le pétrole ? »",
-      "« Pourquoi l’or monte-t-il quand les taux réels baissent ? »",
-      "« Pourquoi le cuivre est-il un indicateur de croissance ? »",
-    ],
-  },
 
   // ------------------------------------------------------------------ OBLIGATIONS
   {
@@ -882,7 +581,6 @@ export const CHAPTERS: Chapter[] = [
     code: "F1",
     title: "Obligations et taux",
     level: "Intermédiaire",
-    minutes: 25,
     intro: "Prix, rendement, duration, courbe, spreads de crédit : le cœur du marché de taux.",
     sections: [
       {
@@ -972,7 +670,6 @@ export const CHAPTERS: Chapter[] = [
     code: "F2",
     title: "Actions, indices et valorisation",
     level: "Débutant",
-    minutes: 25,
     intro: "Ce qu’est une action, comment on la valorise, les grands indices et le fonctionnement des marchés.",
     sections: [
       {
@@ -1069,7 +766,6 @@ export const CHAPTERS: Chapter[] = [
     code: "F3",
     title: "Produits dérivés et options",
     level: "Avancé",
-    minutes: 25,
     intro: "Forwards, futures, options, grecques et volatilité : le vocabulaire et les formules indispensables en salle de marché.",
     sections: [
       {
@@ -1147,8 +843,8 @@ export const CHAPTERS: Chapter[] = [
     interview: [
       "« Quelle est la perte maximale d’un acheteur de call ? » → la prime.",
       "« Que mesure le delta ? »",
-      "« Pourquoi les puts hors de la monnaie ont-ils une volatilité implicite plus élevée ? »",
     ],
+    sources: [{ label: "MSCI · méthode et pondérations du MSCI World", url: "https://www.msci.com/indexes/index/990100/msci-world-index" }],
   },
 
   // ------------------------------------------------------------------ GUESSTIMATES
@@ -1158,7 +854,6 @@ export const CHAPTERS: Chapter[] = [
     code: "G",
     title: "Ordres de grandeur clés",
     level: "Intermédiaire",
-    minutes: 15,
     intro:
       "Estimer vite un ordre de grandeur (PIB, population, dette, marché). On n’a pas besoin de la valeur exacte, on vise le bon ordre de grandeur et une démarche claire.",
     sections: [
@@ -1174,9 +869,9 @@ export const CHAPTERS: Chapter[] = [
         example: "PIB d’un pays ≈ population × PIB par habitant. 50 M d’habitants × 40 000 $ = 2 000 Md$ = 2 T$.",
       },
       {
-        title: "2. Repères à connaître en ordre de grandeur",
+        title: "2. Repères historiques",
         paragraphs: [
-          "Ces repères sont des ordres de grandeur à la date indiquée ; ils évoluent chaque année. Les questions du quiz qui portent dessus affichent leur date de référence et expirent.",
+          "Ces repères arrondis concernent 2024–2025. La population, le PIB nominal en dollars et la consommation pétrolière dépendent respectivement des estimations de l’ONU, des comptes et taux de change, et du périmètre des liquides pétroliers.",
         ],
         table: {
           head: ["Grandeur", "Ordre de grandeur (2024-2025)"],
@@ -1198,22 +893,22 @@ export const CHAPTERS: Chapter[] = [
       {
         title: "3. Rapports utiles",
         bullets: [
-          "Dette publique / PIB : de l’ordre de 100 à 120 % en France et aux États-Unis, plus de 200 % au Japon.",
-          "Budget de l’État : en général 20 à 50 % du PIB selon les pays (France : dépenses publiques autour de 55 %).",
-          "Capitalisation boursière mondiale / PIB mondial : proche de 1, avec de grandes variations.",
-          "Taux d’épargne, part de la consommation (60 à 70 % du PIB dans les grandes économies développées).",
+          "Rapporte la dette publique au PIB nominal dans la même devise. Avec 2 800 Md€ de dette pour 2 000 Md€ de PIB dans un exemple fictif, le ratio vaut 140 %.",
+          "Précise le périmètre quand tu compares les dépenses publiques au PIB. Le budget de l’État central et les dépenses de toutes les administrations ne couvrent pas les mêmes institutions.",
+          "Une capitalisation se mesure à une date. Pour la rapporter au PIB, fixe la devise, l’année du PIB et le périmètre boursier.",
+          "Le taux d’épargne des ménages rapporte leur épargne à leur revenu disponible. La consommation rapportée au PIB est un autre ratio.",
         ],
       },
       {
         title: "4. Exemples de raisonnement",
         bullets: [
-          "Nombre de foyers en France : 68 M d’habitants / 2,3 personnes par foyer ≈ 30 M de foyers.",
+          "Pour un pays fictif de 68 millions d’habitants et 2,3 personnes par foyer, estime 68 / 2,3 ≈ 30 millions de foyers.",
           "Dette à 100 % du PIB, taux moyen de 2 % : charge d’intérêts ≈ 2 % du PIB. À 4 % : 4 % du PIB.",
           "Un pays de 10 M d’habitants avec un PIB par habitant de 30 000 $ → PIB de 300 Md$.",
         ],
       },
       {
-        title: "5. Constantes à connaître par cœur",
+        title: "5. Conversions et hypothèses pratiques",
         table: {
           head: ["Grandeur", "Valeur"],
           rows: [
@@ -1233,8 +928,8 @@ export const CHAPTERS: Chapter[] = [
       {
         title: "6. Quelques raccourcis pour estimer",
         bullets: [
-          "Un pays avec x habitants et un revenu moyen y : PIB ≈ x × y, à 20 % près.",
-          "Les dépenses publiques représentent en général 30 à 55 % du PIB dans les pays développés.",
+          "Si tu connais le PIB par habitant, multiplie-le par la population pour estimer le PIB total. Un revenu moyen des ménages mesure autre chose.",
+          "Pour estimer un marché à plusieurs segments, calcule chaque volume × panier, puis additionne. Fais varier une hypothèse pour tester la sensibilité.",
           "Une dette de 100 % du PIB à 3 % de taux moyen coûte 3 % du PIB par an en intérêts.",
           "Une capitalisation de 1 T$ avec un PER de 25 correspond à 40 Md$ de bénéfices (1 000 / 25).",
           "Une volatilité annuelle de 16 % équivaut à environ 1 % par jour (16 / √252 ≈ 1).",
@@ -1251,7 +946,21 @@ export const CHAPTERS: Chapter[] = [
       "« Estime le PIB de la France sans connaître le chiffre. »",
       "« Combien de verres de vin sont consommés en France en un an ? » (même méthode : population × consommation moyenne)",
     ],
+    sources: [
+      { label: "ONU · World Population Prospects 2024", url: "https://population.un.org/wpp/" },
+      { label: "FMI · World Economic Outlook, avril 2025", url: "https://www.imf.org/en/publications/weo/weo-database/2025/april" },
+      { label: "EIA · projections et consommation de produits pétroliers", url: "https://www.eia.gov/outlooks/steo/archives/Sep24.pdf" },
+    ],
   },
+];
+
+const basics = ["calcul-mental", "actions-et-indices", "capitalisations", "inflation"];
+export const CHAPTERS: Chapter[] = [
+  ...basics.flatMap((slug) => referenceChapters.filter((chapter) => chapter.slug === slug)),
+  ...curriculumChapters.filter((chapter) => chapter.difficulty === "beginner"),
+  ...referenceChapters.filter((chapter) => !basics.includes(chapter.slug)),
+  ...(["intermediate", "advanced", "expert"] as const).flatMap((level) =>
+    curriculumChapters.filter((chapter) => chapter.difficulty === level)),
 ];
 
 export function getChapter(slug: string): Chapter | undefined {

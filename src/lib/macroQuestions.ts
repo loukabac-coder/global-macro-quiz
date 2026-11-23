@@ -9,12 +9,12 @@ const META: Record<string, { prompt: string; tol: number; diff: string }> = {
   fed_target_upper: { prompt: "Quelle est la borne haute de la fourchette cible des fed funds, en % ?", tol: 0, diff: "intermediate" },
   us_cpi_yoy: { prompt: "Quelle est la hausse annuelle de l’IPC-U aux États-Unis, en % ?", tol: 12, diff: "intermediate" },
   ez_hicp_yoy: { prompt: "Quelle est l’inflation IPCH en zone euro sur 12 mois, en % ?", tol: 12, diff: "intermediate" },
-  us_unrate: { prompt: "Quel est le taux de chômage aux États-Unis ? (en %)", tol: 8, diff: "beginner" },
+  us_unrate: { prompt: "Quel est le taux de chômage aux États-Unis ? (en %)", tol: 8, diff: "intermediate" },
   us_10y: { prompt: "Quel est le rendement du Treasury américain à 10 ans ? (en %)", tol: 6, diff: "intermediate" },
-  eurusd: { prompt: "Quel est le taux de référence BCE EUR/USD, en dollars par euro ?", tol: 1.5, diff: "beginner" },
-  brent: { prompt: "Quel est le prix au comptant du Brent, en dollars par baril ?", tol: 6, diff: "beginner" },
-  wti: { prompt: "Quel est le prix au comptant du WTI, en dollars par baril ?", tol: 6, diff: "beginner" },
-  gold: { prompt: "Quel est le prix du contrat à terme sur l’or (GC=F), en dollars par once troy ?", tol: 4, diff: "beginner" },
+  eurusd: { prompt: "Quel est le taux de référence BCE EUR/USD, en dollars par euro ?", tol: 1.5, diff: "intermediate" },
+  brent: { prompt: "Quel est le prix au comptant du Brent, en dollars par baril ?", tol: 6, diff: "intermediate" },
+  wti: { prompt: "Quel est le prix au comptant du WTI, en dollars par baril ?", tol: 6, diff: "intermediate" },
+  gold: { prompt: "Quel est le prix du contrat à terme sur l’or (GC=F), en dollars par once troy ?", tol: 4, diff: "intermediate" },
 };
 
 function base(key: string, ind: Indicator, diff: string, prompt: string, explanation: string) {
@@ -53,7 +53,7 @@ export function buildMacroQuestions(data: MacroData, nowMs: number): Question[] 
   }
 
   const tfq = (id: string, ind: Indicator, prompt: string, answer: boolean, explanation: string) => {
-    out.push({ ...base(id, ind, "beginner", prompt, explanation), type: "true_false", options: null, correct: answer, tolerance_pct: null });
+    out.push({ ...base(id, ind, "intermediate", prompt, explanation), type: "true_false", options: null, correct: answer, tolerance_pct: null });
   };
 
   const hicp = get("ez_hicp_yoy");

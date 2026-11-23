@@ -3,7 +3,7 @@ import { todayParis } from "@/lib/rng";
 
 export function quizResumeKey(user: string | null, activity?: Activity, practice?: string): string {
   const date = activity?.type === "daily" ? `:${todayParis()}` : "";
-  return `gmq:quiz:v1:${user ?? "local"}:${location.pathname}:${practice ?? JSON.stringify(activity) ?? "guest"}${date}`;
+  return `gmq:quiz:v2:${user ?? "local"}:${location.pathname}:${practice ?? JSON.stringify(activity) ?? "guest"}${date}`;
 }
 
 const MAX_AGE = 4 * 60 * 60 * 1000;

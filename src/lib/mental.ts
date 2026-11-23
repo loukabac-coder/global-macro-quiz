@@ -125,11 +125,11 @@ function interets(level: number, r: Rng): Gen {
     const rate = pick(r, [5, 10, 20]);
     const ans = r4(cap * (1 + rate / 100));
     return {
-      prompt: `Tu places ${nf(cap)} € à ${rate} % pendant 1 an. Combien as-tu à la fin ?`,
-      answer: ans,
+      prompt: `Tu places ${nf(cap)} € à ${rate} % pendant 1 an. Combien d’euros d’intérêts gagnes-tu ?`,
+      answer: r4(ans - cap),
       tol: 0,
       unit: "€",
-      explanation: `${nf(cap)} × ${nf(1 + rate / 100)} = ${nf(ans)} €. Les intérêts : ${rate} % de ${nf(cap)} = ${nf(ans - cap)}.`,
+      explanation: `Les intérêts correspondent à ${rate} % de ${nf(cap)} €, soit ${nf(ans - cap)} €.`,
     };
   }
   if (level === 2) {
@@ -387,7 +387,7 @@ function ratios(level: number, r: Rng): Gen {
   if (level <= 1) {
     const eps = pick(r, [2, 3, 4, 5, 6]);
     const per = pick(r, [10, 15, 20, 25]);
-    return { prompt: `Une action cote ${eps * per} $ et le bénéfice par action est de ${eps} $. Quel est le PER ?`, answer: per, tol: 0, unit: "", explanation: `PER = cours / bénéfice par action = ${eps * per} / ${eps} = ${per}.` };
+    return { prompt: `Le PER se calcule en divisant le cours par le bénéfice par action. Cours : ${eps * per} $. Bénéfice par action : ${eps} $. Quel est le PER ?`, answer: per, tol: 0, unit: "", explanation: `Divise le cours par le bénéfice par action : ${eps * per} / ${eps} = ${per}.` };
   }
   if (level === 2) {
     const price = pick(r, [40, 50, 80, 100, 200]);
@@ -462,7 +462,12 @@ const GENERATORS: Record<Topic, (level: number, r: Rng) => Gen> = {
   ordres,
 };
 
-const DIFF_BY_LEVEL = ["beginner", "beginner", "intermediate", "advanced", "expert"];
+const DIFF_BY_LEVEL = ["beginner", "intermediate", "intermediate", "advanced", "expert"];
+export const MENTAL_QUESTION_PREFIX = "gen:mental:v2:";
+
+export function mentalDifficulty(level: number): string {
+  return DIFF_BY_LEVEL[Math.min(5, Math.max(1, Math.round(level))) - 1];
+}
 
 let counter = 0;
 
@@ -472,10 +477,10 @@ export function mentalQuestion(level: number, r: Rng, topic?: Topic | null): Que
   const g = GENERATORS[t](lv, r);
   counter += 1;
   return {
-    id: `gen:mental:${t}:${lv}:${counter}`,
+    id: `${MENTAL_QUESTION_PREFIX}${t}:${lv}:${counter}`,
     category_id: "mental-math",
     type: "numeric",
-    difficulty: DIFF_BY_LEVEL[lv - 1],
+    difficulty: mentalDifficulty(lv),
     prompt: g.prompt,
     options: g.unit ? { unit: g.unit } : null,
     correct: g.answer,

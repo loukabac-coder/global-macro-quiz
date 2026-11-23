@@ -2,6 +2,8 @@ import { shuffle, type Question } from "@/lib/quiz";
 import { fmtCap, type Company, type MarketCaps } from "@/lib/marketcaps";
 import { dataTimestamp } from "@/lib/dataFreshness";
 
+const FRENCH_ISSUERS = new Set(["MC.PA", "OR.PA", "AI.PA", "SU.PA", "RMS.PA", "TTE.PA", "SAN.PA", "SAF.PA", "BNP.PA"]);
+
 // Questions générées à partir des capitalisations du jour : leurs réponses
 // se mettent à jour toutes seules chaque fois que le robot actualise les données.
 
@@ -17,9 +19,10 @@ function top(list: Company[], n: number): string {
 }
 
 export function buildLiveQuestions(data: MarketCaps): Question[] {
-  const collectedAt = data.updated_at ? new Date(data.updated_at) : null;
-  const day = collectedAt ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Paris" }).format(collectedAt) : null;
-  const collection = collectedAt ? dataTimestamp.format(collectedAt) : null;
+  if (!data.updated_at || !Number.isFinite(Date.parse(data.updated_at))) return [];
+  const collectedAt = new Date(data.updated_at);
+  const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Paris" }).format(collectedAt);
+  const collection = dataTimestamp.format(collectedAt);
   const world = [...data.items].sort((a, b) => b.market_cap_usd - a.market_cap_usd);
   const europe = world.filter((c) => c.region === "Europe");
   const out: Question[] = [];
@@ -29,16 +32,17 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
     id: `live:${day}:${n++}`,
     category_id: "market-caps",
     difficulty: diff,
-    prompt: collection ? `${prompt} (collecte du ${collection}, heure de Paris)` : prompt,
+    prompt: `${prompt} (collecte du ${collection}, heure de Paris)`,
     explanation,
     tolerance_pct: null as number | null,
     wrong_explanations: null,
-    source: "Yahoo Finance, estimations du panel à la collecte",
+    source: data.source,
     kind: "conjunctural",
     reference_date: day,
   });
 
   function mcq(diff: string, prompt: string, right: Company, wrong: Company[], explanation: string) {
+    if (new Set([right.name, ...wrong.map((company) => company.name)]).size !== wrong.length + 1) return;
     out.push({
       ...base(diff, prompt, explanation),
       type: "mcq",
@@ -47,9 +51,26 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
     });
   }
 
+  const apple = world.find((company) => company.ticker === "AAPL");
+  if (apple?.price_date && md(apple) >= 500) {
+    const correct = md(apple);
+    out.push({
+      ...base("intermediate", "Estime la capitalisation d’Apple en milliards de dollars, à 500 Md$ près.",
+        `La collecte donne environ ${fmtCap(apple.market_cap_usd)} pour la séance du ${apple.price_date}.`),
+      type: "numeric", options: { unit: "Md$" }, correct, tolerance_pct: 100 * 500 / correct,
+      reference_date: apple.price_date,
+    });
+  }
+
+  const french = world.filter((c) => FRENCH_ISSUERS.has(c.ticker)).slice(0, 4);
+  if (french.length === 4 && french[0].market_cap_usd > french[1].market_cap_usd) {
+    mcq("intermediate", "Parmi ces quatre valeurs françaises du panel, laquelle a la plus grande capitalisation ?",
+      french[0], french.slice(1), `Classement de la sélection : ${top(french, 4)}.`);
+  }
+
   if (world.length >= 8) {
     mcq(
-      "beginner",
+      "intermediate",
       "Quelle entreprise a la plus grande capitalisation boursière parmi les grandes valeurs suivies ?",
       world[0],
       shuffle(world.slice(1, 8)).slice(0, 3),
@@ -82,7 +103,7 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
     const best = [...four].sort((a, b) => b.market_cap_usd - a.market_cap_usd);
     if (four.length === 4) {
       mcq(
-        "beginner",
+        "intermediate",
         "Parmi ces quatre entreprises, laquelle a la plus grande capitalisation ?",
         best[0],
         best.slice(1),
@@ -93,7 +114,7 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
 
   if (europe.length >= 8) {
     mcq(
-      "beginner",
+      "intermediate",
       "Quelle est la plus grande capitalisation boursière d’Europe (parmi les grandes valeurs suivies) ?",
       europe[0],
       shuffle(europe.slice(1, 8)).slice(0, 3),
@@ -112,7 +133,7 @@ export function buildLiveQuestions(data: MarketCaps): Question[] {
     }
     const e = shuffle(europe.slice(0, 5))[0];
     out.push({
-      ...base("advanced", `Quelle est la capitalisation boursière de ${e.name} ? (ordre de grandeur, en milliards de dollars)`,
+      ...base("intermediate", `Quelle est la capitalisation boursière de ${e.name} ? (ordre de grandeur, en milliards de dollars)`,
         `${e.name} : environ ${fmtCap(e.market_cap_usd)}. Top Europe : ${top(europe, 5)}.`),
       type: "numeric",
       options: { unit: "Md$" },

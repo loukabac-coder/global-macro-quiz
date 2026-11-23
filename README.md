@@ -39,7 +39,7 @@ Les tests Node exécutent les migrations dans PostgreSQL en mémoire avec un sch
 
 ```powershell
 git status --short
-git add .github README.md package.json package-lock.json public/data/guest-questions.json scripts sql src test vercel.json
+git add .github README.md package.json package-lock.json public/data scripts sql src test vercel.json
 git diff --cached --stat
 git commit -m "Fiabilise les quiz, le parcours et les données"
 git pull --rebase origin main
@@ -53,7 +53,8 @@ git push origin main
 
 ## Données et progression
 
-- L’examen blanc tire 20 questions corrigées de niveau intermédiaire ou avancé dans la banque Supabase. La page indique les thèmes manquants si le tirage est impossible. Les signalements des comptes connectés sont consultables dans la table `question_reports` du projet Supabase.
+- Les modules et les autres quiz partagent la banque versionnée dans `src/lib/curriculum`. La refonte du contenu est activée au déploiement du code. Les RPC des lots existants enregistrent toujours la progression et les révisions dans Supabase. L’[audit du Parcours](docs/audit-parcours.md) détaille le nouveau contenu, et le [script d’inventaire](sql/inventaire-banque-historique.sql) permet de comparer la banque historique en lecture seule.
+- L’examen blanc tire 20 questions corrigées de niveau intermédiaire ou avancé dans cette banque. La page indique les thèmes manquants si le tirage est impossible. Les signalements des comptes connectés sont consultables dans la table `question_reports` du projet Supabase.
 - La reprise d’un quiz classique est disponible pendant quatre heures sur le même navigateur. Le chronomètre d’une question déjà démarrée continue de courir pendant l’interruption.
 - Le défi quotidien utilise la date de Paris et le même jeu de questions pour les visiteurs et les comptes. Les cours, les mini-checks et les corrections immédiates restent accessibles selon le niveau du parcours.
 - GitHub Actions contrôle la macro et l’or toutes les 30 minutes. Le panel de capitalisations est contrôlé chaque heure en semaine. Le calendrier GitHub et les délais de publication des fournisseurs peuvent décaler la disponibilité.

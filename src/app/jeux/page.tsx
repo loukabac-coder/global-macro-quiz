@@ -6,9 +6,11 @@ import AppShell from "@/components/AppShell";
 import QuizRunner from "@/components/QuizRunner";
 import { useSearch } from "@/lib/useSearch";
 import { gameSeconds } from "@/lib/quizSession";
+import { mentalDifficulty } from "@/lib/mental";
+import { DIFFICULTY_FR } from "@/lib/quiz";
 
 const GAMES = [
-  { id: "calcul", name: "Calcul éclair", text: "10 calculs de tête, de plus en plus durs. Points selon la vitesse." },
+  { id: "calcul", name: "Calcul éclair", text: "10 calculs de tête du niveau choisi. Points selon la vitesse." },
   { id: "ordres", name: "Ordres de grandeur", text: "PIB, capitalisations, ratios : donne le bon ordre de grandeur." },
   { id: "culture", name: "Culture marchés", text: "QCM et vrai/faux rapides sur la macro, les banques centrales, le change, les actions." },
 ] as const;
@@ -49,7 +51,7 @@ function JeuxContent() {
           Des séries de 10 questions rapides, comme à l’oral en entretien. Le temps est limité, les points dépendent de ta vitesse, et ton temps moyen de réponse est affiché à la fin.
         </p>
 
-        <h2 className="mt-8 text-sm font-semibold">Difficulté du calcul éclair</h2>
+        <h2 className="mt-8 text-sm font-semibold">Difficulté des jeux</h2>
         <div className="mt-3 flex gap-2 text-sm">
           {[1, 2, 3, 4, 5].map((n) => (
             <button key={n} onClick={() => setLv(n)} aria-pressed={chosen === n} className={`size-11 border font-mono ${chosen === n ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"}`}>
@@ -57,6 +59,7 @@ function JeuxContent() {
             </button>
           ))}
         </div>
+        <p className="mt-2 text-sm text-muted">Niveau {chosen} · {DIFFICULTY_FR[mentalDifficulty(chosen)]}</p>
 
         <ul className="mt-8 space-y-3">
           {GAMES.map((g) => (

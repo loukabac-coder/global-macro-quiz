@@ -14,6 +14,7 @@ import {
   computeStatuses,
   nextOpenModule,
   previousModule,
+  modulePosition,
   type Module,
   type Progress,
   type Status,
@@ -107,7 +108,7 @@ export default function Parcours() {
     const prog = progress[m.id];
     const isGuestOpen = guest && m.id === GUEST_MODULE && m.ready;
     const isGuestLocked = guest && !isGuestOpen && m.ready;
-    const n = m.id.slice(1);
+    const n = String(modulePosition(m));
 
     let tag = "";
     let tagClass = "text-muted";
@@ -134,7 +135,7 @@ export default function Parcours() {
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{m.title}</p>
           <p className="truncate text-sm text-muted">
-            {!guest && st === "locked" ? `Valide d’abord « ${previousModule(m.id)?.title} »` : m.goal}
+            {!guest && st === "locked" ? `Valide d’abord « ${previousModule(m.id, statuses)?.title} »` : m.goal}
           </p>
         </div>
         <span className={`hidden shrink-0 font-mono text-xs sm:block ${tagClass}`}>{tag}</span>
@@ -200,7 +201,7 @@ export default function Parcours() {
                 <Link href={`/module?id=${next.id}`} className="mt-6 block bg-accent px-5 py-4 text-ink hover:brightness-110">
                   <span className="block text-base font-semibold">Continuer : {next.title} →</span>
                   <span className="mt-0.5 block text-sm opacity-80">
-                    {LEVELS.find((l) => l.id === next.level)?.name} · module {next.id.slice(1)} · {next.goal}
+                    {LEVELS.find((l) => l.id === next.level)?.name} · module {modulePosition(next)} · {next.goal}
                   </span>
                 </Link>
               ) : (

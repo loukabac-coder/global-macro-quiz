@@ -27,6 +27,7 @@ function examTheme(q: Question): Theme | undefined {
   if (q.category_id !== "financial-markets" && q.category_id !== "fixed-income") return;
   const prompt = searchText(q.prompt);
   if (/\b(options?|calls?|puts?|forwards?|futures?|swaps?|derives?|strike|straddle|gamma|vega)\b/.test(prompt)) return "derivatives";
+  if (/\b(pente|courbe)\b/.test(prompt) && /\b(rendements?|taux|ans)\b/.test(prompt)) return "rates";
   if (/\b(obligations?|obligataires?|coupons?|duration|convexite|dv01|oat|bund)\b/.test(prompt)) return "bonds";
   if (/\b(taux|courbe des rendements?|points? de base|bps|spread de taux)\b/.test(prompt)) return "rates";
   if (/\b(actions?|capitalisations?|dividendes?|bourse|p\/e|per|indices? boursiers?)\b/.test(prompt)) return "equities";

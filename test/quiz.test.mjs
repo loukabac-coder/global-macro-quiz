@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import { test } from "node:test";
 
@@ -11,10 +10,10 @@ registerHooks({
     return nextResolve(specifier, context);
   },
 });
-const { parseNumber, checkNumeric, correctLabel, withBankTolerance } = await import("../src/lib/quiz.ts");
+const { parseNumber, checkNumeric, correctLabel } = await import("../src/lib/quiz.ts");
 const { mentalQuestion } = await import("../src/lib/mental.ts");
-const { dailyQuestions } = await import("../src/lib/guest.ts");
-const { MODULES, computeStatuses } = await import("../src/lib/modules.ts");
+const { dailyQuestions, guestQuick } = await import("../src/lib/guest.ts");
+const { LEVELS, MODULES, computeStatuses } = await import("../src/lib/modules.ts");
 const { moduleQuestions } = await import("../src/lib/moduleQuestions.ts");
 const { gameSeconds } = await import("../src/lib/quizSession.ts");
 const { buildMacroQuestions } = await import("../src/lib/macroQuestions.ts");
@@ -25,8 +24,12 @@ const { isAtLeastAsRecent } = await import("../src/lib/dataFreshness.ts");
 const { GET: marketDataRoute } = await import("../src/app/api/donnees/route.ts");
 const { drawExam, EXAM_SIZE } = await import("../src/lib/exam.ts");
 const { matchesKeywords, searchText } = await import("../src/lib/searchText.ts");
-const { loadTrainingByHistory } = await import("../src/lib/loaders.ts");
-const guestPool = JSON.parse(readFileSync(new URL("../public/data/guest-questions.json", import.meta.url), "utf8"));
+const { loadQuick, loadGame, loadPlacement, loadTraining, loadTrainingByHistory, loadWeakness } = await import("../src/lib/loaders.ts");
+const { CURRICULUM, curriculumQuestions, isCurrentFavorite } = await import("../src/lib/curriculum/catalog.ts");
+const { CHAPTERS, getChapter } = await import("../src/lib/courses.ts");
+const { buildLiveQuestions } = await import("../src/lib/liveQuestions.ts");
+const { mentalDifficulty } = await import("../src/lib/mental.ts");
+const { CATS } = await import("../src/lib/categories.ts");
 
 test("un examen couvre les sept thèmes en donnant la priorité aux questions nouvelles", () => {
   const subjects = [
@@ -68,37 +71,31 @@ test("la recherche retrouve plusieurs mots indépendamment des accents et de la 
   assert.equal(matchesKeywords(index, "coût obligations"), false);
 });
 
-test("le filtre historique combine le thème et le niveau avec le dernier résultat de la question", async () => {
-  const bank = [
-    { id: 1, category_id: "fx", difficulty: "intermediate" },
-    { id: 2, category_id: "fx", difficulty: "intermediate" },
-    { id: 3, category_id: "fx", difficulty: "intermediate" },
-    { id: 4, category_id: "fx", difficulty: "advanced" },
-    { id: 5, category_id: "macroeconomics", difficulty: "intermediate" },
-  ];
+test("le filtre historique combine le thème, le niveau et l’identifiant pédagogique", async () => {
+  const [one, two] = curriculumQuestions({ categories: ["fx"], levels: ["intermediate"] });
+  const [otherLevel] = curriculumQuestions({ categories: ["fx"], levels: ["advanced"] });
+  const [otherCategory] = curriculumQuestions({ categories: ["market-caps"], levels: ["intermediate"] });
   const db = {
-    from() {
-      let rows = bank;
-      return {
-        select() { return this; },
-        or() { return this; },
-        order() { return this; },
-        in(key, values) { rows = rows.filter((row) => values.includes(row[key])); return this; },
-        async range(start, end) { return { data: rows.slice(start, end + 1), error: null }; },
-      };
-    },
-    rpc() {
-      const rows = [{ question_key: "1", was_correct: true }, { question_key: "2", was_correct: false }];
+    rpc(name) {
+      assert.equal(name, "quiz_answer_history");
+      const rows = [
+        { question_key: one.id, was_correct: true }, { question_key: two.id, was_correct: false },
+        { question_key: otherLevel.id, was_correct: false }, { question_key: otherCategory.id, was_correct: false },
+        { question_key: "32", was_correct: false },
+      ];
       return {
         order() { return this; },
         async range(start, end) { return { data: rows.slice(start, end + 1), error: null }; },
       };
     },
   };
-  for (const [history, id] of [["correct", 1], ["incorrect", 2], ["unseen", 3]]) {
-    const questions = await loadTrainingByHistory(db, ["fx"], ["intermediate"], history);
-    assert.deepEqual(questions.map((q) => q.id), [id]);
-  }
+  const correct = await loadTrainingByHistory(db, ["fx"], ["intermediate"], "correct");
+  const incorrect = await loadTrainingByHistory(db, ["fx"], ["intermediate"], "incorrect");
+  const unseen = await loadTrainingByHistory(db, ["fx"], ["intermediate"], "unseen");
+  assert.deepEqual(correct.map((q) => q.id), [one.id]);
+  assert.deepEqual(incorrect.map((q) => q.id), [two.id]);
+  assert.equal(unseen.length, 10);
+  assert.ok(unseen.every((q) => q.category_id === "fx" && q.difficulty === "intermediate" && ![one.id, two.id].includes(q.id)));
 });
 
 test("saisie numérique française, finie et correctement groupée", () => {
@@ -118,7 +115,7 @@ test("calculs approchés plus souples et conversions exactes", () => {
   for (const rounded of [4.6, 4.7, 5.4]) assert.equal(checkNumeric(weight, rounded), true);
   for (const wrong of [4.59, 5.41, -5]) assert.equal(checkNumeric(weight, wrong), false);
   assert.match(correctLabel(weight), /accepté de 4,6 à 5,4 %/);
-  assert.equal(checkNumeric(guestPool.find((q) => q.id === "guest:003"), 4.7), true);
+  assert.equal(checkNumeric(CURRICULUM.find((q) => q.id === "course:i2:market-caps:poids"), 4.7), true);
 
   const precise = mentalQuestion(1, () => 0, "bps");
   assert.equal(precise.tolerance_pct, 0);
@@ -132,25 +129,18 @@ test("calculs approchés plus souples et conversions exactes", () => {
   assert.equal(checkNumeric(duration, 0.75), false);
 });
 
-test("les modules et l’ancienne banque utilisent des marges adaptées à la consigne", () => {
-  const exercises = moduleQuestions(MODULES.find((m) => m.id === "d2"), 10);
-  const weight = exercises.find((q) => q.prompt.includes("Estime son poids"));
+test("les marges gardent les poids approchés distincts des conversions exactes", () => {
+  const weight = CURRICULUM.find((q) => q.id === "course:i2:market-caps:poids");
   assert.equal(checkNumeric(weight, weight.correct * 1.06), true);
-  const cap = exercises.find((q) => q.prompt.includes("Quelle est la capitalisation"));
+  assert.equal(checkNumeric(weight, weight.correct * 1.09), false);
+  const cap = CURRICULUM.find((q) => q.id === "course:d2:market-caps:cap");
   assert.equal(cap.tolerance_pct, 0);
-
-  const previous = { ...weight, prompt: "Quel est le poids de la société dans la capitalisation totale ?", tolerance_pct: 1 };
-  assert.equal(withBankTolerance(previous).tolerance_pct, 8);
-  assert.equal(withBankTolerance(withBankTolerance(previous)).tolerance_pct, 8);
-  const estimate = { ...previous, type: "guesstimate", prompt: "Dépense annuelle totale ?", tolerance_pct: null };
-  assert.equal(withBankTolerance(estimate).tolerance_pct, 15);
-  assert.equal(withBankTolerance({ ...estimate, tolerance_pct: 20 }).tolerance_pct, 20);
-  assert.equal(withBankTolerance({ ...estimate, prompt: "Calcule la dépense totale. Arrondis au centime.", tolerance_pct: 0 }).tolerance_pct, 0);
-  assert.equal(withBankTolerance({ ...previous, kind: "conjunctural" }).tolerance_pct, 1);
+  assert.equal(checkNumeric(cap, cap.correct + 1), false);
 });
 
-test("les capitalisations débutant mêlent culture de marché, estimations datées et calculs", () => {
-  const lesson = MODULES.find((m) => m.id === "d2");
+test("les estimations de capitalisation datées démarrent à l’intermédiaire", () => {
+  const beginner = MODULES.find((m) => m.id === "d2");
+  const intermediate = MODULES.find((m) => m.id === "i2");
   const collected = "2026-11-23T10:00:00Z";
   const now = Date.parse("2026-11-23T11:00:00Z");
   const rows = [
@@ -160,39 +150,39 @@ test("les capitalisations débutant mêlent culture de marché, estimations dat�
   ];
   const caps = {
     updated_at: collected, checked_at: collected, source: "Collecte de test", failed: [],
-    items: rows.map(([ticker, name, cap]) => ({ ticker, name, market_cap_usd: cap * 1e9, price_date: "2026-11-23", currency: "USD" })),
+    items: rows.map(([ticker, name, cap]) => ({
+      ticker, name, market_cap_usd: cap * 1e9, price_date: "2026-11-23", currency: "USD",
+      country: ticker.endsWith(".PA") ? "France" : "États-Unis", region: ticker.endsWith(".PA") ? "Europe" : "Amérique du Nord",
+    })),
   };
-  const questions = moduleQuestions(lesson, 10, caps, now);
+  assert.equal(hasFreshMarketCaps(caps, now), true);
+  const live = buildLiveQuestions(caps);
+  assert.ok(live.every((q) => q.kind === "conjunctural" && q.difficulty !== "beginner" && q.reference_date));
+  const questions = moduleQuestions(beginner, 10, live);
+  assert.ok(questions.every((q) => q.kind === "structural"));
+  assert.ok(questions.some((q) => q.prompt.includes("valeurs françaises") || q.prompt.includes("sociétés françaises")));
+  const dated = moduleQuestions(intermediate, 10, live.filter((q) => q.prompt.includes("500 Md$") || q.prompt.includes("quatre valeurs françaises")));
+  assert.equal(dated.length, 10);
   assert.equal(questions.length, 10);
-  assert.equal(questions.filter((q) => q.type === "mcq").length, 6);
-  assert.ok(questions.some((q) => q.prompt.includes("deux grandes")));
-  const apple = questions.find((q) => q.prompt.includes("500 Md$"));
+  const apple = dated.find((q) => q.prompt.includes("500 Md$"));
   assert.equal(apple.correct, 4_123);
   assert.equal(apple.source, caps.source);
   assert.equal(apple.reference_date, "2026-11-23");
   for (const value of [3_623, 4_623]) assert.equal(checkNumeric(apple, value), true);
   for (const value of [3_622, 4_624]) assert.equal(checkNumeric(apple, value), false);
-  const france = questions.find((q) => q.prompt.includes("quatre valeurs françaises"));
+  const france = dated.find((q) => q.prompt.includes("quatre valeurs françaises"));
   assert.equal(france.options[france.correct], "LVMH");
   assert.ok(!france.options.includes("Airbus"));
-  const practice = moduleQuestions(lesson, 3, caps, now);
-  assert.equal(practice.length, 3);
-  assert.ok(practice.some((q) => q.prompt.includes("500 Md$")));
-  assert.ok(practice.some((q) => q.prompt.includes("deux grandes")));
-
-  const stale = moduleQuestions(lesson, 10, caps, Date.parse("2026-11-23T16:00:00Z"));
-  assert.equal(stale.length, 10);
-  assert.equal(stale.filter((q) => q.type === "mcq").length, 7);
-  assert.ok(stale.every((q) => q.kind === "structural"));
+  assert.equal(hasFreshMarketCaps(caps, Date.parse("2026-11-23T16:00:00Z")), false);
 });
 
 test("le défi du jour partage une série stable de dix questions", () => {
   const date = "2026-11-22";
-  const first = dailyQuestions(guestPool, date);
+  const first = dailyQuestions(CURRICULUM, date);
   assert.equal(first.length, 10);
-  assert.deepEqual(first, dailyQuestions([...guestPool].reverse(), date));
-  assert.notDeepEqual(first, dailyQuestions(guestPool, "2026-11-23"));
-  assert.equal(guestPool.find((q) => q.id === "guest:017").correct, false);
+  assert.deepEqual(first, dailyQuestions([...CURRICULUM].reverse(), date));
+  assert.notDeepEqual(first, dailyQuestions(CURRICULUM, "2026-11-23"));
+  assert.deepEqual(LEVELS.map(({ id }) => first.filter((q) => q.difficulty === id).length), [4, 3, 2, 1]);
 });
 
 test("les 22 modules disposent chacun de dix questions jouables", () => {
@@ -206,9 +196,119 @@ test("les 22 modules disposent chacun de dix questions jouables", () => {
   }
   const passed = { d1: { passed: true, best_pct: 70, attempts: 1 } };
   assert.equal(computeStatuses({}, null).d2, "locked");
-  assert.equal(computeStatuses(passed, null).d2, "open");
+  assert.equal(computeStatuses(passed, null).d3, "open");
+  assert.equal(computeStatuses(passed, null).d2, "locked");
+  assert.equal(computeStatuses({ ...passed, d3: passed.d1 }, null).d2, "open");
   assert.equal(computeStatuses({}, "avance").a1, "open");
   assert.equal(gameSeconds("calcul", 4), 30);
+});
+
+test("la banque pédagogique couvre la grille et relie chaque question à un module", () => {
+  const keys = new Set();
+  const prompts = new Set();
+  for (const question of CURRICULUM) {
+    const lesson = MODULES.find((item) => item.id === question.moduleId);
+    assert.ok(lesson?.categories.includes(question.category_id), question.id);
+    assert.equal(question.difficulty, lesson.level, question.id);
+    assert.ok(question.id.startsWith("course:") && question.id.length <= 64 && !keys.has(question.id), question.id);
+    assert.ok(!prompts.has(searchText(question.prompt)), question.id);
+    assert.ok(question.explanation.trim(), question.id);
+    assert.ok(question.kind === "structural" && question.reference_date === null, question.id);
+    if (question.type === "numeric") {
+      assert.ok(Number.isFinite(question.correct) && question.tolerance_pct >= 0, question.id);
+    } else {
+      assert.ok(question.options[question.correct] && new Set(question.options).size === question.options.length, question.id);
+    }
+    keys.add(question.id);
+    prompts.add(searchText(question.prompt));
+  }
+  for (const [category] of CATS) {
+    for (const { id: level } of LEVELS) {
+      const pool = curriculumQuestions({ categories: [category], levels: [level] });
+      const specialized = ["central-banks", "fx", "commodities"].includes(category);
+      assert.ok(pool.length >= (specialized && level !== "beginner" ? 15 : 8), category + " · " + level);
+    }
+  }
+  for (const lesson of MODULES) {
+    for (const slug of (lesson.chapters ?? [lesson.chapter])) assert.ok(getChapter(slug), lesson.id);
+  }
+  assert.equal(new Set(CHAPTERS.map((c) => c.slug)).size, CHAPTERS.length);
+  assert.ok(CHAPTERS.every((c) => !("minutes" in c)));
+
+  const numeric = [
+    ["course:d1:mental-math:division", 125],
+    ["course:i6:fx:cross", 165],
+    ["course:a2:central-banks:taylor", 5],
+    ["course:e4:fx:carry-net", -1.3],
+    ["course:e5:commodities:brent-wti-pnl", -1000],
+    ["course:e5:commodities:or-argent", 70],
+    ["course:e5:market-caps:ev-tresorerie", 7],
+    ["course:e5:macro-guesstimates:segments", 600],
+  ];
+  for (const [id, correct] of numeric) assert.equal(CURRICULUM.find((q) => q.id === id)?.correct, correct);
+});
+
+test("les favoris rendent les questions retirées indisponibles et gardent les questions publiées", () => {
+  assert.equal(isCurrentFavorite(CURRICULUM[0]), true);
+  assert.equal(isCurrentFavorite({ ...CURRICULUM[0], id: "guest:016" }), false);
+  assert.equal(isCurrentFavorite({ ...CURRICULUM[0], id: "module:d4:2" }), false);
+  assert.equal(isCurrentFavorite(mentalQuestion(1, () => 0, "pourcentages")), true);
+  assert.equal(isCurrentFavorite({
+    ...CURRICULUM[0], id: "macro:price:2026-11-23", kind: "conjunctural", reference_date: "2026-11-23",
+  }), false);
+});
+
+test("les modes jouent avec la même banque et respectent leurs niveaux et formats", async () => {
+  const bank = new Set(CURRICULUM.map((q) => q.id));
+  const noLive = async () => [];
+  const live = [{ ...CURRICULUM[0], difficulty: "beginner", id: "retired:unverified" }];
+  const quick = await loadQuick(false, async () => live);
+  const mixed = await loadQuick(true, noLive);
+  const guest = await guestQuick();
+  for (const [draw, size] of [[quick, 10], [mixed, 15], [guest, 5]]) {
+    assert.equal(draw.length, size);
+    assert.ok(draw.every((q) => bank.has(q.id)));
+  }
+  assert.ok(quick.slice(0, 6).every((q) => q.difficulty === "beginner"));
+  const training = await loadTraining(["fx"], ["expert"], noLive);
+  assert.equal(training.length, 10);
+  assert.ok(training.every((q) => q.difficulty === "expert" && q.category_id === "fx" && bank.has(q.id)));
+  const beginners = await loadTraining(["fx", "commodities"], ["beginner"], async () => { throw new Error("Aucune donnée courante requise"); });
+  assert.ok(beginners.every((q) => q.difficulty === "beginner" && bank.has(q.id)));
+  assert.equal(loadPlacement().length, 12);
+  for (const game of ["calcul", "ordres", "culture"]) {
+    for (const level of [1, 2, 3, 4, 5]) {
+      const draw = await loadGame(game, level, noLive);
+      assert.equal(draw.length, 10, game);
+      assert.ok(draw.every((q) => bank.has(q.id) && q.difficulty === mentalDifficulty(level)), game);
+      assert.ok(draw.every((q) => game === "culture" ? q.type === "mcq" : q.type === "numeric"), game);
+    }
+  }
+  const exam = drawExam(CURRICULUM, []);
+  assert.equal(exam.questions.length, EXAM_SIZE);
+  const next = drawExam(CURRICULUM, exam.questions.map((q) => q.id));
+  assert.ok(next.questions.every((q) => !exam.questions.includes(q)));
+});
+
+test("les révisions retrouvent une question du Parcours par son identifiant stable", async () => {
+  const reviewed = CURRICULUM.find((q) => q.id === "course:i6:fx:cross");
+  const db = {
+    from(table) {
+      return {
+        select() { return this; },
+        like() { return this; },
+        lte() { return this; },
+        order() { return this; },
+        eq() { return table === "category_stats" ? { data: [{ category_id: "fx", difficulty: "intermediate", answered: 4, correct: 1 }] } : this; },
+        limit() { return { data: [{ question_id: reviewed.id }, { question_id: "retired:123" }] }; },
+      };
+    },
+  };
+  const { questions, note } = await loadWeakness(db, "fixture");
+  assert.equal(questions.length, 10);
+  assert.ok(questions.some((q) => q.id === reviewed.id));
+  assert.ok(questions.every((q) => q.category_id === "fx" && q.difficulty === "intermediate"));
+  assert.match(note, /1 question/);
 });
 
 test("les observations futures ou mal datées sont écartées et le Brent/WTI se compare à date égale", () => {

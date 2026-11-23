@@ -63,9 +63,8 @@ test("migration en mémoire, correction, historique et modules", async () => {
     `)).rows[0];
     assert.deepEqual(row, { issue: false, write_history: false, set_level: false });
     const base = { type: "numeric", category_id: "mental-math", difficulty: "intermediate", correct: -100, tolerance_pct: 5 };
-    const guestPool = JSON.parse(readFileSync(new URL("../public/data/guest-questions.json", import.meta.url), "utf8"));
-    const weight = guestPool.find((q) => q.id === "guest:003");
-    const exactConversion = guestPool.find((q) => q.id === "guest:004");
+    const weight = { ...base, id: "course:i2:market-caps:poids", difficulty: "intermediate", category_id: "market-caps", correct: 5, tolerance_pct: 8 };
+    const exactConversion = { ...base, id: "course:d1:mental-math:pb", difficulty: "beginner", correct: 1.5, tolerance_pct: 0 };
     const questions = Array.from({ length: 10 }, (_, i) => ({ ...base, id: i === 0 ? "1" : i === 1 ? "2" : `module:d1:${i}` }));
     questions[0] = { ...weight, id: "1" };
     const estimate = { ...base, correct: 4_123, tolerance_pct: 100 * 500 / 4_123 };
@@ -83,6 +82,10 @@ test("migration en mémoire, correction, historique et modules", async () => {
     assert.deepEqual((await db.query("select finish_quiz_run($1) as result", [id])).rows[0].result, finalized);
     assert.equal((await db.query("select count(*)::int as n from quiz_sessions")).rows[0].n, 1);
     assert.equal((await db.query("select count(*)::int as n from attempts")).rows[0].n, 2);
+    assert.deepEqual((await db.query("select question_key, was_correct from quiz_answer_history() where question_key like 'course:%'")).rows, [
+      { question_key: "course:d1:mental-math:pb", was_correct: false },
+      { question_key: "course:i2:market-caps:poids", was_correct: false },
+    ]);
     assert.deepEqual((await db.query("select passed,best_pct,attempts from module_progress")).rows[0], { passed: true, best_pct: 70, attempts: 1 });
 
     const placementId = await session(db, first, "quick", "placement", [

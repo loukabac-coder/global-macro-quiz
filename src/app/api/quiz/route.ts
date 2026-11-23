@@ -1,22 +1,20 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import guest from "../../../../public/data/guest-questions.json";
 import { CAT_NAME } from "@/lib/categories";
+import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { MODULE_QUIZ_SIZE, PASS_THRESHOLD } from "@/lib/config";
 import { readMacroSnapshot, readMarketCapsSnapshot } from "@/lib/dataSnapshots";
 import { drawExam, EXAM_SECONDS, EXAM_SIZE } from "@/lib/exam";
 import { dailyQuestions } from "@/lib/guest";
 import { buildLiveQuestions } from "@/lib/liveQuestions";
-import { fetchQuestions, loadGame, loadPlacement, loadQuick, loadTraining, loadTrainingByHistory, loadWeakness } from "@/lib/loaders";
+import { loadGame, loadPlacement, loadQuick, loadTraining, loadTrainingByHistory, loadWeakness } from "@/lib/loaders";
 import { buildMacroQuestions } from "@/lib/macroQuestions";
 import { hasFreshMarketCaps } from "@/lib/marketcaps";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
 import { moduleQuestions } from "@/lib/moduleQuestions";
 import { computeStatuses, moduleById, type Module, type Progress } from "@/lib/modules";
-import { DIFFICULTY_FR, isNumeric, shuffle, type Question } from "@/lib/quiz";
+import { DIFFICULTY_FR, isNumeric, type Question } from "@/lib/quiz";
 import { gameSeconds, mentalSeconds, parseHistory, type Activity, type QuizMode } from "@/lib/quizSession";
 import { todayParis } from "@/lib/rng";
-
-const guestPool = guest as Question[];
 
 function filters(values: unknown, allowed: Record<string, unknown>): string[] | undefined {
   if (!Array.isArray(values) || !values.every((v) => typeof v === "string" && Object.hasOwn(allowed, v))) return;
@@ -71,17 +69,15 @@ async function liveQuestions(): Promise<Question[]> {
 type Run = { questions: Question[]; mode: QuizMode; timer?: number; note?: string; day?: string; emptyMessage?: string };
 
 async function loadModuleQuestions(module: Module): Promise<Question[]> {
-  const caps = module.id === "d2" ? await readMarketCapsSnapshot() : null;
-  return moduleQuestions(module, MODULE_QUIZ_SIZE, caps);
+  const live = ["i2", "i4", "i5", "i6"].includes(module.id) ? await liveQuestions() : [];
+  return moduleQuestions(module, MODULE_QUIZ_SIZE, live);
 }
 
 async function loadActivity(db: SupabaseClient, userId: string, activity: Activity): Promise<Run | null> {
   switch (activity.type) {
     case "exam": {
-      const [bank, previous] = await Promise.all([
-        fetchQuestions(db, { levels: ["intermediate", "advanced"] }),
-        db.rpc("recent_exam_question_ids"),
-      ]);
+      const bank = curriculumQuestions({ levels: ["intermediate", "advanced"] });
+      const previous = await db.rpc("recent_exam_question_ids");
       if (previous.error) throw new Error("exam_history");
       const { questions, available, missing } = drawExam(
         bank.map(normalizeQuestion).filter((q): q is Question => q !== null),
@@ -95,13 +91,11 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
     }
     case "daily": {
       const day = todayParis();
-      return { questions: dailyQuestions(guestPool, day), mode: "daily", day };
+      return { questions: dailyQuestions(curriculumQuestions(), day), mode: "daily", day };
     }
     case "quick":
     case "mixed": {
-      const selected = await loadQuick(db, activity.type === "mixed", liveQuestions);
-      const limit = activity.type === "mixed" ? 15 : 10;
-      return { questions: [...selected, ...shuffle(guestPool).slice(0, Math.max(0, limit - selected.length))], mode: activity.type };
+      return { questions: await loadQuick(activity.type === "mixed", liveQuestions), mode: activity.type };
     }
     case "weakness":
       return { ...await loadWeakness(db, userId), mode: "weakness" };
@@ -110,26 +104,15 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
         const questions = await loadTrainingByHistory(db, activity.categories, activity.levels, activity.history);
         return { questions, mode: "training", emptyMessage: "Aucune question ne correspond à ces filtres et à ton historique." };
       }
-      if (activity.categories.length === 1 && activity.categories[0] === "market-caps"
-        && activity.levels.length === 1 && activity.levels[0] === "beginner") {
-        const beginner = moduleById("d2");
-        if (beginner) return { questions: await loadModuleQuestions(beginner), mode: "training" };
-      }
-      return { questions: await loadTraining(db, activity.categories, activity.levels, liveQuestions), mode: "training" };
+      return { questions: await loadTraining(activity.categories, activity.levels, liveQuestions), mode: "training" };
     }
     case "mental":
       return { questions: mentalSession(12, activity.level, Math.random, activity.topic), mode: "training", timer: activity.timed ? mentalSeconds(activity.level) : 0 };
     case "game": {
-      const questions = await loadGame(db, activity.game, activity.level, liveQuestions);
-      if (activity.game === "culture" && questions.length < 10) {
-        const prompts = new Set(questions.map((q) => q.prompt));
-        const backup = guestPool.filter((q) => !isNumeric(q) && !prompts.has(q.prompt));
-        questions.push(...shuffle(backup).slice(0, 10 - questions.length));
-      }
-      return { questions, mode: "challenge", timer: gameSeconds(activity.game, activity.level) };
+      return { questions: await loadGame(activity.game, activity.level, liveQuestions), mode: "challenge", timer: gameSeconds(activity.game, activity.level) };
     }
     case "placement":
-      return { questions: await loadPlacement(db), mode: "quick" };
+      return { questions: loadPlacement(), mode: "quick" };
     case "module": {
       const m = moduleById(activity.id);
       if (!m?.ready) return null;

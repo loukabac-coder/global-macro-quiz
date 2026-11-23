@@ -43,26 +43,6 @@ export function isNumeric(q: Question): boolean {
   return q.type === "numeric" || q.type === "guesstimate";
 }
 
-export function withBankTolerance(question: Question): Question {
-  if (!isNumeric(question) || question.kind === "conjunctural") return question;
-  const { prompt, tolerance_pct, type, category_id } = question;
-  const precise = /\bexact(?:e|ement)?\b|sans arrondir|\barrondi\w*\s+(?:à|au|aux)|(?:centime|décimale|unité)s? près|\b\d+\s+décimales\b/i;
-  if (precise.test(prompt)) return question;
-
-  const current = Number(tolerance_pct) || 0;
-  let minimum = 0;
-  if (type === "guesstimate" || /ordre de grandeur/i.test(prompt)) {
-    minimum = NUMERIC_TOLERANCE.orderOfMagnitude;
-  } else if (/\b(?:poids|part)\b/i.test(prompt) && /capitalisation|indice/i.test(prompt)) {
-    minimum = NUMERIC_TOLERANCE.weight;
-  } else if (/approxim|approch[ée]|\bestim(?:e|ez|er|ation)\b|\benviron\b|à peu près/i.test(prompt)) {
-    minimum = NUMERIC_TOLERANCE.estimate;
-  } else if (category_id === "mental-math" && current > 0) {
-    minimum = NUMERIC_TOLERANCE.rounding;
-  }
-  return minimum > current ? { ...question, tolerance_pct: minimum } : question;
-}
-
 export function mcqOptions(q: Question): string[] {
   return Array.isArray(q.options) ? (q.options as unknown[]).map(String) : [];
 }

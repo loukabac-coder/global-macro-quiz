@@ -5,7 +5,7 @@ import Link from "next/link";
 import QuizRunner, { type Result } from "@/components/QuizRunner";
 import AppShell from "@/components/AppShell";
 import Crumbs from "@/components/Crumbs";
-import { fetchMarketCaps } from "@/lib/marketcaps";
+import { getChapter } from "@/lib/courses";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 import { useSearch } from "@/lib/useSearch";
 import { moduleQuestions } from "@/lib/moduleQuestions";
@@ -16,6 +16,7 @@ import {
   computeStatuses,
   levelOfModule,
   moduleById,
+  modulePosition,
   previousModule,
   type Module,
   type Progress,
@@ -65,6 +66,7 @@ function SelectedModule() {
 function ModuleContent({ m }: { m?: Module }) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [block, setBlock] = useState<Block>("unknown");
+  const [requiredModule, setRequiredModule] = useState<string | null>(null);
   const [guest, setGuest] = useState(false);
   const [round, setRound] = useState(0);
 
@@ -108,13 +110,15 @@ function ModuleContent({ m }: { m?: Module }) {
       }
       if (!active) return;
       setGuest(isGuest);
+      const statuses = computeStatuses(progress, placement);
       if (!mod.ready) {
         setBlock("soon");
         setPhase("blocked");
       } else if (isGuest && mod.id !== GUEST_MODULE) {
         setBlock("account");
         setPhase("blocked");
-      } else if (!isGuest && computeStatuses(progress, placement)[mod.id] === "locked") {
+      } else if (!isGuest && statuses[mod.id] === "locked") {
+        setRequiredModule(previousModule(mod.id, statuses)?.title ?? null);
         setBlock("locked");
         setPhase("blocked");
       } else {
@@ -128,6 +132,7 @@ function ModuleContent({ m }: { m?: Module }) {
   }, [m]);
 
   const lvl = m ? levelOfModule(m) : null;
+  const chapters = m?.chapters ?? (m?.chapter ? [m.chapter] : []);
 
   if (phase === "check" && m) {
     return (
@@ -135,7 +140,7 @@ function ModuleContent({ m }: { m?: Module }) {
         key={`check-${round}`}
         title={`Mini-check · ${m.title}`}
         kicker="Mini-check · non noté, rien n’est enregistré"
-        practiceLoad={async () => moduleQuestions(m, MINI_CHECK_SIZE, m.id === "d2" ? await fetchMarketCaps() : null)}
+        practiceLoad={async () => moduleQuestions(m, MINI_CHECK_SIZE)}
         practiceKey={m.id}
         backHref="/parcours"
         backLabel="Parcours"
@@ -193,7 +198,7 @@ function ModuleContent({ m }: { m?: Module }) {
               )}
               {block === "locked" && m && (
                 <p>
-                  Ce module est verrouillé. Valide d’abord « {previousModule(m.id)?.title} » avec au moins {PASS_THRESHOLD} %.
+                  Ce module est verrouillé. Valide d’abord « {requiredModule} » avec au moins {PASS_THRESHOLD} %.
                 </p>
               )}
             </div>
@@ -207,7 +212,7 @@ function ModuleContent({ m }: { m?: Module }) {
           <div>
             <Crumbs items={[["Parcours", "/parcours"], [lvl.name, "/parcours"], [m.title]]} />
             <p className="font-mono text-xs text-accent">
-              {lvl.name.toUpperCase()} · MODULE {m.id.slice(1)}
+              {lvl.name.toUpperCase()} · MODULE {modulePosition(m)}
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight">{m.title}</h1>
             <p className="mt-3 text-muted">{m.goal}</p>
@@ -228,12 +233,16 @@ function ModuleContent({ m }: { m?: Module }) {
                   </li>
                 ))}
               </ul>
-              {m.chapter && (
-                <p className="border-t border-line px-4 py-3 text-sm">
-                  <Link href={`/cours/${m.chapter}`} className="text-fg underline underline-offset-4 hover:text-accent">
-                    Lire la fiche complète
-                  </Link>
-                </p>
+              {chapters.length > 0 && (
+                <ul className="space-y-2 border-t border-line px-4 py-3 text-sm">
+                  {chapters.map((slug) => (
+                    <li key={slug}>
+                      <Link href={`/cours/${slug}`} className="text-fg underline underline-offset-4 hover:text-accent">
+                        {chapters.length > 1 ? getChapter(slug)?.title ?? "Lire la fiche" : "Lire la fiche complète"}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
 
