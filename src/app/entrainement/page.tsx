@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import { getSupabase } from "@/lib/supabase";
 import { CATS } from "@/lib/categories";
 import type { StatRow } from "@/lib/progress";
+import { HISTORY_LABELS, parseHistory } from "@/lib/quizSession";
 
 const LEVELS: [string, string][] = [
   ["", "Tous niveaux"],
@@ -42,6 +43,7 @@ export default function Entrainement() {
   const [logged, setLogged] = useState<boolean | null>(null);
   const [stats, setStats] = useState<StatRow[]>([]);
   const [level, setLevel] = useState("");
+  const [history, setHistory] = useState<keyof typeof HISTORY_LABELS>("all");
 
   useEffect(() => {
     let active = true;
@@ -65,6 +67,14 @@ export default function Entrainement() {
   }, []);
 
   const lock = logged === false;
+
+  function trainingHref(category?: string) {
+    const params = new URLSearchParams({ mode: "training" });
+    if (category) params.set("categorie", category);
+    if (level) params.set("niveau", level);
+    if (history !== "all") params.set("historique", history);
+    return `/quiz?${params}`;
+  }
 
   function acc(cat: string): string {
     const rows = stats.filter((s) => s.category_id === cat);
@@ -98,6 +108,7 @@ export default function Entrainement() {
           <Card locked={lock} href="/quiz?mode=mixed" title="Mixed" text="15 questions, toutes catégories mélangées." />
           <Card locked={lock} href="/calcul-mental" title="Calcul mental infini" text="Pourcentages, variations, intérêts composés, devises, bps, règle de 72. Générés à la volée, niveaux 1 à 5." />
           <Card locked={lock} href="/test-niveau" title="Test de niveau" text="12 questions pour te placer dans le parcours." />
+          <Card locked={lock} href="/examen-blanc" title="Examen blanc" tag="45 s" text="20 questions intermédiaires et avancées. Correction en fin d’examen." />
         </div>
 
         <h2 className="mt-8 font-mono text-xs text-accent">CHRONOMÉTRÉ · FINANCE GAMES</h2>
@@ -110,11 +121,22 @@ export default function Entrainement() {
         <h2 className="mt-8 font-mono text-xs text-accent">PAR CATÉGORIE</h2>
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
           {LEVELS.map(([v, label]) => (
-            <button key={v} onClick={() => setLevel(v)} disabled={lock} className={`border px-3 py-1.5 ${level === v ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"} disabled:opacity-50`}>
+            <button key={v} onClick={() => setLevel(v)} disabled={lock} aria-pressed={level === v} className={`border px-3 py-1.5 ${level === v ? "border-accent bg-panel" : "border-line text-muted hover:border-muted"} disabled:opacity-50`}>
               {label}
             </button>
           ))}
         </div>
+        {!lock && (
+          <div className="mt-3 flex flex-wrap items-end gap-3 text-sm">
+            <label className="text-muted">
+              Historique de réponse
+              <select value={history} onChange={(event) => setHistory(parseHistory(event.target.value))} className="mt-1 block max-w-full border border-line bg-panel px-3 py-2 text-fg">
+                {Object.entries(HISTORY_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+              </select>
+            </label>
+            <Link href={trainingHref()} className="border border-line px-3 py-2 hover:border-accent">S’entraîner sur tous les thèmes</Link>
+          </div>
+        )}
         <div className="mt-3 grid gap-px border border-line bg-line sm:grid-cols-3">
           {CATS.map(([id, name]) =>
             lock ? (
@@ -123,7 +145,7 @@ export default function Entrainement() {
                 <div className="mt-1 font-mono text-xs text-muted">Compte requis</div>
               </Link>
             ) : (
-              <Link key={id} href={`/quiz?categorie=${id}${level ? `&niveau=${level}` : ""}`} className="bg-ink p-4 hover:bg-panel">
+              <Link key={id} href={trainingHref(id)} className="bg-ink p-4 hover:bg-panel">
                 <div className="font-semibold">{name}</div>
                 <div className="mt-1 font-mono text-xs text-muted">réussite · réponses : {acc(id)}</div>
               </Link>

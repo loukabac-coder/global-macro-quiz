@@ -18,6 +18,7 @@ const NAV: [string, string][] = [
 const SECTION: [string, string][] = [
   ["/parcours", "/parcours"],
   ["/test-niveau", "/parcours"],
+  ["/examen-blanc", "/parcours"],
   ["/entrainement", "/entrainement"],
   ["/quiz", "/entrainement"],
   ["/jeux", "/entrainement"],
@@ -27,6 +28,7 @@ const SECTION: [string, string][] = [
   ["/donnees", "/cours"],
   ["/capitalisations", "/cours"],
   ["/profil", "/profil"],
+  ["/favoris", "/profil"],
 ];
 
 function sectionOf(path: string): string {

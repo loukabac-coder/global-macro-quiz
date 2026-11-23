@@ -23,7 +23,83 @@ const { hasFreshMarketCaps } = await import("../src/lib/marketcaps.ts");
 const { readMacroSnapshot } = await import("../src/lib/dataSnapshots.ts");
 const { isAtLeastAsRecent } = await import("../src/lib/dataFreshness.ts");
 const { GET: marketDataRoute } = await import("../src/app/api/donnees/route.ts");
+const { drawExam, EXAM_SIZE } = await import("../src/lib/exam.ts");
+const { matchesKeywords, searchText } = await import("../src/lib/searchText.ts");
+const { loadTrainingByHistory } = await import("../src/lib/loaders.ts");
 const guestPool = JSON.parse(readFileSync(new URL("../public/data/guest-questions.json", import.meta.url), "utf8"));
+
+test("un examen couvre les sept thèmes en donnant la priorité aux questions nouvelles", () => {
+  const subjects = [
+    ["macroeconomics", "PIB"], ["financial-markets", "Courbe des taux"],
+    ["financial-markets", "Obligation à coupon"], ["fx", "Parité de change"],
+    ["market-caps", "Action cotée"], ["financial-markets", "Option sur action"],
+    ["monetary-policy", "Politique monétaire"],
+  ];
+  const bank = subjects.flatMap(([category_id, subject], t) => Array.from({ length: 7 }, (_, i) => ({
+    id: `${t}-${i}`, category_id, prompt: `${subject} ${i}`, type: "numeric", correct: 1, explanation: "Correction",
+    difficulty: i % 2 === 0 ? "intermediate" : "advanced",
+  })));
+  const invalid = [
+    { ...bank[0], id: "duplicate" },
+    { ...bank[1], id: "uncorrected", prompt: "Entrée sans correction", explanation: "" },
+    { ...bank[2], id: "beginner", prompt: "Entrée débutante", difficulty: "beginner" },
+    { ...bank[3], id: "expert", prompt: "Entrée experte", difficulty: "expert" },
+  ];
+  const one = drawExam([...bank, ...invalid], []);
+  assert.equal(one.available, bank.length);
+  assert.equal(one.questions.length, EXAM_SIZE);
+  const previous = one.questions.map((question) => question.id);
+  const two = drawExam(bank, previous);
+  assert.equal(two.questions.length, EXAM_SIZE);
+  assert.equal(two.questions.some((q) => previous.includes(q.id)), false);
+  assert.equal(new Set(two.questions.map((q) => q.id.split("-")[0])).size, subjects.length);
+  const restricted = drawExam(bank.filter((q) => q.id.startsWith("1-") ? q.id === "1-0" : true), ["1-0"]);
+  assert.equal(restricted.questions.filter((q) => q.id === "1-0").length, 1);
+  const missing = drawExam(bank.filter((q) => !q.id.startsWith("2-")), []);
+  assert.deepEqual(missing.questions, []);
+  assert.deepEqual(missing.missing, ["obligations"]);
+  assert.deepEqual(drawExam(bank.filter((q) => Number(q.id.at(-1)) < 2), []).questions, []);
+});
+
+test("la recherche retrouve plusieurs mots indépendamment des accents et de la casse", () => {
+  const index = searchText("Le coût du change et la mise en œuvre d’une politique monétaire");
+  assert.equal(matchesKeywords(index, "  MONETAIRE coût "), true);
+  assert.equal(matchesKeywords(index, "oeuvre"), true);
+  assert.equal(matchesKeywords(index, "coût obligations"), false);
+});
+
+test("le filtre historique combine le thème et le niveau avec le dernier résultat de la question", async () => {
+  const bank = [
+    { id: 1, category_id: "fx", difficulty: "intermediate" },
+    { id: 2, category_id: "fx", difficulty: "intermediate" },
+    { id: 3, category_id: "fx", difficulty: "intermediate" },
+    { id: 4, category_id: "fx", difficulty: "advanced" },
+    { id: 5, category_id: "macroeconomics", difficulty: "intermediate" },
+  ];
+  const db = {
+    from() {
+      let rows = bank;
+      return {
+        select() { return this; },
+        or() { return this; },
+        order() { return this; },
+        in(key, values) { rows = rows.filter((row) => values.includes(row[key])); return this; },
+        async range(start, end) { return { data: rows.slice(start, end + 1), error: null }; },
+      };
+    },
+    rpc() {
+      const rows = [{ question_key: "1", was_correct: true }, { question_key: "2", was_correct: false }];
+      return {
+        order() { return this; },
+        async range(start, end) { return { data: rows.slice(start, end + 1), error: null }; },
+      };
+    },
+  };
+  for (const [history, id] of [["correct", 1], ["incorrect", 2], ["unseen", 3]]) {
+    const questions = await loadTrainingByHistory(db, ["fx"], ["intermediate"], history);
+    assert.deepEqual(questions.map((q) => q.id), [id]);
+  }
+});
 
 test("saisie numérique française, finie et correctement groupée", () => {
   assert.equal(parseNumber("−1 234,50 %"), -1234.5);

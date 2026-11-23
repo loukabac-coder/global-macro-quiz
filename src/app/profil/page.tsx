@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { getSupabase } from "@/lib/supabase";
@@ -82,7 +83,10 @@ export default function Profil() {
   return (
     <AppShell width="max-w-4xl">
       <main className="py-8 sm:py-10">
-        <h1 className="text-3xl font-semibold tracking-tight">Profil</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-semibold tracking-tight">Profil</h1>
+          <Link href="/favoris" className="border border-line px-4 py-2 text-sm hover:border-accent">Mes questions favorites</Link>
+        </div>
         {email && <p className="mt-2 font-mono text-sm text-muted">{email}</p>}
         {error && <div role="alert" className="mt-6 border-l-2 border-danger bg-panel px-3 py-2.5 text-sm">{error}</div>}
         {!profile && !error && <p className="mt-6 text-sm text-muted">Chargement…</p>}

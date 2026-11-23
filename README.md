@@ -32,9 +32,9 @@ Les tests Node exécutent les migrations dans PostgreSQL en mémoire avec un sch
 
 ## Publier sur Vercel
 
-1. Dans Supabase, vérifie que le projet cible contient déjà les tables `profiles`, `questions`, `quiz_sessions` et `attempts` utilisées par le site. Si le Lot 1 n’a jamais été appliqué, exécute [lot-1-progression.sql](sql/lot-1-progression.sql) dans **SQL Editor**. Sur une base de test, applique ensuite [lot-4-modules.sql](sql/lot-4-modules.sql) et vérifie un quiz connecté jusqu’à l’apparition du score dans le profil.
+1. Dans Supabase, vérifie que le projet cible contient déjà les tables `profiles`, `questions`, `quiz_sessions` et `attempts` utilisées par le site. Sur une base de test, applique les migrations dans l’ordre, [Lot 1](sql/lot-1-progression.sql), [Lot 4](sql/lot-4-modules.sql), puis [Lot 5](sql/lot-5-examen-et-questions.sql). Vérifie un quiz connecté jusqu’à l’apparition du score dans le profil.
 2. Dans Vercel, ouvre **Settings → Environment Variables**. Conserve les variables publiques et ajoute `SUPABASE_SECRET_KEY` à **Production**. Pour une Preview testée sur une autre base, renseigne les trois variables de cette base pour la Preview.
-3. Au moment de publier, exécute [lot-4-modules.sql](sql/lot-4-modules.sql) dans le **SQL Editor** du projet de production. La migration conserve les historiques. Elle désactive les anciennes écritures de progression au profit des nouvelles RPC. Enchaîne avec le déploiement pour éviter que l’ancien site reste servi pendant cette transition.
+3. Avant de publier, applique les migrations manquantes dans **Supabase → SQL Editor** sur le projet de production. Si les lots 1 et 4 sont déjà en place, exécute [lot-5-examen-et-questions.sql](sql/lot-5-examen-et-questions.sql). Les migrations conservent les historiques.
 4. Publie le commit sur la branche Production de Vercel, habituellement `main`. Les commandes suivantes supposent que cette branche est bien `main` et que tu travailles dessus.
 
 ```powershell
@@ -53,6 +53,8 @@ git push origin main
 
 ## Données et progression
 
+- L’examen blanc tire 20 questions corrigées de niveau intermédiaire ou avancé dans la banque Supabase. La page indique les thèmes manquants si le tirage est impossible. Les signalements des comptes connectés sont consultables dans la table `question_reports` du projet Supabase.
+- La reprise d’un quiz classique est disponible pendant quatre heures sur le même navigateur. Le chronomètre d’une question déjà démarrée continue de courir pendant l’interruption.
 - Le défi quotidien utilise la date de Paris et le même jeu de questions pour les visiteurs et les comptes. Les cours, les mini-checks et les corrections immédiates restent accessibles selon le niveau du parcours.
 - GitHub Actions contrôle la macro et l’or toutes les 30 minutes. Le panel de capitalisations est contrôlé chaque heure en semaine. Le calendrier GitHub et les délais de publication des fournisseurs peuvent décaler la disponibilité.
 - Les tableaux et les quiz lisent la même publication via `data-live`. Vercel ne redéploie pas sur cette branche. Les tableaux ouverts vérifient toutes les deux minutes s’il y a une nouvelle publication.

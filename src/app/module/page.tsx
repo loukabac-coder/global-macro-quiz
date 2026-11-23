@@ -136,6 +136,7 @@ function ModuleContent({ m }: { m?: Module }) {
         title={`Mini-check · ${m.title}`}
         kicker="Mini-check · non noté, rien n’est enregistré"
         practiceLoad={async () => moduleQuestions(m, MINI_CHECK_SIZE, m.id === "d2" ? await fetchMarketCaps() : null)}
+        practiceKey={m.id}
         backHref="/parcours"
         backLabel="Parcours"
         replayLabel="Refaire le mini-check"

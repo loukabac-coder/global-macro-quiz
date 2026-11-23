@@ -160,6 +160,7 @@ export default function Parcours() {
                 Essayer le module 1 sans compte →
               </Link>
               <Link href="/invite" className="border border-line px-5 py-4 text-center text-sm hover:border-muted">Quiz rapide : 5 questions</Link>
+              <Link href="/examen-blanc" className="border border-line px-5 py-4 text-center text-sm hover:border-muted">Examen blanc</Link>
               <Link href="/inscription" className="border border-line px-5 py-4 text-center text-sm hover:border-muted">Créer un compte</Link>
             </div>
           </div>
@@ -228,6 +229,13 @@ export default function Parcours() {
               <Link href="/entrainement" className="border border-line p-4 hover:border-accent">
                 <p className="font-mono text-xs text-muted">ENTRAÎNEMENT LIBRE</p>
                 <p className="mt-1 font-semibold">Quiz, jeux chronométrés, cours</p>
+              </Link>
+              <Link href="/examen-blanc" className="border border-line p-4 hover:border-accent">
+                <p className="font-mono text-xs text-muted">20 QUESTIONS · 45 S PAR QUESTION</p>
+                <p className="mt-1 font-semibold">Examen blanc</p>
+              </Link>
+              <Link href="/favoris" className="border border-line p-4 hover:border-accent">
+                <p className="mt-1 font-semibold">Mes questions favorites</p>
               </Link>
             </section>
           </div>

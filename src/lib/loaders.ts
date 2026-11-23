@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { shuffle, withBankTolerance, type Question } from "@/lib/quiz";
 import { mentalQuestion, mentalSession } from "@/lib/mental";
-import type { Game } from "@/lib/quizSession";
+import type { Game, HistoryFilter } from "@/lib/quizSession";
 
 export const Q_COLS =
   "id, category_id, type, difficulty, prompt, options, correct, tolerance_pct, explanation, wrong_explanations, source, kind, reference_date";
@@ -111,6 +111,27 @@ export async function loadTraining(
     picked = [...picked, ...Array.from({ length: SIZE - picked.length }, () => mentalQuestion(lv, Math.random))];
   }
   return shuffle(picked);
+}
+
+export async function loadTrainingByHistory(
+  supabase: SupabaseClient, categories: string[], levels: string[], history: Exclude<HistoryFilter, "all">,
+): Promise<Question[]> {
+  const loadHistory = async () => {
+    const last = new Map<string, boolean>();
+    const pageSize = 500;
+    for (let offset = 0; ;) {
+      const { data, error } = await supabase.rpc("quiz_answer_history").order("question_key").range(offset, offset + pageSize - 1);
+      if (error) throw new Error(error.message);
+      if (!data?.length) return last;
+      for (const row of data as { question_key: string; was_correct: boolean }[]) last.set(row.question_key, row.was_correct);
+      offset += data.length;
+    }
+  };
+  const [questions, last] = await Promise.all([fetchQuestions(supabase, { categories, levels }), loadHistory()]);
+  return shuffle(questions.filter((q) => {
+    const answer = last.get(String(q.id));
+    return history === "unseen" ? answer === undefined : answer === (history === "correct");
+  })).slice(0, SIZE);
 }
 
 // Weakness Training : questions à revoir (répétition espacée) + catégories où le taux de réussite est le plus bas.

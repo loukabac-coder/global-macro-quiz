@@ -53,7 +53,7 @@ test("migration en mémoire, correction, historique et modules", async () => {
   const db = new PGlite();
   try {
     await db.exec(initialSchema);
-    for (const name of ["lot-1-progression", "lot-4-modules", "lot-4-modules"]) {
+    for (const name of ["lot-1-progression", "lot-4-modules", "lot-4-modules", "lot-5-examen-et-questions", "lot-5-examen-et-questions"]) {
       await db.exec(readFileSync(new URL(`../sql/${name}.sql`, import.meta.url), "utf8"));
     }
     const row = (await db.query(`
@@ -97,6 +97,94 @@ test("migration en mémoire, correction, historique et modules", async () => {
     assert.equal((await db.query("select count(*)::int as n from quiz_sessions")).rows[0].n, 0);
     assert.equal((await db.query("select count(*)::int as n from module_progress")).rows[0].n, 0);
     assert.equal((await db.query("select count(*)::int as n from profiles")).rows[0].n, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test("examen à délai strict, corrections différées, reprise et données personnelles", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(initialSchema);
+    for (const name of ["lot-1-progression", "lot-4-modules", "lot-5-examen-et-questions"]) {
+      await db.exec(readFileSync(new URL(`../sql/${name}.sql`, import.meta.url), "utf8"));
+    }
+    const bank = Array.from({ length: 20 }, (_, index) => ({
+      id: String(index + 1), category_id: "financial-markets", difficulty: "intermediate",
+      prompt: `Fixture ${index + 1}`, type: "numeric", correct: -100, tolerance_pct: 5,
+      explanation: "Correction de test",
+    }));
+    await assert.rejects(session(db, first, "training", "exam", bank.slice(0, 19), 45), /quiz_runs_exam_format/);
+    await assert.rejects(session(db, first, "training", "exam", bank, 30), /quiz_runs_exam_format/);
+    const exam = await session(db, first, "training", "exam", bank, 45);
+    assert.equal((await db.query("select resume_quiz_run($1) as run", [exam])).rows[0].run, null);
+    await assert.rejects(db.query("select finish_quiz_run($1)", [exam]), /incomplete/);
+    await assert.rejects(db.query("select start_exam_question($1,1)", [exam]), /unexpected question/);
+    await db.query("select start_exam_question($1,0)", [exam]);
+    const { rows: started } = await db.query("select start_exam_question($1,0) elapsed", [exam]);
+    assert.ok(Number(started[0].elapsed) >= 0);
+    assert.deepEqual(await answer(db, exam, 0, -105), { submitted: true });
+    const retry = await db.query("select record_quiz_answer($1,0,'0'::jsonb) result", [exam]);
+    assert.deepEqual(retry.rows[0].result, { submitted: true });
+    await db.query("select start_exam_question($1,1)", [exam]);
+    await db.exec("reset role");
+    await db.query("update quiz_private.quiz_runs set question_started_at = clock_timestamp() - interval '45.1 seconds' where id=$1", [exam]);
+    await db.exec("set role authenticated");
+    assert.deepEqual(await answer(db, exam, 1, -100), { submitted: true });
+    for (let i = 2; i < 20; i++) assert.deepEqual(await answer(db, exam, i, i === 2 ? null : -100), { submitted: true });
+    const finalized = (await db.query("select finish_quiz_run($1) as result", [exam])).rows[0].result;
+    assert.equal(finalized.score, 18);
+    assert.equal(finalized.total, 20);
+    assert.equal(finalized.corrections.length, 20);
+    assert.equal(finalized.corrections[0].answer, -105);
+    assert.equal(finalized.corrections[0].question.correct, -100);
+    for (const timeout of [1, 2]) {
+      assert.equal(finalized.corrections[timeout].ok, false);
+      assert.equal(finalized.corrections[timeout].answer, null);
+      assert.equal(finalized.corrections[timeout].seconds, 45);
+    }
+    assert.deepEqual((await db.query("select finish_quiz_run($1) as result", [exam])).rows[0].result, finalized);
+    assert.deepEqual((await db.query("select recent_exam_question_ids() ids")).rows[0].ids, bank.map((q) => q.id));
+    assert.equal((await db.query("select count(*)::int n from quiz_sessions")).rows[0].n, 1);
+
+    const classic = await session(db, first, "training", "standard", bank.slice(0, 3), 20);
+    await answer(db, classic, 0, -105);
+    let resume = (await db.query("select resume_quiz_run($1) run", [classic])).rows[0].run;
+    assert.equal(resume.feedback[0].question.correct, -100);
+    assert.equal(resume.questionSeconds, null);
+    assert.equal(resume.questions[1].correct, null);
+    await db.query("select start_quiz_question($1,1)", [classic]);
+    resume = (await db.query("select resume_quiz_run($1) run", [classic])).rows[0].run;
+    assert.ok(resume.questionSeconds >= 0 && resume.questionSeconds < 20);
+    assert.deepEqual((await db.query("select * from quiz_answer_history()")).rows.slice(0, 2), [
+      { question_key: "1", was_correct: true }, { question_key: "10", was_correct: true },
+    ]);
+    await db.query("insert into question_favorites(question_key,question) values ('1:favorite',$1)", [JSON.stringify(bank[0])]);
+    await db.exec("insert into question_reports (question_key,question_id,prompt,reason) values ('1:favorite','1','Fixture','ambiguous')");
+    await assert.rejects(db.query("select * from question_reports"), /permission denied/);
+
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [second]);
+    assert.equal((await db.query("select resume_quiz_run($1) run", [classic])).rows[0].run, null);
+    assert.deepEqual((await db.query("select recent_exam_question_ids() ids")).rows[0].ids, []);
+    assert.deepEqual((await db.query("select * from quiz_answer_history()")).rows, []);
+    assert.deepEqual((await db.query("select * from question_favorites")).rows, []);
+    await assert.rejects(db.query("insert into question_favorites(user_id,question_key,question) values ($1,'1:other','{}')", [first]), /row-level security/);
+    await assert.rejects(db.query("insert into question_reports(user_id,question_key,question_id,prompt,reason) values ($1,'1:other','1','Fixture','ambiguous')", [first]), /row-level security/);
+
+    await db.exec("reset role");
+    await db.query(`
+      with older as (
+        insert into quiz_sessions(user_id,mode,finished_at,score,total,seconds_spent)
+        values ($1,'quick',now()-interval '2 days',0,1,10) returning id
+      ), newer as (
+        insert into quiz_sessions(user_id,mode,finished_at,score,total,seconds_spent)
+        values ($1,'quick',now()-interval '1 day',1,1,5) returning id
+      )
+      insert into attempts(user_id,session_id,question_id,is_correct)
+      select $1,id,2,false from older union all select $1,id,2,true from newer
+    `, [second]);
+    await db.exec("set role authenticated");
+    assert.deepEqual((await db.query("select * from quiz_answer_history()")).rows, [{ question_key: "2", was_correct: true }]);
   } finally {
     await db.close();
   }

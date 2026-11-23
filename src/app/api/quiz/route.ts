@@ -3,16 +3,17 @@ import guest from "../../../../public/data/guest-questions.json";
 import { CAT_NAME } from "@/lib/categories";
 import { MODULE_QUIZ_SIZE, PASS_THRESHOLD } from "@/lib/config";
 import { readMacroSnapshot, readMarketCapsSnapshot } from "@/lib/dataSnapshots";
+import { drawExam, EXAM_SECONDS, EXAM_SIZE } from "@/lib/exam";
 import { dailyQuestions } from "@/lib/guest";
 import { buildLiveQuestions } from "@/lib/liveQuestions";
-import { loadGame, loadPlacement, loadQuick, loadTraining, loadWeakness } from "@/lib/loaders";
+import { fetchQuestions, loadGame, loadPlacement, loadQuick, loadTraining, loadTrainingByHistory, loadWeakness } from "@/lib/loaders";
 import { buildMacroQuestions } from "@/lib/macroQuestions";
 import { hasFreshMarketCaps } from "@/lib/marketcaps";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
 import { moduleQuestions } from "@/lib/moduleQuestions";
 import { computeStatuses, moduleById, type Module, type Progress } from "@/lib/modules";
 import { DIFFICULTY_FR, isNumeric, shuffle, type Question } from "@/lib/quiz";
-import { gameSeconds, mentalSeconds, type Activity, type QuizMode } from "@/lib/quizSession";
+import { gameSeconds, mentalSeconds, parseHistory, type Activity, type QuizMode } from "@/lib/quizSession";
 import { todayParis } from "@/lib/rng";
 
 const guestPool = guest as Question[];
@@ -25,12 +26,12 @@ function filters(values: unknown, allowed: Record<string, unknown>): string[] | 
 function parseActivity(value: unknown): Activity | undefined {
   if (!value || typeof value !== "object") return;
   const v = value as Record<string, unknown>;
-  if (v.type === "quick" || v.type === "mixed" || v.type === "daily" || v.type === "weakness" || v.type === "placement") return { type: v.type };
+  if (v.type === "quick" || v.type === "mixed" || v.type === "daily" || v.type === "weakness" || v.type === "placement" || v.type === "exam") return { type: v.type };
   if (v.type === "module" && typeof v.id === "string") return { type: v.type, id: v.id };
   if (v.type === "training") {
     const categories = filters(v.categories, CAT_NAME);
     const levels = filters(v.levels, DIFFICULTY_FR);
-    if (categories && levels) return { type: v.type, categories, levels };
+    if (categories && levels) return { type: v.type, categories, levels, history: parseHistory(v.history) };
   }
   const level = v.level;
   if (typeof level !== "number" || !Number.isInteger(level) || level < 1 || level > 5) return;
@@ -67,7 +68,7 @@ async function liveQuestions(): Promise<Question[]> {
   return [...(hasFreshMarketCaps(caps, now) ? buildLiveQuestions(caps) : []), ...buildMacroQuestions(macro, now)];
 }
 
-type Run = { questions: Question[]; mode: QuizMode; timer?: number; note?: string; day?: string };
+type Run = { questions: Question[]; mode: QuizMode; timer?: number; note?: string; day?: string; emptyMessage?: string };
 
 async function loadModuleQuestions(module: Module): Promise<Question[]> {
   const caps = module.id === "d2" ? await readMarketCapsSnapshot() : null;
@@ -76,6 +77,22 @@ async function loadModuleQuestions(module: Module): Promise<Question[]> {
 
 async function loadActivity(db: SupabaseClient, userId: string, activity: Activity): Promise<Run | null> {
   switch (activity.type) {
+    case "exam": {
+      const [bank, previous] = await Promise.all([
+        fetchQuestions(db, { levels: ["intermediate", "advanced"] }),
+        db.rpc("recent_exam_question_ids"),
+      ]);
+      if (previous.error) throw new Error("exam_history");
+      const { questions, available, missing } = drawExam(
+        bank.map(normalizeQuestion).filter((q): q is Question => q !== null),
+        previous.data as string[],
+      );
+      const emptyMessage = questions.length === EXAM_SIZE ? undefined : [
+        `La banque contient ${available} questions admissibles. Un examen exige ${EXAM_SIZE} questions intermédiaires ou avancées couvrant les sept thèmes.`,
+        missing.length ? `Thèmes manquants : ${missing.join(", ")}.` : "",
+      ].filter(Boolean).join(" ");
+      return { questions, mode: "training", timer: EXAM_SECONDS, emptyMessage };
+    }
     case "daily": {
       const day = todayParis();
       return { questions: dailyQuestions(guestPool, day), mode: "daily", day };
@@ -89,6 +106,10 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
     case "weakness":
       return { ...await loadWeakness(db, userId), mode: "weakness" };
     case "training": {
+      if (activity.history && activity.history !== "all") {
+        const questions = await loadTrainingByHistory(db, activity.categories, activity.levels, activity.history);
+        return { questions, mode: "training", emptyMessage: "Aucune question ne correspond à ces filtres et à ton historique." };
+      }
       if (activity.categories.length === 1 && activity.categories[0] === "market-caps"
         && activity.levels.length === 1 && activity.levels[0] === "beginner") {
         const beginner = moduleById("d2");
@@ -144,12 +165,12 @@ export async function POST(request: Request) {
     if (!run) return Response.json({ error: "Ce module est verrouillé." }, { status: 403 });
     const questions = run.questions.map(normalizeQuestion).filter((q): q is Question => q !== null);
     if (activity.type === "module" && questions.length !== MODULE_QUIZ_SIZE) throw new Error("module_questions");
-    if (!questions.length) return Response.json({ questions: [] });
+    if (!questions.length) return Response.json({ questions: [], note: run.emptyMessage }, { headers: { "Cache-Control": "no-store" } });
     const writer = createClient(url, secret, { auth });
     const { data: id, error: issueError } = await writer.rpc("issue_quiz_run", {
       p_user: user.id,
       p_mode: run.mode,
-      p_kind: activity.type === "module" || activity.type === "placement" ? activity.type : "standard",
+      p_kind: activity.type === "module" || activity.type === "placement" || activity.type === "exam" ? activity.type : "standard",
       p_questions: questions,
       p_time_limit: run.timer ?? 0,
       p_module: activity.type === "module" ? activity.id : null,

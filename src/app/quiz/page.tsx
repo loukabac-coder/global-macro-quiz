@@ -4,7 +4,9 @@ import { Suspense } from "react";
 import QuizRunner from "@/components/QuizRunner";
 import { useSearch } from "@/lib/useSearch";
 import { parseList } from "@/lib/loaders";
-import type { Activity } from "@/lib/quizSession";
+import { HISTORY_LABELS, parseHistory, type Activity } from "@/lib/quizSession";
+import { CAT_NAME } from "@/lib/categories";
+import { DIFFICULTY_FR } from "@/lib/quiz";
 import { todayParis } from "@/lib/rng";
 import { guestDaily, guestQuick } from "@/lib/guest";
 
@@ -25,7 +27,8 @@ function Quiz() {
   const m = params.get("mode") ?? "";
   const categories = parseList(params.get("categorie"));
   const levels = parseList(params.get("niveau"));
-  const training = categories.length > 0 || levels.length > 0;
+  const history = parseHistory(params.get("historique"));
+  const training = m === "training" || categories.length > 0 || levels.length > 0 || history !== "all";
 
   let activity: Activity = { type: "quick" };
   let title = TITLES.quick;
@@ -39,8 +42,12 @@ function Quiz() {
     activity = { type: "mixed" };
     title = TITLES.mixed;
   } else if (training) {
-    activity = { type: "training", categories, levels };
-    title = "Training : " + [categories.join(", "), levels.join(", ")].filter(Boolean).join(" · ");
+    activity = { type: "training", categories, levels, history };
+    title = [
+      categories.map((category) => CAT_NAME[category] ?? category).join(", ") || "Tous les thèmes",
+      levels.map((level) => DIFFICULTY_FR[level] ?? level).join(", "),
+      history === "all" ? "" : HISTORY_LABELS[history],
+    ].filter(Boolean).join(" · ");
   }
 
   return (

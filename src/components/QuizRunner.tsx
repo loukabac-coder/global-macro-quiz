@@ -21,11 +21,15 @@ import {
 import { BADGES } from "@/lib/badges";
 import { levelFromXp, levelName } from "@/lib/progress";
 import { CAT_NAME } from "@/lib/categories";
-import type { Activity, Answer, Feedback, QuizSummary } from "@/lib/quizSession";
+import QuestionActions from "@/components/QuestionActions";
+import { clearQuizResume, quizResumeKey, readQuizResume, writeQuizResume } from "@/lib/quizResume";
+import type { Activity, Answer, Feedback, QuizSummary, ResumedQuiz } from "@/lib/quizSession";
 
-export type Result = { q: Question; ok: boolean; given: string; seconds: number; points: number };
+export type Result = { q: Question; ok: boolean; given: string; seconds: number; points: number; wrongNote?: string | null };
 type Phase = "loading" | "empty" | "error" | "playing" | "done";
 type Item = { q: Question; order: number[] };
+type LocalResume = { items: Item[]; idx: number; checked: boolean; choice: Answer; results: Result[]; issuedAt: number; questionAt: number };
+type ServerResume = { id: string; orders: number[][] };
 
 export type RunnerProps = {
   title: string;
@@ -33,7 +37,8 @@ export type RunnerProps = {
   activity?: Activity;
   timePerQuestion?: number;
   practiceLoad?: () => Promise<Question[]>;
-  /** Questions pour un visiteur sans compte (rien n'est sauvegardé). Sans cette fonction, un visiteur est renvoyé vers la connexion. */
+  practiceKey?: string;
+  /** Questions pour un visiteur sans compte. Sans cette fonction, redirection vers la connexion. */
   guestLoad?: () => Promise<Question[]>;
   /** Page réservée aux invités : aucune connexion à Supabase. */
   guestOnly?: boolean;
@@ -66,9 +71,25 @@ function answerLabel(q: Question, answer: Answer) {
   return fmt(answer);
 }
 
+function resultOf({ question, ok, answer, seconds, points, timedOut }: Feedback): Result {
+  return {
+    q: question, ok, given: timedOut ? "Temps écoulé" : answerLabel(question, answer), seconds, points,
+    wrongNote: !ok && question.type === "mcq" && typeof answer === "number" ? wrongNote(question, answer) : null,
+  };
+}
+
+async function startQuestion(db: ReturnType<typeof getSupabase>, id: string, index: number, exam: boolean) {
+  const sentAt = nowMs();
+  const { data, error } = await db.rpc(exam ? "start_exam_question" : "start_quiz_question", { p_run: id, p_index: index });
+  if (error) throw new Error("La question n’a pas pu démarrer. Réessaie.");
+  const receivedAt = nowMs();
+  return exam ? (sentAt + receivedAt) / 2 - Number(data) * 1000 : receivedAt;
+}
+
 export default function QuizRunner(props: RunnerProps) {
   const { title, kicker, renderEnd, backHref = "/parcours", backLabel = "Quitter", replayLabel = "Rejouer" } = props;
   const router = useRouter();
+  const exam = props.activity?.type === "exam";
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [message, setMessage] = useState<string | null>(null);
@@ -95,6 +116,8 @@ export default function QuizRunner(props: RunnerProps) {
   const configRef = useRef(props);
   const busy = useRef(false);
   const submitRef = useRef<(timedOut: boolean) => void>(() => {});
+  const resumeKey = useRef<string | null>(null);
+  const responses = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     configRef.current = props;
@@ -105,34 +128,61 @@ export default function QuizRunner(props: RunnerProps) {
     let active = true;
     async function run() {
       try {
-        const { practiceLoad, guestOnly, guestLoad, activity, timePerQuestion } = configRef.current;
-        let questions: Question[];
+        const { practiceLoad, practiceKey, guestOnly, guestLoad, activity, timePerQuestion } = configRef.current;
+        const isExam = activity?.type === "exam";
+        let questions: Question[] = [];
         let issuedId: string | null = null;
         let quizNote: string | null = null;
         let timer = timePerQuestion ?? 0;
         let isGuest = false;
+        let resumed: ResumedQuiz | null = null;
+        let local: LocalResume | null = null;
+        let beganAt: number | null = null;
+        let orders: number[][] | undefined;
         if (practiceLoad) {
-          questions = await practiceLoad();
+          resumeKey.current = quizResumeKey(null, activity, practiceKey);
+          local = readQuizResume<LocalResume>(resumeKey.current);
+          if (!local) questions = await practiceLoad();
         } else {
           const supabase = !guestOnly && supabaseConfigured() ? getSupabase() : null;
           const sessionResult = supabase ? await supabase.auth.getSession() : null;
           if (sessionResult?.error) throw new Error("Ta session n’a pas pu être vérifiée.");
+          if (!active) return;
           const session = sessionResult?.data.session;
           if (session && supabase && activity) {
-            const response = await fetch("/api/quiz", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-              body: JSON.stringify(activity),
-            });
-            const res = await response.json() as { id?: string; questions?: Question[]; note?: string; error?: string; timeLimit?: number };
-            if (!response.ok) throw new Error(res.error ?? "Le serveur de quiz est indisponible.");
-            questions = res.questions ?? [];
-            issuedId = res.id ?? null;
-            quizNote = res.note ?? null;
-            timer = res.timeLimit ?? 0;
-            if (issuedId && active) {
-              const { error } = await supabase.rpc("start_quiz_question", { p_run: issuedId, p_index: 0 });
-              if (error) throw new Error("La première question n’a pas pu démarrer.");
+            const key = isExam ? null : quizResumeKey(session.user.id, activity);
+            resumeKey.current = key;
+            const previous = key && readQuizResume<ServerResume>(key);
+            if (previous) {
+              const { data, error } = await supabase.rpc("resume_quiz_run", { p_run: previous.id });
+              if (error) throw new Error("La session interrompue n’a pas pu être chargée.");
+              if (!active) return;
+              resumed = data as ResumedQuiz | null;
+              if (resumed) {
+                issuedId = previous.id;
+                questions = resumed.questions;
+                timer = resumed.timeLimit;
+                orders = previous.orders;
+              }
+            }
+            if (!resumed) {
+              const response = await fetch("/api/quiz", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+                body: JSON.stringify(activity),
+              });
+              const res = await response.json() as { id?: string; questions?: Question[]; note?: string; error?: string; timeLimit?: number };
+              if (!response.ok) throw new Error(res.error ?? "Le serveur de quiz est indisponible.");
+              if (!active) return;
+              questions = res.questions ?? [];
+              issuedId = res.id ?? null;
+              quizNote = res.note ?? null;
+              timer = res.timeLimit ?? 0;
+              orders = questions.map((q) => shuffle(mcqOptions(q).map((_, i) => i)));
+              if (issuedId && key) writeQuizResume<ServerResume>(key, { id: issuedId, orders });
+            }
+            if (issuedId && (!resumed || (!resumed.feedback.length && resumed.questionSeconds === null))) {
+              beganAt = await startQuestion(supabase, issuedId, 0, isExam);
             }
           } else {
             if (!guestLoad) {
@@ -140,32 +190,42 @@ export default function QuizRunner(props: RunnerProps) {
               return;
             }
             isGuest = true;
-            questions = await guestLoad();
+            resumeKey.current = quizResumeKey(null, activity);
+            local = readQuizResume<LocalResume>(resumeKey.current);
+            if (!local) questions = await guestLoad();
           }
         }
         if (!active) return;
         setNote(quizNote);
-        if (questions.length === 0) {
+        if (!local && questions.length === 0) {
           setPhase("empty");
           return;
         }
         setSessionId(issuedId);
         setTimer(timer);
         setGuest(isGuest);
-        setItems(questions.map((q) => ({ q, order: shuffle(mcqOptions(q).map((_, i) => i)) })));
-        setIdx(0);
-        setChoice(null);
+        const restoredFeedback = resumed?.feedback ?? [];
+        const lastFeedback = restoredFeedback.at(-1);
+        const showingFeedback = resumed?.questionSeconds === null && !!lastFeedback;
+        setItems(local?.items ?? questions.map((q, i) => ({ q, order: orders?.[i] ?? shuffle(mcqOptions(q).map((_, j) => j)) })));
+        setIdx(local?.idx ?? (showingFeedback ? restoredFeedback.length - 1 : restoredFeedback.length));
+        setChoice(showingFeedback ? lastFeedback.answer : local?.choice ?? null);
         setText("");
-        setChecked(false);
-        setResults([]);
+        setChecked(local?.checked ?? showingFeedback);
+        setResults(local?.results ?? restoredFeedback.map(resultOf));
         setFormError(null);
-        setSave(null);
-        setSummary(null);
+        setSave(resumed?.summary ? "saved" : null);
+        setSummary(resumed?.summary ?? null);
         const t = nowMs();
-        setStartAt(t);
-        setQStart(t);
+        const wallTime = Date.now();
+        const issuedSeconds = resumed?.issuedSeconds ?? (local ? (wallTime - local.issuedAt) / 1000 : 0);
+        const questionSeconds = resumed?.questionSeconds ?? (local ? (wallTime - local.questionAt) / 1000 : lastFeedback?.seconds ?? 0);
+        setStartAt(t - issuedSeconds * 1000);
+        setQStart(beganAt ?? t - questionSeconds * 1000);
         setNow(t);
-        setPhase("playing");
+        setTotal(Math.floor(issuedSeconds));
+        if (resumed?.summary && resumeKey.current) clearQuizResume(resumeKey.current);
+        setPhase(resumed?.summary ? "done" : "playing");
       } catch (e) {
         if (!active) return;
         setMessage(e instanceof Error ? e.message : "Erreur inconnue.");
@@ -178,23 +238,54 @@ export default function QuizRunner(props: RunnerProps) {
     };
   }, [router, runId]);
 
+  useEffect(() => {
+    if (phase !== "playing" || sessionId || !resumeKey.current) return;
+    const origin = Date.now() - nowMs();
+    const issuedAt = origin + startAt;
+    writeQuizResume<LocalResume>(resumeKey.current, { items, idx, checked, choice, results, issuedAt, questionAt: origin + qStart }, issuedAt);
+  }, [phase, sessionId, items, idx, checked, choice, results, startAt, qStart]);
+
   // Horloge (et fin de temps automatique pour les séries chronométrées)
   useEffect(() => {
     if (phase !== "playing" || checked) return;
-    const id = setInterval(() => {
+    const tick = () => {
       const t = nowMs();
       setNow(t);
       if (T > 0 && t - qStart >= T * 1000) {
         clearInterval(id);
         submitRef.current(true);
       }
-    }, 250);
-    return () => clearInterval(id);
+    };
+    const id = setInterval(tick, 250);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [phase, checked, T, qStart, idx]);
 
   function replay() {
+    if (phase === "done" && resumeKey.current) clearQuizResume(resumeKey.current);
     setPhase("loading");
     setRunId((n) => n + 1);
+  }
+
+  async function advanceQuestion() {
+    const t = sessionId ? await startQuestion(getSupabase(), sessionId, idx + 1, exam) : nowMs();
+    setIdx(idx + 1);
+    setChoice(null);
+    setText("");
+    setChecked(false);
+    setFormError(null);
+    setQStart(t);
+    setNow(nowMs());
+  }
+
+  function finish() {
+    setTotal(Math.floor((nowMs() - startAt) / 1000));
+    setPhase("done");
+    if (sessionId) void persist(sessionId);
+    else if (resumeKey.current) clearQuizResume(resumeKey.current);
   }
 
   async function submit(timedOut: boolean) {
@@ -212,25 +303,32 @@ export default function QuizRunner(props: RunnerProps) {
     busy.current = true;
     setPending(true);
     setFormError(null);
+    let examFinished = false;
     try {
       let feedback: Feedback;
       if (sessionId) {
         const { data, error } = await getSupabase().rpc("record_quiz_answer", { p_run: sessionId, p_index: idx, p_answer: answer });
         if (error || !data) throw new Error("réponse");
+        if (exam) {
+          if (!data.submitted) throw new Error("examen");
+          if (idx + 1 < items.length) await advanceQuestion();
+          else examFinished = true;
+          return;
+        }
         feedback = data as Feedback;
       } else {
         const ok = answer !== null && (isNumeric(q) ? checkNumeric(q, Number(answer)) : answer === q.correct);
         feedback = { question: q, ok, answer, seconds, points: T > 0 && ok ? Math.round(50 + 50 * speed) : 0, timedOut };
       }
-      const { question, ok, seconds: spent, points } = feedback;
-      setResults((r) => [...r, { q: question, ok, given: feedback.timedOut ? "Temps écoulé" : answerLabel(question, feedback.answer), seconds: spent, points }]);
+      setResults((r) => [...r, resultOf(feedback)]);
       setChoice(feedback.answer);
       setChecked(true);
     } catch {
-      setFormError("La réponse n’a pas pu être vérifiée. Réessaie.");
+      setFormError(exam ? "L’examen n’a pas pu avancer. Réessaie." : "La réponse n’a pas pu être vérifiée. Réessaie.");
     } finally {
       setPending(false);
       busy.current = false;
+      if (examFinished) finish();
     }
   }
 
@@ -241,7 +339,13 @@ export default function QuizRunner(props: RunnerProps) {
     try {
       const { data, error } = await getSupabase().rpc("finish_quiz_run", { p_run: id });
       if (error || !data) throw new Error("session");
-      setSummary(data as QuizSummary);
+      const saved = data as QuizSummary;
+      if (exam) {
+        if (saved.corrections?.length !== items.length) throw new Error("corrections");
+        setResults(saved.corrections.map(resultOf));
+      }
+      setSummary(saved);
+      if (resumeKey.current && readQuizResume<ServerResume>(resumeKey.current)?.id === id) clearQuizResume(resumeKey.current);
       setSave("saved");
     } catch {
       setSave("error");
@@ -252,34 +356,19 @@ export default function QuizRunner(props: RunnerProps) {
 
   async function next() {
     if (!checked || busy.current) return;
-    if (idx + 1 < items.length) {
-      if (sessionId) {
-        busy.current = true;
-        setPending(true);
-        try {
-          const { error } = await getSupabase().rpc("start_quiz_question", { p_run: sessionId, p_index: idx + 1 });
-          if (error) throw new Error("question");
-        } catch {
-          setFormError("La question suivante n’a pas pu démarrer. Réessaie.");
-          return;
-        } finally {
-          setPending(false);
-          busy.current = false;
-        }
-      }
-      setIdx(idx + 1);
-      setChoice(null);
-      setText("");
-      setChecked(false);
-      setFormError(null);
-      const t = nowMs();
-      setQStart(t);
-      setNow(t);
-    } else {
-      const t = Math.floor((nowMs() - startAt) / 1000);
-      setTotal(t);
-      setPhase("done");
-      if (sessionId) void persist(sessionId);
+    if (idx + 1 === items.length) {
+      finish();
+      return;
+    }
+    busy.current = true;
+    setPending(true);
+    try {
+      await advanceQuestion();
+    } catch {
+      setFormError("La question suivante n’a pas pu démarrer. Réessaie.");
+    } finally {
+      setPending(false);
+      busy.current = false;
     }
   }
 
@@ -288,11 +377,16 @@ export default function QuizRunner(props: RunnerProps) {
   });
 
   function handleKey(e: KeyboardEvent) {
-    if (phase !== "playing" || !items[idx] || busy.current || e.repeat) return;
+    if (phase !== "playing" || !items[idx] || busy.current || e.repeat || e.isComposing
+      || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return;
     const it = items[idx];
-    const typing = e.target instanceof HTMLInputElement;
+    const target = e.target instanceof HTMLElement ? e.target : null;
+    const typing = target?.closest("input, textarea, select, [contenteditable]");
     const ready = isNumeric(it.q) ? text.trim() !== "" : choice !== null;
     if (e.key === "Enter") {
+      if (typing && !target?.matches("[data-quiz-answer]")) return;
+      const control = target?.closest("button, a, summary, form");
+      if (control && !control.matches("[data-quiz-option][aria-pressed=true]")) return;
       e.preventDefault();
       if (checked) next();
       else if (ready) submit(false);
@@ -300,12 +394,18 @@ export default function QuizRunner(props: RunnerProps) {
     }
     if (checked || typing) return;
     const k = e.key.toLowerCase();
+    let selected: number | boolean | undefined;
     if (it.q.type === "mcq") {
-      const pos = "1234".indexOf(k) >= 0 ? "1234".indexOf(k) : "abcd".indexOf(k);
-      if (pos >= 0 && pos < it.order.length) setChoice(it.order[pos]);
+      const pos = "123456789".indexOf(k) >= 0 ? "123456789".indexOf(k) : LETTERS.indexOf(k.toUpperCase());
+      if (pos >= 0 && pos < it.order.length) selected = it.order[pos];
     } else if (it.q.type === "true_false") {
-      if (k === "v" || k === "1") setChoice(true);
-      if (k === "f" || k === "2") setChoice(false);
+      if (k === "v" || k === "1") selected = true;
+      if (k === "f" || k === "2") selected = false;
+    }
+    if (selected !== undefined) {
+      e.preventDefault();
+      setChoice(selected);
+      responses.current?.querySelector<HTMLButtonElement>(`[data-quiz-option="${selected}"]`)?.focus();
     }
   }
 
@@ -339,9 +439,9 @@ export default function QuizRunner(props: RunnerProps) {
   if (phase === "empty")
     return shell(
       <div className="space-y-4">
-        <p className="text-sm text-muted">Aucune question disponible pour ce choix pour le moment.</p>
-        <Link href="/entrainement" className="inline-block border border-line px-5 py-3 text-sm hover:border-muted">
-          Choisir un autre mode
+        <p role="status" className="text-sm text-muted">{note ?? "Aucune question disponible pour ce choix pour le moment."}</p>
+        <Link href={exam ? backHref : "/entrainement"} className="inline-block border border-line px-5 py-3 text-sm hover:border-muted">
+          {exam ? "Retour au parcours" : "Choisir un autre mode"}
         </Link>
       </div>,
     );
@@ -353,6 +453,15 @@ export default function QuizRunner(props: RunnerProps) {
       </div>,
     );
 
+  if (phase === "done" && exam && !results.length) {
+    return shell(save === "error" && sessionId ? (
+      <div className="space-y-4">
+        <p role="alert" className="text-sm text-danger">Le résultat de l’examen n’a pas pu être chargé.</p>
+        <button type="button" onClick={() => persist(sessionId)} className="border border-line px-4 py-2 text-sm hover:border-muted">Réessayer</button>
+      </div>
+    ) : <p role="status" className="text-sm text-muted">Calcul de ton résultat…</p>);
+  }
+
   if (phase === "done") {
     const score = results.filter((r) => r.ok).length;
     const pct = Math.round((score / results.length) * 100);
@@ -361,7 +470,7 @@ export default function QuizRunner(props: RunnerProps) {
     const stats: [string, string][] = [
       ["Score", `${score}/${results.length}`],
       ["Réussite", `${pct} %`],
-      T > 0 ? ["Points", String(points)] : ["Durée", clock(total)],
+      T > 0 && !exam ? ["Points", String(points)] : ["Durée", clock(total)],
       ["Temps moyen", `${avg.toFixed(1).replace(".", ",")} s`],
     ];
     const leveledUp = summary && levelFromXp(summary.xp - summary.xp_gained) < summary.level;
@@ -408,7 +517,7 @@ export default function QuizRunner(props: RunnerProps) {
         )}
         {guest && (
           <div className="mt-4 border border-line bg-panel px-4 py-3 text-sm text-muted">
-            Mode invité : rien n’est sauvegardé. <Link href="/inscription" className="text-fg underline underline-offset-4 hover:text-accent">Crée un compte</Link> pour sauvegarder ta progression et débloquer le parcours complet.
+            <Link href="/inscription" className="text-fg underline underline-offset-4 hover:text-accent">Crée un compte</Link> pour conserver ta progression et débloquer le parcours complet.
           </div>
         )}
 
@@ -429,6 +538,7 @@ export default function QuizRunner(props: RunnerProps) {
                 <div className="mt-3 space-y-2 pl-9 text-sm leading-relaxed text-muted">
                   <p>Ta réponse : <span className="text-fg">{r.given}</span></p>
                   <p>Bonne réponse : <span className="text-fg">{correctLabel(r.q)}</span></p>
+                  {r.wrongNote && <p>{r.wrongNote}</p>}
                   <p>{r.q.explanation}</p>
                   {(r.q.source || r.q.reference_date) && (
                     <p className="font-mono text-xs">
@@ -438,6 +548,7 @@ export default function QuizRunner(props: RunnerProps) {
                       )}
                     </p>
                   )}
+                  <QuestionActions question={r.q} />
                 </div>
               </details>
             </li>
@@ -508,7 +619,7 @@ export default function QuizRunner(props: RunnerProps) {
         {items.map((it, i) => (
           <span
             key={`${it.q.id}-${i}`}
-            className={`h-1 flex-1 ${i < results.length ? (results[i].ok ? "bg-accent" : "bg-danger") : i === idx ? "bg-fg" : "bg-line"}`}
+            className={`h-1 flex-1 ${i < results.length ? (results[i].ok ? "bg-accent" : "bg-danger") : i < idx ? "bg-muted" : i === idx ? "bg-fg" : "bg-line"}`}
           />
         ))}
       </div>
@@ -521,10 +632,10 @@ export default function QuizRunner(props: RunnerProps) {
       <div className="mt-8">
         <h1 className="text-lg font-medium leading-snug sm:text-xl">{q.prompt}</h1>
 
-        <div className="mt-6 space-y-2">
+        <div ref={responses} className="mt-6 space-y-2">
           {q.type === "mcq" &&
             item.order.map((optIdx, pos) => (
-              <button key={optIdx} type="button" disabled={checked || pending} aria-pressed={choice === optIdx} onClick={() => setChoice(optIdx)} className={optionClass(optIdx)}>
+              <button key={optIdx} type="button" data-quiz-option={optIdx} disabled={checked || pending} aria-pressed={choice === optIdx} onClick={() => setChoice(optIdx)} className={optionClass(optIdx)}>
                 <span className="font-mono text-muted">{LETTERS[pos]}</span>
                 <span>{mcqOptions(q)[optIdx]}</span>
               </button>
@@ -532,7 +643,7 @@ export default function QuizRunner(props: RunnerProps) {
 
           {q.type === "true_false" &&
             [true, false].map((v) => (
-              <button key={String(v)} type="button" disabled={checked || pending} aria-pressed={choice === v} onClick={() => setChoice(v)} className={tfClass(v)}>
+              <button key={String(v)} type="button" data-quiz-option={String(v)} disabled={checked || pending} aria-pressed={choice === v} onClick={() => setChoice(v)} className={tfClass(v)}>
                 {v ? "Vrai" : "Faux"}
               </button>
             ))}
@@ -544,6 +655,7 @@ export default function QuizRunner(props: RunnerProps) {
                 inputMode="decimal"
                 autoComplete="off"
                 autoFocus
+                data-quiz-answer
                 disabled={checked || pending}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -579,6 +691,7 @@ export default function QuizRunner(props: RunnerProps) {
                 {q.kind === "conjunctural" && q.reference_date && <span className="ml-3 text-warn">Donnée au {frDate(q.reference_date)}</span>}
               </p>
             )}
+            <QuestionActions question={q} />
           </div>
         )}
 
@@ -592,7 +705,9 @@ export default function QuizRunner(props: RunnerProps) {
               {pending ? "Chargement…" : idx + 1 < items.length ? "Question suivante" : "Voir les résultats"}
             </button>
           )}
-          <span className="hidden font-mono text-xs text-muted sm:inline">Entrée pour valider · 1 à 4 pour choisir</span>
+          <span className="hidden font-mono text-xs text-muted sm:inline">
+            Entrée pour valider{q.type === "mcq" ? ` · 1 à ${Math.min(item.order.length, 9)} pour choisir` : q.type === "true_false" ? " · 1 ou 2 pour choisir" : ""}
+          </span>
         </div>
       </div>
     </div>,
