@@ -153,6 +153,9 @@ def main():
     print(f"{len(items)}/{len(COMPANIES)} valeurs récupérées")
     checked_at = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     retained.update({row["ticker"]: row for row in items})
+    prior_items = previous.get("items", [])
+    old_session = max((row.get("price_date") or "" for row in prior_items), default="")
+    new_session = max((row.get("price_date") or "" for row in items), default="")
     data = {
         "updated_at": checked_at if items else previous.get("updated_at"),
         "checked_at": checked_at,
@@ -160,6 +163,7 @@ def main():
         "source": "Estimations Yahoo Finance, taux de conversion Yahoo Finance ou BCE",
         "failed": failed,
         "items": sorted(retained.values(), key=lambda i: i["market_cap_usd"], reverse=True),
+        "previous_items": prior_items if old_session and new_session > old_session else previous.get("previous_items", []),
     }
     publish(data, out_path)
     if failed:

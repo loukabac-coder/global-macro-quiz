@@ -10,6 +10,11 @@ export type Indicator = {
   frequency?: "daily" | "monthly" | "annual";
   retrieved_at?: string;
   published_at?: string;
+  source_url?: string;
+  previous_date?: string;
+  previous_value?: number;
+  change_date?: string;
+  change_from?: number;
   status?: string | null;
 };
 
@@ -18,6 +23,7 @@ export type MacroData = {
   indicators: Record<string, Indicator>;
   failed?: string[];
   checked_at?: string;
+  checks?: Record<string, { at: string; ok: boolean }>;
 };
 
 export async function fetchMacro(): Promise<MacroData | null> {
@@ -33,7 +39,12 @@ export async function fetchMacro(): Promise<MacroData | null> {
 }
 
 export function isFresh(ind: Indicator, nowMs: number): boolean {
-  const age = observationAge(ind.ref_date, nowMs);
+  let age = observationAge(ind.ref_date, nowMs);
+  if (age >= 0 && ind.frequency === "monthly") {
+    const [year, month] = ind.ref_date.split("-").map(Number);
+    const end = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+    age = Math.max(0, observationAge(end, nowMs));
+  }
   return Number.isFinite(ind.value) && age >= 0 && age <= ind.max_age_days;
 }
 

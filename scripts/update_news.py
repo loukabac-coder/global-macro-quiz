@@ -13,9 +13,12 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import xml.etree.ElementTree as ET
 
 from scripts.update_macro import first_ok, http_get
+from scripts.policy_decisions import NAMES, decision, links
 
 ROOT = Path(__file__).resolve().parent.parent / "public" / "data" / "actualite.json"
 COUNCIL = "https://www.consilium.europa.eu"
+ELECTIONS_CANADA = "https://www.elections.ca/content.aspx?dir=pas&document=ge&lang=f&section=ele"
+MONTHS_FR = "janvier février mars avril mai juin juillet août septembre octobre novembre décembre".split()
 try:
     PARIS = ZoneInfo("Europe/Paris")
 except ZoneInfoNotFoundError:
@@ -29,6 +32,7 @@ def plain(value):
 
 TOPICS = (
     (r"sanction|mesures restrictives|restrictive measures", "Sanctions et mesures restrictives"),
+    (r"élections?|elections?|official results|résultats officiels", "Élections et institutions"),
     (r"méthane|methane|approvisionnement énergétique|energy supply|quotas d.émission", "Énergie et approvisionnement"),
     (r"droits de douane|tariff|commerce|trade|gibraltar|apec|royaume-uni.*sommet|summit.*kingdom", "Commerce et coopération internationale"),
     (r"titrisation|securiti[sz]ation|marchés des capitaux|capital markets|produits financiers|financial product", "Réglementation financière"),
@@ -93,6 +97,8 @@ LEADERS = {
            "https://www.bundesregierung.de/breg-en/federal-government/federal-cabinet", "de"),
     "ca": ("Primature du Canada", "Gouvernement du Canada", "https://www.pm.gc.ca/en", "ca"),
     "eu": ("Présidence du Conseil européen", "Conseil européen", f"{COUNCIL}/fr/european-council/president/", "eu"),
+    "us": ("Présidence des États-Unis", "Maison-Blanche", "https://www.whitehouse.gov/administration/", "us"),
+    "jp": ("Primature du Japon", "Bureau du Premier ministre du Japon", "https://japan.kantei.go.jp/index.html", "jp"),
 }
 
 
@@ -105,9 +111,14 @@ def parse_leader(code, html):
                 name = match[1]
                 break
     if code == "uk":
-        match = re.search(r"Current role holder:\s*(.*?)\s+Contents", plain(html), re.I)
+        match = re.search(r"Current role holder\s*:\s*([^<]+)?\s*<a\b[^>]*>(.*?)</a>", html, re.I | re.S)
         if match:
-            name = re.sub(r"^(?:The\s+)?(?:Rt\.?\s+Hon\.?\s+)?|\s+MP$", "", match[1], flags=re.I)
+            name = re.sub(r"^(?:The\s+)?(?:Rt\.?\s+Hon\.?\s+)?|\s+MP$", "", plain(match[2]), flags=re.I)
+        else:
+            fallback = re.search(r"Current role holder\s*:\s*((?:The\s+)?(?:Rt\.?\s+Hon\.?\s+)?[^:]{3,55}?)(?:\s+MP)?\s+(?:Table of )?Contents",
+                                 plain(html), re.I)
+            if fallback:
+                name = re.sub(r"^(?:The\s+)?(?:Rt\.?\s+Hon\.?\s+)?", "", fallback[1], flags=re.I)
     if code == "de":
         match = re.search(r"current Federal Government consists of Federal Chancellor (.*?) and \d+", plain(html), re.I)
         if match:
@@ -122,6 +133,19 @@ def parse_leader(code, html):
         title = re.search(r"<h1\b[^>]*>(.*?)</h1>", html, re.I | re.S)
         if title and re.search(r"Président(?:e)? du Conseil européen", plain(html), re.I):
             name = plain(title[1])
+        else:
+            match = re.search(r"The current President of the European Council is ([^.]{4,75})\.", plain(html), re.I)
+            if match:
+                name = match[1]
+    if code == "us":
+        match = re.search(r"\bPresident (.{4,75}?) \d+(?:st|nd|rd|th)(?:\s*&\s*\d+(?:st|nd|rd|th))? President of the United States",
+                          plain(html), re.I)
+        if match:
+            name = match[1]
+    if code == "jp":
+        match = re.search(r"Profile of the Prime Minister\s+The \d+(?:st|nd|rd|th) Prime Minister\s+(.{4,75}?)\s+Profile", plain(html), re.I)
+        if match:
+            name = match[1]
     if not 2 <= len(name.split()) <= 6 or any(char.isdigit() for char in name) or len(name) > 90:
         raise ValueError("titulaire non identifié dans la source officielle")
     return name
@@ -129,9 +153,41 @@ def parse_leader(code, html):
 
 def leader(key, now):
     office, source, url, code = LEADERS[key]
-    name = parse_leader(code, http_get(url))
+    if code == "eu":
+        alternatives = [url, f"{COUNCIL}/en/european-council/president/role/"]
+        selected, name = first_ok(*(lambda page=page: (page, parse_leader(code, http_get(page))) for page in alternatives))
+        return {"id": key, "office": office, "name": name, "source": source, "url": selected,
+                "date": now.astimezone(PARIS).date().isoformat(), "retrieved_at": now.isoformat(timespec="seconds")}
+    html = http_get(url)
+    if code == "jp":
+        candidates = links(html, url, r"/\d+(?:_[a-z]+)?/meibo/index(?:_e)?\.html")
+        url = max(candidates, key=lambda value: int(re.search(r"/(\d+)", value)[1]))
+        html = http_get(url)
+    name = parse_leader(code, html)
     return {"id": key, "office": office, "name": name, "source": source, "url": url,
             "date": now.astimezone(PARIS).date().isoformat(), "retrieved_at": now.isoformat(timespec="seconds")}
+
+
+def election_canada(now):
+    index = re.sub(r"</?sup\b[^>]*>", "", http_get(ELECTIONS_CANADA), flags=re.I)
+    contests = re.findall(r"(\d+)(?:e|re) élection générale,\s*(\d{1,2}) ([a-zéû]+) (\d{4})", plain(index), re.I)
+    edition, day, month, year = max(contests, key=lambda entry: int(entry[0]))
+    event_day = datetime.date(int(year), MONTHS_FR.index(month.lower()) + 1, int(day))
+    home = f"https://www.elections.ca/res/rep/off/ovrGE{edition}/home.html"
+    tables = links(http_get(home), home, r"(?:[^/]+/)?table7E\.html")
+    url = tables[0]
+    html = http_get(url)
+    rows = [[plain(cell) for cell in re.findall(r"<t[hd]\b[^>]*>(.*?)</t[hd]>", row, re.I | re.S)]
+            for row in re.findall(r"<tr\b[^>]*>(.*?)</tr>", html, re.I | re.S)]
+    headers = next(row[1:] for row in rows if row and row[0] == "Province or territory")
+    seats = next([int(value.replace(",", "")) for value in row[1:]] for row in rows if row and row[0] == "Canada")
+    total = seats[-1]
+    if len(seats) != len(headers) or total <= 0 or sum(seats[:-1]) != total:
+        raise ValueError("résultats électoraux incomplets")
+    first = max(range(len(seats) - 1), key=seats.__getitem__)
+    return {"id": "ca-general", "country": "Canada", "date": event_day.isoformat(), "winner": headers[first],
+            "seats": seats[first], "total": total, "source": "Élections Canada", "url": url,
+            "retrieved_at": now.isoformat(timespec="seconds")}
 
 
 def main():
@@ -143,9 +199,11 @@ def main():
     checked = now.isoformat(timespec="seconds")
     failed = []
     feeds = {"Communiqués du Conseil de l’Union européenne": council, "Communiqués du Canada": canada}
-    with ThreadPoolExecutor(max_workers=7) as workers:
+    with ThreadPoolExecutor(max_workers=12) as workers:
         requests = {label: workers.submit(fetch, now) for label, fetch in feeds.items()}
         sources = {key: workers.submit(leader, key, now) for key in LEADERS}
+        monetary = {key: workers.submit(decision, key, now) for key in NAMES}
+        canadian_election = workers.submit(election_canada, now)
         events = {event["id"]: event for event in previous.get("events", [])}
         for label, request in requests.items():
             try:
@@ -157,15 +215,38 @@ def main():
         leaders = {item["id"]: item for item in previous.get("leaders", [])}
         for key, future in sources.items():
             try:
-                leaders[key] = future.result()
+                leader_row = future.result()
+                old = leaders.get(key)
+                if old and old["name"] != leader_row["name"]:
+                    leader_row.update({"previous_name": old["name"], "change_date": leader_row["date"]})
+                elif old:
+                    leader_row.update({field: old[field] for field in ("previous_name", "change_date") if field in old})
+                leaders[key] = leader_row
             except Exception as error:
                 failed.append(LEADERS[key][0])
                 print("KO", key, error)
+        decisions = {item["id"]: item for item in previous.get("decisions", [])}
+        for key, future in monetary.items():
+            try:
+                row = future.result()
+                if key in decisions and row["date"] < decisions[key]["date"]:
+                    raise ValueError("le communiqué est antérieur au dernier communiqué vérifié")
+                decisions[key] = row
+            except Exception as error:
+                failed.append(NAMES[key])
+                print("KO décision", key, error)
+        elections = previous.get("elections", [])
+        try:
+            elections = [canadian_election.result()]
+        except Exception as error:
+            failed.append("Élections Canada · résultats officiels")
+            print("KO résultats électoraux", error)
     kept = sorted(events.values(), key=lambda row: row["date"], reverse=True)[:50]
-    succeeded = len(failed) < len(LEADERS) + len(feeds)
+    succeeded = len(failed) < len(LEADERS) + len(feeds) + len(NAMES) + 1
     result = {
         "updated_at": checked if succeeded else previous.get("updated_at"),
         "checked_at": checked, "failed": failed, "events": kept, "leaders": list(leaders.values()),
+        "decisions": list(decisions.values()), "elections": elections,
     }
     temp = ROOT.with_suffix(".tmp")
     temp.write_text(json.dumps(result, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

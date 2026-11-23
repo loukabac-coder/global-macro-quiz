@@ -3,8 +3,10 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Crumbs from "@/components/Crumbs";
+import CourseReferences from "@/components/CourseReferences";
 import { lessonHref, lessonsFor } from "@/lib/courseTree";
 import { GROUPS, LEVELS, milestone, milestoneHref, unitCode, unitHref } from "@/lib/program";
+import { hasStudyReferences } from "@/lib/studyReferences";
 
 export function generateStaticParams() {
   return GROUPS.flatMap((group) => group.units.flatMap((unit) =>
@@ -35,7 +37,8 @@ async function LessonContents({ params }: Props) {
         <Crumbs items={[["Cours", "/cours"], [group.title, `/cours/${group.slug}`], [unit.title, unitHref(group, unit)]]} />
         <p className="font-mono text-sm text-accent">{unitCode(group, unit)}.{index + 1} · {level.name}</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">{lesson.title}</h1>
-        <div className="mt-8 space-y-8">
+        {hasStudyReferences(`${slug}/${sous}`) && <CourseReferences key={`${slug}/${sous}`} scope={`${slug}/${sous}`} jump={{ href: "#explications", label: "Lire les explications" }} />}
+        <div id="explications" className="mt-8 scroll-mt-5 space-y-8">
           {lesson.sections.map((section, number) => (
             <section key={number}>
               {section.title !== lesson.title && <h2 className="border-b border-line pb-2 text-lg font-semibold">{section.title}</h2>}
@@ -52,7 +55,7 @@ async function LessonContents({ params }: Props) {
                   </table>
                 </div>
               )}
-              {section.example && <p className="mt-4 border-l-2 border-accent bg-panel px-4 py-3 text-sm leading-relaxed"><strong className="text-accent">Exemple. </strong>{section.example}</p>}
+              {section.example && <p className="mt-4 border-l-2 border-accent bg-panel px-4 py-3 text-sm leading-relaxed"><strong className="text-accent">Exemple chiffré fictif. </strong>{section.example}</p>}
             </section>
           ))}
         </div>

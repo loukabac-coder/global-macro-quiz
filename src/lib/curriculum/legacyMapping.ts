@@ -1,7 +1,13 @@
 import type { Question } from "@/lib/quiz";
 import { searchText } from "@/lib/searchText";
+import { GROUPS } from "@/lib/program";
 
 export function questionLocation(q: Question) {
+  if (q.reference_href?.startsWith("/cours/")) {
+    const [, , group, unit] = q.reference_href.split("#")[0].split("/");
+    const match = GROUPS.find(({ slug }) => slug === group);
+    if (match?.units.some(({ slug }) => slug === unit)) return { groupNo: match.no, unitSlug: unit };
+  }
   const text = searchText(q.prompt);
   switch (q.category_id) {
     case "macroeconomics":

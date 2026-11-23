@@ -3,8 +3,10 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Crumbs from "@/components/Crumbs";
+import CourseReferences from "@/components/CourseReferences";
 import { lessonHref, lessonsFor } from "@/lib/courseTree";
 import { GROUPS, LEVELS, milestone, milestoneHref, unitCode, unitsAt } from "@/lib/program";
+import { hasStudyReferences } from "@/lib/studyReferences";
 
 export function generateStaticParams() {
   return GROUPS.flatMap((group) => group.units.map((unit) => ({ slug: group.slug, sous: unit.slug })));
@@ -29,9 +31,8 @@ async function UnitContents({ params }: Props) {
       <main className="fade-in py-10">
         <Crumbs items={[["Cours", "/cours"], [group.title, `/cours/${slug}`], [unit.title]]} />
         <h1 className="text-3xl font-semibold tracking-tight"><span className="text-accent">{code}</span> · {unit.title}</h1>
-        {group.no === "03" && <Link className="mt-4 inline-block text-sm underline underline-offset-4 hover:text-accent" href="/donnees#actualite">Derniers communiqués et dirigeants en poste</Link>}
-        {group.no === "04" && <Link className="mt-4 inline-block text-sm underline underline-offset-4 hover:text-accent" href={unit.slug === "capitalisations" ? "/capitalisations" : "/donnees"}>Dernières observations vérifiées</Link>}
-        <h2 className="mt-8 text-xl font-semibold">Sommaire</h2>
+        {hasStudyReferences(`${slug}/${sous}`) && <CourseReferences key={`${slug}/${sous}`} scope={`${slug}/${sous}`} jump={{ href: "#sommaire", label: "Voir le sommaire" }} />}
+        <h2 id="sommaire" className="mt-8 scroll-mt-5 text-xl font-semibold">Sommaire</h2>
         <ol className="mt-4 divide-y divide-line border-y border-line">
           {pages.map((page, index) => (
             <li key={page.slug}>

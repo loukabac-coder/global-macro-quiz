@@ -3,17 +3,28 @@ import { type Question } from "@/lib/quiz";
 
 type DatedFact = { id: string; date: string; retrieved_at: string; source: string; url: string };
 export type NewsItem = DatedFact & { title: string; context: string; topic: string; published_at?: string | null };
-export type Leader = DatedFact & { office: string; name: string };
-export type NewsData = SnapshotDates & { events: NewsItem[]; leaders: Leader[]; failed: string[] };
+export type Leader = DatedFact & { office: string; name: string; previous_name?: string; change_date?: string };
+export type ElectionResult = DatedFact & { country: string; winner: string; seats: number; total: number };
+export type PolicyDecision = DatedFact & { movement: "unchanged" | "up" | "down" };
+export const POLICY_MOVEMENT = { unchanged: "Maintien du taux", up: "Hausse du taux", down: "Baisse du taux" } as const;
+export const POLICY_BANKS = {
+  ecb: "Banque centrale européenne", fed: "Réserve fédérale", boe: "Banque d’Angleterre",
+  boj: "Banque du Japon", snb: "Banque nationale suisse",
+};
+export type NewsData = SnapshotDates & { events: NewsItem[]; leaders: Leader[]; decisions?: PolicyDecision[]; elections?: ElectionResult[]; failed: string[] };
 
 export function isNewsVerified(row: DatedFact, now: number, maxDays: number) {
   const age = observationAge(row.date, now);
   return age >= 0 && age <= maxDays && wasRecentlyChecked(row.retrieved_at, now, CHECK_MAX_HOURS);
 }
 
+export function electionSummary(row: ElectionResult) {
+  return `${row.winner} · ${row.seats} sièges sur ${row.total}`;
+}
+
 const topics = [
   "Sanctions et mesures restrictives", "Énergie et approvisionnement", "Commerce et coopération internationale",
-  "Réglementation financière", "Budget et financement public",
+  "Réglementation financière", "Budget et financement public", "Élections et institutions",
 ];
 
 export function buildNewsQuestions(data: NewsData, now: number): Question[] {

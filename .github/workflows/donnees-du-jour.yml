@@ -23,7 +23,7 @@ jobs:
   update:
     if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 28
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -34,7 +34,7 @@ jobs:
         run: |
           if git ls-remote --exit-code origin refs/heads/data-live > /dev/null; then
             git fetch --no-tags --depth=1 origin refs/heads/data-live:refs/remotes/origin/data-live
-            for file in public/data/macro.json public/data/market-caps.json public/data/actualite.json; do
+            for file in public/data/macro.json public/data/market-caps.json public/data/actualite.json public/data/production.json; do
               if git cat-file -e "origin/data-live:$file"; then
                 git show "origin/data-live:$file" > "$file"
               fi
@@ -57,11 +57,19 @@ jobs:
           else
             timeout 5m python scripts/update_macro.py
           fi
-      - name: Actualité économique et dirigeants
+      - name: Préparer la lecture des publications officielles PDF
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '11 7 * * *' || github.event.schedule == '41 18 * * *'
+        run: python -m pip install pypdf==7.0.1
+      - name: Actualité, dirigeants et décisions monétaires
         id: news
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '11 7 * * *' || github.event.schedule == '41 18 * * *'
         continue-on-error: true
         run: timeout 3m python -m scripts.update_news
+      - name: Production, réserves et exportations
+        id: production
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '11 7 * * *' || github.event.schedule == '41 18 * * *'
+        continue-on-error: true
+        run: timeout 8m python -m scripts.update_production
       - name: Publier les fichiers sur la branche data-live
         run: |
           target="$RUNNER_TEMP/data-live"
@@ -70,13 +78,13 @@ jobs:
           else
             git worktree add --detach "$target" HEAD
           fi
-          cp public/data/macro.json public/data/market-caps.json public/data/actualite.json "$target/public/data/"
+          cp public/data/macro.json public/data/market-caps.json public/data/actualite.json public/data/production.json "$target/public/data/"
           cp vercel.json "$target/"
-          git -C "$target" add public/data/macro.json public/data/market-caps.json public/data/actualite.json vercel.json
+          git -C "$target" add public/data/macro.json public/data/market-caps.json public/data/actualite.json public/data/production.json vercel.json
           if ! git -C "$target" diff --cached --quiet; then
             git -C "$target" -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m "Actualisation des données de marché"
           fi
           git -C "$target" push origin HEAD:refs/heads/data-live
       - name: Signaler les collectes en échec
-        if: steps.caps.outcome == 'failure' || steps.macro.outcome == 'failure' || steps.news.outcome == 'failure'
+        if: steps.caps.outcome == 'failure' || steps.macro.outcome == 'failure' || steps.news.outcome == 'failure' || steps.production.outcome == 'failure'
         run: exit 1

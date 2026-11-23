@@ -3,6 +3,7 @@
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import NewsSnapshot from "@/components/NewsSnapshot";
+import CourseReferences from "@/components/CourseReferences";
 import { dataTimestamp } from "@/lib/dataFreshness";
 import { fetchMacro, fmtValue, isDatedObservation, isVerifiedMacro, referenceLabel } from "@/lib/macro";
 import { useDataSnapshot } from "@/lib/useDataSnapshot";
@@ -62,11 +63,13 @@ export default function Donnees() {
                         {dated ? referenceLabel(key, ind) : "Date de séance indisponible"}
                         {ind.retrieved_at && <p className="mt-1 text-muted">Vérifiée le {dataTimestamp.format(new Date(ind.retrieved_at))}</p>}
                         {ind.published_at && <p className="mt-1 text-muted">Publiée le {dataTimestamp.format(new Date(ind.published_at))}</p>}
-                        {ind.status && <p className="mt-1 text-muted">Code fournisseur : {ind.status}</p>}
+                        {ind.status && <p className="mt-1 text-muted">Statut · {ind.status}</p>}
                         {data.failed?.includes(key) && <p className="mt-1 text-warn">Observation conservée après un échec de collecte</p>}
                         {fresh ? <p className="mt-1 text-accent">Utilisable en quiz</p> : <p className="mt-1 text-warn">Fraîcheur non vérifiée · questions de cette série suspendues</p>}
                       </td>
-                      <td className="hidden px-3 py-2.5 text-xs text-muted sm:table-cell">{ind.source}</td>
+                      <td className="hidden px-3 py-2.5 text-xs text-muted sm:table-cell">{ind.source_url?.startsWith("https://")
+                        ? <a href={ind.source_url} className="underline hover:text-accent" target="_blank" rel="noreferrer">{ind.source}</a>
+                        : ind.source}</td>
                     </tr>
                   );
                 })}
@@ -79,6 +82,9 @@ export default function Donnees() {
           <Link href="/quiz?categorie=monetary-policy,macroeconomics,fx,commodities,geopolitics" className="bg-accent px-5 py-3 text-sm font-semibold text-ink hover:brightness-110">S’entraîner sur ces données</Link>
         </div>
         <NewsSnapshot />
+        <div id="classements" className="mt-10 border-t border-line pt-2">
+          <CourseReferences scope="reperes/producteurs" canPractice={false} />
+        </div>
       </main>
     </AppShell>
   );

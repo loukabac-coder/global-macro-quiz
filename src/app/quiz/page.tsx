@@ -6,7 +6,8 @@ import { useSearch } from "@/lib/useSearch";
 import { parseList } from "@/lib/loaders";
 import { HISTORY_LABELS, parseHistory, type Activity } from "@/lib/quizSession";
 import { CAT_NAME } from "@/lib/categories";
-import { DIFFICULTY_FR } from "@/lib/quiz";
+import { DIFFICULTY_FR, type Question } from "@/lib/quiz";
+import { hasStudyReferences } from "@/lib/studyReferences";
 import { todayParis } from "@/lib/rng";
 import { guestDaily, guestQuick } from "@/lib/guest";
 
@@ -25,6 +26,25 @@ function Quiz() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const m = params.get("mode") ?? "";
+  const scope = params.get("cours") ?? "";
+  if (m === "memoires" && hasStudyReferences(scope)) {
+    return (
+      <QuizRunner
+        key={search}
+        title="Tester ma mémoire"
+        kicker="Révision courte · sans note"
+        practiceKey={`memoires:${scope}`}
+        practiceLoad={async () => {
+          const response = await fetch(`/api/donnees?type=memoire&cours=${encodeURIComponent(scope)}`, { cache: "no-store" });
+          if (!response.ok) throw new Error("Les repères n’ont pas pu être chargés.");
+          return ((await response.json()) as { questions: Question[] }).questions;
+        }}
+        backHref={`/cours/${scope}`}
+        backLabel="Retour au cours"
+        replayLabel="Autre tirage"
+      />
+    );
+  }
   const categories = parseList(params.get("categorie"));
   const levels = parseList(params.get("niveau"));
   const history = parseHistory(params.get("historique"));

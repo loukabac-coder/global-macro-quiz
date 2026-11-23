@@ -11,6 +11,8 @@ export type Question = {
   wrong_explanations: unknown;
   source: string | null;
   source_url?: string;
+  reference_href?: string;
+  reference_key?: string;
   kind: string;
   reference_date: string | null;
   family?: string;

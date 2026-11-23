@@ -5,6 +5,7 @@ import { mentalDifficulty, mentalQuestion } from "@/lib/mental";
 import type { Game, HistoryFilter } from "@/lib/quizSession";
 import { LEVELS } from "@/lib/program";
 import { diverseDraw } from "@/lib/drawQuestions";
+import { stableReferenceKey } from "@/lib/studyQuestions";
 
 export const SIZE = 10;
 type LiveQuestions = () => Promise<Question[]>;
@@ -77,16 +78,28 @@ export async function loadTrainingByHistory(
 
 export async function loadWeakness(
   supabase: SupabaseClient, userId: string,
+  liveQuestions?: LiveQuestions,
 ): Promise<{ questions: Question[]; note: string }> {
-  const [dueRes, statsRes] = await Promise.all([
+  const now = new Date().toISOString();
+  const [dueRes, statsRes, recent, dated] = await Promise.all([
     supabase.from("question_reviews").select("question_id").eq("user_id", userId)
-      .like("question_id", "course:%").lte("due_at", new Date().toISOString()).order("due_at").limit(40),
+      .like("question_id", "course:%").lte("due_at", now).order("due_at").limit(40),
     supabase.from("category_stats").select("category_id, difficulty, answered, correct").eq("user_id", userId),
+    liveQuestions ? supabase.from("question_reviews").select("question_id,due_at").eq("user_id", userId)
+      .or("question_id.like.live:%,question_id.like.macro:%,question_id.like.news:%,question_id.like.production:%,question_id.like.policy:%")
+      .order("last_seen", { ascending: false }).limit(500) : null,
+    liveQuestions ? liveQuestions() : [],
   ]);
-  if (dueRes.error || statsRes.error) throw new Error("La liste des révisions n’a pas pu être chargée.");
+  if (dueRes.error || statsRes.error || recent?.error) throw new Error("La liste des révisions n’a pas pu être chargée.");
   const pool = curriculumQuestions();
+  const recentKeys = new Map<string, number>();
+  for (const row of recent?.data ?? []) {
+    const key = stableReferenceKey(row.question_id);
+    if (!recentKeys.has(key)) recentKeys.set(key, Date.parse(row.due_at));
+  }
+  const dueDated = balanced(dated.filter((q) => (recentKeys.get(q.reference_key ?? stableReferenceKey(q.id)) ?? Infinity) <= Date.parse(now)), 4);
   const dates = new Set((dueRes.data ?? []).map((r) => r.question_id));
-  const due = balanced(pool.filter((q) => dates.has(q.id)), 6);
+  const due = [...dueDated, ...balanced(pool.filter((q) => dates.has(q.id)), 6 - dueDated.length)];
   const seen = new Set(due.map((q) => q.id));
   const weak = [...(statsRes.data ?? [])]
     .filter((r) => r.answered >= 3 && r.correct < r.answered)
@@ -99,7 +112,8 @@ export async function loadWeakness(
   const rest = [...balanced(pool.filter((q) => !seen.has(q.id) && q.difficulty === fallbackLevel), SIZE - seen.size)];
   for (const q of rest) seen.add(q.id);
   const remaining = balanced(pool.filter((q) => !seen.has(q.id)), SIZE - seen.size);
-  const note = due.length ? `${due.length} question(s) à revoir.` : needsPractice.length ? "Tirage ciblé sur tes thèmes et niveaux les moins réussis." : "Les premières questions à revoir apparaîtront après tes quiz.";
+  const note = dueDated.length ? `${dueDated.length} repère(s) à revoir avec leur valeur vérifiée.`
+    : due.length ? `${due.length} question(s) à revoir.` : needsPractice.length ? "Tirage ciblé sur tes thèmes et niveaux les moins réussis." : "Les premières questions à revoir apparaîtront après tes quiz.";
   return { questions: shuffle([...due, ...needsPractice, ...rest, ...remaining]), note };
 }
 

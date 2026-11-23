@@ -18,6 +18,7 @@ export type MarketCaps = {
   source: string;
   failed: string[];
   items: Company[];
+  previous_items?: Company[];
   checked_at?: string;
   refresh_failed?: boolean;
 };
@@ -34,13 +35,17 @@ export async function fetchMarketCaps(): Promise<MarketCaps | null> {
   }
 }
 
+export function companyCheckedAt(data: MarketCaps, row: Company) {
+  return row.retrieved_at ?? (data.failed.includes(row.ticker) ? null : data.updated_at);
+}
+
 export function verifiedCompanies(data: MarketCaps, nowMs: number): Company[] {
   function dated(date?: string | null) {
     const age = date ? observationAge(date, nowMs) : NaN;
     return age >= 0 && age <= 7;
   }
   return data.items.filter((row) => {
-    const retrieved = row.retrieved_at ?? (data.failed.includes(row.ticker) ? null : data.updated_at);
+    const retrieved = companyCheckedAt(data, row);
     return dated(row.price_date) && (row.currency === "USD" || dated(row.fx_date))
       && wasRecentlyChecked(retrieved, nowMs, CHECK_MAX_HOURS);
   });

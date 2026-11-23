@@ -2,13 +2,11 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { CAT_NAME } from "@/lib/categories";
 import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { PASS_THRESHOLD } from "@/lib/config";
-import { readMacroSnapshot, readMarketCapsSnapshot, readNewsSnapshot } from "@/lib/dataSnapshots";
+import { readStudySources } from "@/lib/dataSnapshots";
 import { drawExam, EXAM_SECONDS, EXAM_SIZE } from "@/lib/exam";
 import { dailyQuestions } from "@/lib/guest";
-import { buildLiveQuestions } from "@/lib/liveQuestions";
 import { loadGame, loadPlacement, loadQuick, loadTraining, loadTrainingByHistory, loadWeakness } from "@/lib/loaders";
-import { buildMacroQuestions } from "@/lib/macroQuestions";
-import { buildNewsQuestions } from "@/lib/news";
+import { buildStudyQuestions } from "@/lib/studyQuestions";
 import { TOPICS, mentalSession, type Topic } from "@/lib/mental";
 import { milestoneDraw } from "@/lib/drawQuestions";
 import type { Progress } from "@/lib/modules";
@@ -66,9 +64,8 @@ function normalizeQuestion(q: Question): Question | null {
 }
 
 async function liveQuestions(): Promise<Question[]> {
-  const [caps, macro, news] = await Promise.all([readMarketCapsSnapshot(), readMacroSnapshot(), readNewsSnapshot()]);
-  const now = Date.now();
-  return [...buildLiveQuestions(caps, now), ...buildMacroQuestions(macro, now), ...buildNewsQuestions(news, now)];
+  const sources = await readStudySources();
+  return buildStudyQuestions(sources, Date.now());
 }
 
 type Run = { questions: Question[]; mode: QuizMode; timer?: number; note?: string; day?: string; emptyMessage?: string };
@@ -98,7 +95,7 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
       return { questions: await loadQuick(activity.type === "mixed", liveQuestions), mode: activity.type };
     }
     case "weakness":
-      return { ...await loadWeakness(db, userId), mode: "weakness" };
+      return { ...await loadWeakness(db, userId, liveQuestions), mode: "weakness" };
     case "training": {
       if (activity.history && activity.history !== "all") {
         const questions = await loadTrainingByHistory(db, activity.categories, activity.levels, activity.history, liveQuestions);
@@ -121,7 +118,7 @@ async function loadActivity(db: SupabaseClient, userId: string, activity: Activi
       const progress: Progress = Object.fromEntries((rows.data ?? []).map((r) => [r.module_id, r]));
       if (!canAttempt(m, progress)) return null;
       const [live, reviewed] = await Promise.all([
-        m.level !== "beginner" && Number(m.group.no) <= 4 ? liveQuestions() : Promise.resolve([]),
+        m.level !== "beginner" ? liveQuestions() : Promise.resolve([]),
         db.from("question_reviews").select("question_id").eq("user_id", userId).order("last_seen", { ascending: false }).limit(150),
       ]);
       if (reviewed.error) throw new Error("question_reviews");

@@ -1,6 +1,7 @@
 import type { Question } from "@/lib/quiz";
 import { fmt } from "@/lib/quiz";
 import { fmtValue, isVerifiedMacro, referenceLabel, type Indicator, type MacroData } from "@/lib/macro";
+import { indicatorScope } from "@/lib/studyReferences";
 
 // Questions générées à partir des indicateurs du jour. Une question n'existe que si sa donnée
 // est assez récente : sinon elle disparaît toute seule.
@@ -23,9 +24,12 @@ const META: Record<string, { prompt: string; tol: number; diff: string }> = {
 };
 
 function base(key: string, ind: Indicator, diff: string, prompt: string, explanation: string) {
-  const category = key.includes("rate") || ["fed_target_upper", "us_10y", "tf_fed_ecb"].includes(key) ? "monetary-policy"
+  const anchorKey = { tf_hicp: "ez_hicp_yoy", tf_cpi: "us_cpi_yoy", tf_fed_ecb: "fed_target_upper", tf_brent_wti: "brent" }[key] ?? key;
+  const scope = key.startsWith("gdp_ordre") ? "macro/pib" : indicatorScope(anchorKey);
+  const category = scope?.startsWith("banques/") || ["us_10y", "tf_fed_ecb"].includes(key) ? "monetary-policy"
     : /^(gdp_|tf_(hicp|cpi))/.test(key) || /cpi|hicp|us_unrate/.test(key) ? "macroeconomics"
-      : /^eur/.test(key) ? "fx" : "commodities";
+      : scope?.startsWith("macro/") ? "macroeconomics" : scope?.endsWith("/devises") ? "fx"
+        : scope?.endsWith("/indices") ? "market-caps" : scope?.startsWith("mental/") ? "macro-guesstimates" : "commodities";
   return {
     id: `macro:${key}:${ind.ref_date}`,
     category_id: category,
@@ -36,6 +40,9 @@ function base(key: string, ind: Indicator, diff: string, prompt: string, explana
     explanation,
     wrong_explanations: null,
     source: ind.source,
+    source_url: ind.source_url,
+    reference_key: `macro:${key}`,
+    reference_href: scope ? `/cours/${scope}#${key.startsWith("gdp_ordre") ? "observations-1" : `macro-${anchorKey}`}` : undefined,
     kind: "conjunctural",
     reference_date: ind.ref_date,
   };
@@ -59,6 +66,19 @@ export function buildMacroQuestions(data: MacroData, nowMs: number): Question[] 
       options: ind.unit ? { unit: ind.unit } : null,
       correct: ind.value,
       tolerance_pct: meta.tol,
+    });
+  }
+
+  for (const [key, ind] of Object.entries(data.indicators)) {
+    const scope = indicatorScope(key);
+    if (!scope || Object.hasOwn(META, key) || key.startsWith("gdp_") || !get(key)) continue;
+    const exact = scope.startsWith("banques/");
+    const tolerance = exact ? 0 : 10;
+    const date = referenceLabel(key, ind);
+    out.push({
+      ...base(key, ind, "intermediate", `Quelle valeur retenir pour « ${ind.label} » (${date})${ind.unit ? `, en ${ind.unit}` : ""} ?`,
+        `${ind.label} · ${fmtValue(ind)} · ${date}.`),
+      type: "numeric", options: ind.unit ? { unit: ind.unit } : null, correct: ind.value, tolerance_pct: tolerance,
     });
   }
 

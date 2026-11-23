@@ -869,26 +869,11 @@ const referenceChapters: Chapter[] = [
         example: "PIB d’un pays ≈ population × PIB par habitant. 50 M d’habitants × 40 000 $ = 2 000 Md$ = 2 T$.",
       },
       {
-        title: "2. Repères historiques",
+        title: "2. Repères démographiques et économiques",
         paragraphs: [
-          "Ces repères arrondis concernent 2024–2025. La population, le PIB nominal en dollars et la consommation pétrolière dépendent respectivement des estimations de l’ONU, des comptes et taux de change, et du périmètre des liquides pétroliers.",
+          "Le tableau en début de cours donne la population et le PIB nominal de la dernière année publiée. Pour estimer un PIB par habitant, utilise des valeurs de la même année et du même territoire.",
+          "Les quantités de pétrole du module Repères de marché ont chacune leur périmètre. La production, les exportations et la consommation désignent des flux distincts.",
         ],
-        table: {
-          head: ["Grandeur", "Ordre de grandeur (2024-2025)"],
-          rows: [
-            ["Population mondiale", "environ 8,2 milliards"],
-            ["Population Chine / Inde", "environ 1,4 milliard chacune"],
-            ["Population États-Unis", "environ 340 millions"],
-            ["Population Union européenne", "environ 450 millions"],
-            ["Population France / Allemagne", "environ 68 M / 84 M"],
-            ["PIB mondial", "environ 110 000 Md$ (110 T$)"],
-            ["PIB États-Unis", "environ 29 T$"],
-            ["PIB Chine", "environ 18 à 19 T$"],
-            ["PIB Allemagne / Japon", "environ 4 à 5 T$ chacun"],
-            ["PIB France", "environ 3 T$"],
-            ["Demande mondiale de pétrole", "environ 100 mb/d"],
-          ],
-        },
       },
       {
         title: "3. Rapports utiles",

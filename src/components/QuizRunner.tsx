@@ -597,6 +597,7 @@ export default function QuizRunner(props: RunnerProps) {
                       )}
                     </p>
                   )}
+                  {r.q.reference_href?.startsWith("/cours/") && <Link href={r.q.reference_href} className="text-xs underline underline-offset-4 hover:text-accent">Retrouver ce repère dans le cours</Link>}
                   <QuestionActions question={r.q} />
                 </div>
               </details>
@@ -765,6 +766,7 @@ export default function QuizRunner(props: RunnerProps) {
                 {q.kind === "conjunctural" && q.reference_date && <span className="ml-3 text-warn">Donnée au {frDate(q.reference_date)}</span>}
               </p>
             )}
+            {q.reference_href?.startsWith("/cours/") && <Link href={q.reference_href} className="mt-3 inline-block text-xs underline underline-offset-4 hover:text-accent">Retrouver ce repère dans le cours</Link>}
             <QuestionActions question={q} />
           </div>
         )}

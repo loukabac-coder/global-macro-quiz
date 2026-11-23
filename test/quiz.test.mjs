@@ -35,6 +35,78 @@ const { GROUPS, LEVELS: PROGRAM_LEVELS, canAttempt, getMilestone, hasPassed, lev
 const { milestoneDraw, diverseDraw } = await import("../src/lib/drawQuestions.ts");
 const { lessonsFor, legacyLessonHref } = await import("../src/lib/courseTree.ts");
 const { buildNewsQuestions } = await import("../src/lib/news.ts");
+const { buildStudyQuestions, memoryDraw, stableReferenceKey } = await import("../src/lib/studyQuestions.ts");
+const { buildStudyView } = await import("../src/lib/studyReferences.ts");
+
+test("un cours, une correction et une série à revoir partagent la même observation révisée", () => {
+  const now = Date.parse("2026-11-23T19:00:00Z");
+  const checked = "2026-11-23T18:00:00Z";
+  const gdp = { label: "PIB nominal · France", value: 3366.315927, unit: "Md$", frequency: "annual",
+    ref_date: "2025-01-01", source: "Banque mondiale", retrieved_at: checked, max_age_days: 1100 };
+  const sources = {
+    macro: { updated_at: checked, indicators: { gdp_fra: gdp }, failed: [] },
+    caps: { updated_at: null, items: [], failed: [], source: "Marché" },
+    news: { updated_at: null, events: [], leaders: [], failed: [] },
+    production: { updated_at: null, tables: {}, failed: [] },
+  };
+  const row = buildStudyView(sources, "macro/pib", now).tables[0].rows[0];
+  const first = buildStudyQuestions(sources, now).find((q) => q.reference_key === "macro:gdp_fra");
+  assert.equal(row.checked, checked);
+  assert.equal(row.period, "2025");
+  assert.equal(row.eligible, true);
+  assert.match(row.exact, /3366,315927|3\s366,315927/);
+  assert.equal(first.reference_href, `/cours/macro/pib#${row.id}`);
+  assert.equal(first.correct, gdp.value);
+  assert.equal(first.tolerance_pct, 15);
+  const memory = memoryDraw(sources, "macro/pib", now);
+  assert.equal(memory.length, 5);
+  assert.equal(memory.find((q) => q.id === first.id)?.correct, gdp.value);
+
+  const revised = { ...sources, macro: { ...sources.macro, indicators: { gdp_fra: { ...gdp, value: 3390 } } } };
+  const second = buildStudyQuestions(revised, now).find((q) => q.reference_key === first.reference_key);
+  assert.equal(second.correct, 3390);
+  assert.equal(first.correct, 3366.315927);
+  assert.equal(stableReferenceKey(first.id), stableReferenceKey("macro:gdp_fra:2026-01-01"));
+
+  const later = now + 3 * 86_400_000;
+  assert.equal(buildStudyView(sources, "macro/pib", later).tables[0].rows[0].eligible, false);
+  assert.equal(memoryDraw(sources, "macro/pib", later).some((q) => q.id === first.id), false);
+});
+
+test("la période mensuelle reste éligible après un contrôle récent si le mois suivant manque", () => {
+  const now = Date.parse("2026-11-23T19:00:00Z");
+  const stamp = "2026-11-23T18:00:00Z";
+  const latest = { label: "IPC-U", value: 3.7, unit: "%", ref_date: "2026-09-01", frequency: "monthly",
+    source: "BLS via FRED", max_age_days: 65, retrieved_at: stamp };
+  const snapshot = { updated_at: stamp, indicators: { us_cpi_yoy: latest }, failed: [] };
+  assert.equal(isVerifiedMacro(snapshot, "us_cpi_yoy", now), true);
+  assert.ok(buildMacroQuestions(snapshot, now).some((q) => q.id === "macro:us_cpi_yoy:2026-09-01"));
+  assert.equal(isVerifiedMacro(snapshot, "us_cpi_yoy", now + 3 * 86_400_000), false);
+});
+
+test("un identifiant de tableau commun ne mélange pas les repères de deux cours", () => {
+  const now = Date.parse("2026-11-23T19:00:00Z");
+  const stamp = "2026-11-23T18:00:00Z";
+  const indicators = {};
+  for (const [i, code] of ["fra", "deu", "ita"].entries()) {
+    indicators[`gdp_${code}`] = { ref_date: "2025-01-01", label: `PIB nominal · ${code}`, value: 100 * (i + 1),
+      unit: "Md$", frequency: "annual", retrieved_at: stamp, max_age_days: 1100, source: "Banque mondiale" };
+  }
+  for (const [i, code] of ["cac", "sp500", "nasdaq100", "dax", "ftse"].entries()) {
+    indicators[`index_${code}`] = { ref_date: "2026-11-23", label: code, value: 100 * (i + 1),
+      unit: "points", frequency: "daily", retrieved_at: stamp, max_age_days: 7, source: "Marché" };
+  }
+  const sources = {
+    macro: { updated_at: stamp, indicators },
+    caps: { updated_at: null, items: [], failed: [], source: "Marché" },
+    news: { updated_at: null, events: [], leaders: [], failed: [] },
+    production: { updated_at: null, tables: {}, failed: [] },
+  };
+  assert.ok(buildStudyQuestions(sources, now).some((q) => q.reference_href === "/cours/macro/pib#observations-1"));
+  const memory = memoryDraw(sources, "reperes/indices", now);
+  assert.equal(memory.length, 5);
+  assert.ok(memory.every((q) => q.reference_href?.startsWith("/cours/reperes/indices#macro-index_")));
+});
 
 test("le sélecteur normalise les montants avant d’appliquer la tolérance", () => {
   const euros = { type: "numeric", options: { unit: "€" }, correct: 2_500_000, tolerance_pct: 0 };
@@ -478,10 +550,19 @@ test("un jour férié, la dernière observation datée reste admissible après v
   assert.deepEqual(buildMacroQuestions(observed, time), []);
 });
 
-test("l’actualité utilise les faits, les dates et les postes vérifiés", async () => {
-  const { default: bundled } = await import("../public/data/actualite.json", { with: { type: "json" } });
+test("l’actualité utilise les faits, les dates et les postes vérifiés", () => {
+  const stamp = "2026-11-23T19:00:00Z";
+  const date = stamp.slice(0, 10);
+  const url = "https://example.org/communique";
+  const bundled = {
+    updated_at: stamp, failed: [],
+    leaders: ["Nom A", "Nom B", "Nom C"].map((name, i) => ({ id: `p${i}`, name, office: `Fonction ${i}`,
+      date, source: "Publication officielle", url, retrieved_at: stamp })),
+    events: [{ id: "trade", title: "Accord commercial", topic: "Commerce et coopération internationale",
+      context: "L’institution annonce un accord provisoire.", date, source: "Publication officielle", url, retrieved_at: stamp }],
+  };
   const draw = buildNewsQuestions(bundled, Date.parse("2026-11-24T10:00:00Z"));
-  assert.equal(draw.filter((q) => q.id.includes(":leader:")).length, 5);
+  assert.equal(draw.filter((q) => q.id.includes(":leader:")).length, 3);
   assert.ok(draw.some((q) => q.difficulty === "advanced" && q.id.includes(":stage:")));
   assert.ok(draw.every((q) => q.difficulty !== "beginner" && q.source_url.startsWith("https://")));
   assert.deepEqual(buildNewsQuestions(bundled, Date.parse("2026-11-27T10:00:00Z")), []);
@@ -501,13 +582,15 @@ test("les données de marché conservent leurs dates après un passage le week-e
 });
 
 test("l’API et les quiz préfèrent la publication contrôlée au fichier embarqué", async (t) => {
-  const now = Date.parse("2026-11-22T22:30:00Z");
+  const { default: bundled } = await import("../public/data/macro.json", { with: { type: "json" } });
+  const now = Date.parse(bundled.checked_at ?? bundled.updated_at) + 3_600_000;
   t.mock.method(Date, "now", () => now);
-  const checked = "2026-11-22T22:17:00Z";
+  const checked = new Date(now - 60_000).toISOString();
+  const day = checked.slice(0, 10);
   const publication = {
     updated_at: checked, checked_at: checked, failed: [],
     indicators: {
-      eurusd: { value: 1.099, unit: "", label: "EUR/USD", source: "BCE", ref_date: "2026-11-20", max_age_days: 7, retrieved_at: checked },
+      eurusd: { value: 1.099, unit: "", label: "EUR/USD", source: "BCE", ref_date: day, max_age_days: 7, retrieved_at: checked },
     },
   };
   let payload = publication;
@@ -519,16 +602,16 @@ test("l’API et les quiz préfèrent la publication contrôlée au fichier emba
   assert.deepEqual(await route.json(), await readMacroSnapshot());
   assert.ok(buildMacroQuestions(publication, now).length);
 
-  payload = { ...publication, failed: ["eurusd"], checked_at: "2026-11-22T22:29:00Z" };
+  payload = { ...publication, failed: ["eurusd"], checked_at: new Date(now - 1_000).toISOString() };
   const interrupted = await readMacroSnapshot();
   assert.equal(isAtLeastAsRecent(interrupted, publication), true);
   assert.equal(isAtLeastAsRecent(publication, interrupted), false);
-  assert.equal(interrupted.indicators.eurusd.ref_date, "2026-11-20");
+  assert.equal(interrupted.indicators.eurusd.ref_date, day);
   assert.equal(isVerifiedMacro(interrupted, "eurusd", now), true);
   assert.deepEqual(buildMacroQuestions(interrupted, now), buildMacroQuestions(publication, now));
   assert.equal(isVerifiedMacro(publication, "eurusd", now + 49 * 3_600_000), false);
 
-  payload = { ...publication, indicators: { eurusd: { ...publication.indicators.eurusd, ref_date: "2026-11-30" } } };
+  payload = { ...publication, indicators: { eurusd: { ...publication.indicators.eurusd, ref_date: new Date(now + 2 * 86_400_000).toISOString().slice(0, 10) } } };
   assert.notEqual((await readMacroSnapshot()).checked_at, checked);
   const badRequest = await marketDataRoute(new Request("https://example.invalid/api/donnees?type=inconnu"));
   assert.equal(badRequest.status, 400);
