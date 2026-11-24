@@ -111,11 +111,27 @@ class MacroTests(unittest.TestCase):
             "de": ("The current Federal Government consists of Federal Chancellor Given Example and 17 Federal Ministers.", "Given Example"),
             "ca": ("<title>Given Example - Prime Minister of Canada | Prime Minister of Canada</title>", "Given Example"),
             "eu": ("<h1>Prénom Exemple</h1> Président du Conseil européen", "Prénom Exemple"),
+            "au": ("<h1>About the Prime Minister</h1><h2>The Hon Given Example MP</h2>", "Given Example"),
+            "es": ("<h1>Nombre Ejemplo</h1>Es presidenta del Gobierno de España.", "Nombre Ejemplo"),
         }
         for code, (html, name) in data.items():
             self.assertEqual(update_news.parse_leader(code, html), name)
             with self.assertRaises(ValueError):
                 update_news.parse_leader(code, "<html>Page indisponible</html>")
+
+    def test_wto_feed_requires_the_official_publication_date(self):
+        now = datetime.datetime(2026, 11, 24, 10, tzinfo=datetime.timezone.utc)
+        xml = """<rss><channel>
+        <item><title>Trade restrictions</title><description>Official notice.</description>
+        <link>https://www.wto.org/english/news_e/news26_e/trade_23nov26_e.htm</link>
+        <pubDate>Mon, 23 Nov 2026 09:05:00 GMT</pubDate></item>
+        <item><title>Trade notice without time</title><description>Official notice.</description>
+        <link>https://www.wto.org/english/news_e/news26_e/trade_20nov26_e.htm</link></item>
+        </channel></rss>"""
+        with patch.object(update_news, "http_get", return_value=xml):
+            rows = update_news.world_trade(now)
+        self.assertEqual([row["date"] for row in rows], ["2026-11-23"])
+        self.assertEqual(rows[0]["published_at"], "2026-11-23T09:05:00+00:00")
 
 
 if __name__ == "__main__":

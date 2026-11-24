@@ -18,6 +18,10 @@ export function isNewsVerified(row: DatedFact, now: number, maxDays: number) {
   return age >= 0 && age <= maxDays && wasRecentlyChecked(row.retrieved_at, now, CHECK_MAX_HOURS);
 }
 
+export function isRecentAnnouncement(row: DatedFact, now: number) {
+  return isNewsVerified(row, now, 30);
+}
+
 export function electionSummary(row: ElectionResult) {
   return `${row.winner} · ${row.seats} sièges sur ${row.total}`;
 }
@@ -42,7 +46,22 @@ export function buildNewsQuestions(data: NewsData, now: number): Question[] {
       wrong_explanations: null, source: row.source, source_url: row.url, kind: "conjunctural", reference_date: row.date,
     }];
   });
-  const events = data.events.filter((row) => isNewsVerified(row, now, 35));
+  const events = data.events.filter((row) => isRecentAnnouncement(row, now));
+  for (const row of leaders) {
+    const peers = [...new Map(leaders.filter((other) => other.date === row.date && other.name !== row.name)
+      .map((other) => [other.name, other])).values()];
+    if (peers.length < 2) continue;
+    const [partner, distractor] = peers;
+    const options = [`${row.name}, puis ${partner.name}`, `${partner.name}, puis ${row.name}`, `${row.name}, puis ${distractor.name}`];
+    facts.push({
+      id: `news:leader-pair:${row.id}:${row.date}`, category_id: "geopolitics", type: "mcq", difficulty: "advanced",
+      family: "institutions:titulaires-apparies", competency: "Associer deux dirigeants à leurs fonctions",
+      prompt: `Qui occupe ces deux fonctions au ${row.date}, dans cet ordre ? ${row.office}, puis ${partner.office}.`,
+      options, correct: 0, tolerance_pct: null,
+      explanation: `${row.office} · ${row.name}. ${partner.office} · ${partner.name}.`,
+      wrong_explanations: null, source: `${row.source} · ${partner.source}`, source_url: row.url, kind: "conjunctural", reference_date: row.date,
+    });
+  }
   for (const row of events) {
     if (!topics.includes(row.topic)) continue;
     const topicsToCompare = topics.filter((topic) => topic !== row.topic).slice(0, 2);
@@ -55,6 +74,18 @@ export function buildNewsQuestions(data: NewsData, now: number): Question[] {
       options: topicsToCompare, correct, tolerance_pct: null, explanation: row.context, wrong_explanations: null,
       source: row.source, source_url: row.url, kind: "conjunctural", reference_date: row.date,
     });
+    const otherSources = [...new Set(events.filter((other) => other.source !== row.source && other.title !== row.title)
+      .map((other) => other.source))].slice(0, 2);
+    if (otherSources.length === 2) {
+      facts.push({
+        id: `news:publisher:${row.id}`, category_id: "geopolitics", type: "mcq", difficulty: "advanced",
+        family: "actualite:auteur", competency: "Identifier l’institution à l’origine d’une annonce",
+        prompt: `Quel organisme a publié ce communiqué daté du ${row.date} ? « ${row.title} »`,
+        options: [...otherSources, row.source], correct: 2, tolerance_pct: null,
+        explanation: `${row.source} a publié ce communiqué le ${row.date}. ${row.context}`,
+        wrong_explanations: null, source: row.source, source_url: row.url, kind: "conjunctural", reference_date: row.date,
+      });
+    }
     if (/accord provisoire|provisional agreement|accord politique provisoire/i.test(row.context)) {
       facts.push({
         id: `news:stage:${row.id}`, category_id: "geopolitics", type: "mcq", difficulty: "advanced",

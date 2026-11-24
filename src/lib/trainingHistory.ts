@@ -30,8 +30,8 @@ export function trainingHistoryScope(id: string) {
     if (key === "ordre") difficulty = "advanced";
   }
   if (type === "news") {
-    scope = ["leader", "election"].includes(kind) ? "geopolitique/institutions" : "geopolitique/actualite";
-    if (kind === "stage") difficulty = "advanced";
+    scope = ["leader", "leader-pair", "election"].includes(kind) ? "geopolitique/institutions" : "geopolitique/actualite";
+    if (["stage", "publisher", "leader-pair"].includes(kind)) difficulty = "advanced";
   }
   if (type === "policy") scope = "banques/decisions";
   if (type === "gen" && kind === "pib") return { groupNo: "01", unitSlug: "pib", difficulty: key };

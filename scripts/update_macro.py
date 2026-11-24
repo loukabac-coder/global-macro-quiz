@@ -406,6 +406,8 @@ INDICATORS = {
         lambda: fred_last("DCOILBRENTEU", "EIA")),
     "wti": ("WTI, prix au comptant", "$/baril", "daily", 7,
         lambda: fred_last("DCOILWTICO", "EIA")),
+    "brent_future": ("Brent · contrat à terme", "$/baril", "daily", 7, lambda: yahoo_last("BZ=F")),
+    "wti_future": ("WTI · contrat à terme", "$/baril", "daily", 7, lambda: yahoo_last("CL=F")),
     "gold": ("Or (once troy, contrat à terme)", "$/once", "daily", 7, lambda: yahoo_last("GC=F")),
     "copper": ("Cuivre (livre, contrat à terme)", "$/livre", "daily", 7, lambda: yahoo_last("HG=F")),
     "copper_imf": ("Cuivre, moyenne mensuelle FMI", "$/tonne", "monthly", 80, lambda: fred_last("PCOPPUSDM", "FMI")),

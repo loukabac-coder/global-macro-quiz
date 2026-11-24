@@ -38,6 +38,7 @@ const { buildStudyQuestions, memoryDraw, stableReferenceKey } = await import("..
 const { buildStudyView } = await import("../src/lib/studyReferences.ts");
 const { mentalMethod, questionCourseHref } = await import("../src/lib/quizLearning.ts");
 const { isMarketPriceEstimate, isObservedMarketRecall, marketScope } = await import("../src/lib/marketRecall.ts");
+const { questionLocation } = await import("../src/lib/curriculum/legacyMapping.ts");
 
 test("un cours, une correction et une série à revoir partagent la même observation révisée", () => {
   const now = Date.parse("2026-11-23T19:00:00Z");
@@ -465,7 +466,7 @@ test("les révisions retrouvent une question du Parcours par son identifiant sta
 test("les observations futures ou mal datées sont écartées et le Brent/WTI se compare à date égale", () => {
   const now = Date.parse("2026-11-22T08:00:00Z");
   const oil = {
-    label: "Brent", value: 92.94, unit: "$/baril", ref_date: "2026-11-21",
+    label: "Brent", value: 92.94, unit: "$/baril", ref_date: "2026-11-22",
     source: "EIA via FRED", max_age_days: 7, frequency: "daily", retrieved_at: "2026-11-22T07:30:00Z",
   };
   assert.equal(isFresh({ ...oil, ref_date: "2026-11-23" }, now), false);
@@ -565,7 +566,7 @@ test("une estimation de LVMH renvoie à l’entreprise et peut tomber en révisi
     options: { unit: "%" }, correct: 25, explanation: "Compare l’écart au prix de départ." }).join(" "), /un quart.*25 %/);
 });
 
-test("les repères chiffrés dominent les tirages de marché aux trois niveaux", async () => {
+test("les repères chiffrés dominent les tirages de marché quand les cotations requises sont disponibles", async () => {
   const [macro, caps, news, production] = await Promise.all(["macro", "market-caps", "actualite", "production"]
     .map(async (name) => (await import(`../public/data/${name}.json`, { with: { type: "json" } })).default));
   const now = Date.parse("2026-11-23T20:00:00Z");
@@ -577,9 +578,11 @@ test("les repères chiffrés dominent les tirages de marché aux trois niveaux",
     assert.equal(example.reference_href, "/cours/reperes/capitalisations/chiffres#cap-MC.PA");
     for (const unit of ["capitalisations", "indices", "devises", "matieres", "producteurs"]) {
       const draw = await loadScopedTraining(null, "reperes", [unit], [id], "all", async () => live);
+      const available = live.filter((q) => isObservedMarketRecall(q) && q.difficulty === id && questionLocation(q).unitSlug === unit);
       assert.equal(draw.length, 10, unit);
-      assert.ok(draw.filter(isObservedMarketRecall).length >= 7, `${unit}/${id}`);
-      assert.ok(draw.filter(isMarketPriceEstimate).length >= 6, `${unit}/${id}`);
+      assert.ok(available.length >= 4, `${unit}/${id}`);
+      assert.ok(draw.filter(isObservedMarketRecall).length >= Math.min(7, available.length), `${unit}/${id}`);
+      assert.ok(draw.filter(isMarketPriceEstimate).length >= Math.min(6, available.filter(isMarketPriceEstimate).length), `${unit}/${id}`);
       if (unit === "indices") assert.ok(draw.some((q) => q.family === "indices:composition-indice"), id);
     }
   }
@@ -594,6 +597,103 @@ test("les repères chiffrés dominent les tirages de marché aux trois niveaux",
   const old = buildStudyQuestions(sources, now + 72 * 3_600_000);
   assert.ok(old.every((q) => !isMarketPriceEstimate(q)));
   assert.ok(!live.some((q) => q.id.startsWith("production:") && q.id.includes("~") && !q.id.endsWith(q.reference_date.slice(0, 4))));
+});
+
+test("à minuit à Paris les nouveaux quiz de marché exigent la séance du nouveau jour", () => {
+  const day = "2026-11-24";
+  const previous = "2026-11-23";
+  const checked = "2026-11-23T23:05:00Z";
+  const now = Date.parse("2026-11-23T23:20:00Z");
+  const indicator = { value: 100, unit: "$/baril", frequency: "daily", source: "Source de test", retrieved_at: checked, max_age_days: 7 };
+  const company = { ticker: "MC.PA", name: "LVMH", country: "France", region: "Europe", currency: "EUR", market_cap_usd: 200e9, retrieved_at: checked };
+  const sources = {
+    caps: { updated_at: checked, failed: [], source: company.name, items: [{ ...company, price_date: day, fx_date: previous }] },
+    macro: { updated_at: checked, indicators: {
+      index_cac: { ...indicator, label: "CAC 40", unit: "points", ref_date: previous },
+      brent: { ...indicator, label: "Brent au comptant", ref_date: previous },
+      wti: { ...indicator, label: "WTI au comptant", ref_date: previous, value: 90 },
+      brent_future: { ...indicator, label: "Brent à terme", ref_date: day },
+    } },
+    news: { updated_at: null, failed: [], events: [], leaders: [] },
+    production: { updated_at: null, failed: [], tables: {} },
+  };
+  const before = buildStudyQuestions(sources, now);
+  assert.ok(before.some((q) => q.reference_key === "macro:brent_future" && q.reference_date === day));
+  assert.ok(before.every((q) => q.reference_date === day && !q.id.startsWith("live:")));
+  const course = buildStudyView(sources, "reperes/indices", now);
+  assert.ok(course.tables[0].rows.find((row) => row.id === "macro-index_cac").awaitingCurrentQuote);
+
+  sources.caps.items[0].fx_date = day;
+  sources.macro.indicators.index_cac.ref_date = day;
+  const updated = buildStudyQuestions(sources, now);
+  assert.ok(updated.some((q) => q.id === `live:MC.PA:${day}`));
+  assert.ok(updated.some((q) => q.reference_key === "macro:index_cac"));
+  assert.ok(updated.every((q) => q.reference_date === day));
+});
+
+test("le quiz de capitalisations donne quatre estimations et une seule question de cours", async () => {
+  const day = "2026-11-23";
+  const checked = `${day}T19:00:00Z`;
+  const now = Date.parse(`${day}T20:00:00Z`);
+  const items = Array.from({ length: 12 }, (_, i) => ({
+    ticker: `Q${i}`, name: `Société ${i}`, country: "États-Unis", region: "Amérique du Nord", currency: "USD", market_cap_usd: (900 + i * 50) * 1e9,
+    price_date: day, retrieved_at: checked,
+  }));
+  const sources = {
+    caps: { updated_at: checked, items, failed: [], source: "Source de test" },
+    macro: { updated_at: null, indicators: {} }, news: { updated_at: null, events: [], leaders: [], failed: [] },
+    production: { updated_at: null, tables: {}, failed: [] },
+  };
+  const live = buildStudyQuestions(sources, now);
+  const market = GROUPS.find(({ no }) => no === "04");
+  const cap = market.units.find(({ slug }) => slug === "capitalisations");
+  for (const { id: level } of PROGRAM_LEVELS) {
+    const item = milestone(market, level, cap);
+    const draw = newMilestoneDraw(item, live, []);
+    assert.equal(draw.length, 5);
+    assert.equal(draw.filter(isMarketPriceEstimate).length, 4);
+    assert.ok(draw.every((q) => q.difficulty === level && q.type === "numeric"));
+    assert.equal(new Set(draw.map((q) => q.id)).size, draw.length);
+    const fallback = newMilestoneDraw(item, [], [draw]);
+    assert.equal(fallback.length, 5);
+    assert.equal(fallback.filter((q) => q.id.startsWith("gen:capitalisations:")).length, 4);
+    assert.ok(fallback.every((q) => !q.reference_date && q.difficulty === level));
+    const training = await loadScopedTraining(null, "reperes", ["capitalisations"], [level], "all", async () => live);
+    assert.equal(training.length, 10);
+    assert.equal(training.filter(isMarketPriceEstimate).length, 9);
+    assert.equal(training.filter((q) => !q.reference_date).length, 1);
+  }
+  const memory = memoryDraw(sources, "reperes/capitalisations", now);
+  assert.equal(memory.length, 5);
+  assert.equal(memory.filter(isMarketPriceEstimate).length, 4);
+});
+
+test("les tirages de géopolitique donnent de la place à l’actualité et aux repères concrets", async () => {
+  const { default: news } = await import("../public/data/actualite.json", { with: { type: "json" } });
+  const now = Date.parse("2026-11-24T10:00:00Z");
+  const live = buildStudyQuestions({
+    news, macro: { updated_at: null, indicators: {} }, caps: { updated_at: null, source: "", items: [], failed: [] },
+    production: { updated_at: null, failed: [], tables: {} },
+  }, now);
+  const facts = (questions) => questions.filter((q) => q.reference_date);
+  const landmarks = (questions) => questions.filter((q) => q.family?.includes(":repere-"));
+  for (const level of ["intermediate", "advanced"]) {
+    const series = await loadScopedTraining(null, "geopolitique", [], [level], "all", async () => live);
+    assert.equal(series.length, 10);
+    assert.ok(series.every((q) => q.difficulty === level));
+    assert.ok(facts(series).length >= 4);
+    assert.ok(landmarks(series).length >= 4);
+    assert.equal(new Set(facts(series).map((q) => q.reference_href)).size, facts(series).length);
+    const institutions = getMilestone(`p:${level[0]}:03:institutions`);
+    const draw = newMilestoneDraw(institutions, live, []);
+    assert.equal(draw.length, 5);
+    assert.ok(facts(draw).length >= 2);
+    assert.ok(facts(draw).every((q) => q.reference_href.startsWith("/cours/geopolitique/institutions/")));
+  }
+  const beginner = await loadScopedTraining(null, "geopolitique", [], ["beginner"], "all", async () => live);
+  assert.equal(beginner.length, 10);
+  assert.deepEqual(facts(beginner), []);
+  assert.deepEqual(landmarks(beginner), []);
 });
 
 test("les estimations générées réduisent la marge selon le niveau et restent renouvelables", () => {
@@ -640,9 +740,30 @@ test("l’actualité utilise les faits, les dates et les postes vérifiés", () 
   };
   const draw = buildNewsQuestions(bundled, Date.parse("2026-11-24T10:00:00Z"));
   assert.equal(draw.filter((q) => q.id.includes(":leader:")).length, 3);
+  assert.equal(draw.filter((q) => q.id.includes(":leader-pair:") && q.difficulty === "advanced").length, 3);
   assert.ok(draw.some((q) => q.difficulty === "advanced" && q.id.includes(":stage:")));
   assert.ok(draw.every((q) => q.difficulty !== "beginner" && q.source_url.startsWith("https://")));
   assert.deepEqual(buildNewsQuestions(bundled, Date.parse("2026-11-27T10:00:00Z")), []);
+
+  const [event] = bundled.events;
+  const monthly = { ...bundled, events: [event, { ...event, id: "older", date: "2026-10-24" },
+    { ...event, id: "month", date: "2026-10-25" }] };
+  const recent = buildNewsQuestions(monthly, Date.parse("2026-11-24T10:00:00Z"));
+  assert.ok(recent.some((q) => q.id === "news:event:month"));
+  assert.ok(recent.every((q) => !q.id.endsWith(":older")));
+
+  const sources = {
+    news: { ...monthly,
+      decisions: [{ ...event, id: "ecb", movement: "unchanged" }, { ...event, id: "fed", date: "2026-10-24", movement: "unchanged" }],
+      elections: [{ ...event, id: "old-election", date: "2025-04-28", country: "Canada", winner: "Parti A", seats: 169, total: 343 }],
+    },
+    macro: { updated_at: null, indicators: {} },
+    caps: { updated_at: null, source: "Source de test", items: [], failed: [] },
+    production: { updated_at: null, tables: {}, failed: [] },
+  };
+  const generated = buildStudyQuestions(sources, Date.parse("2026-11-24T10:00:00Z"));
+  assert.ok(generated.some((q) => q.reference_key === "policy:ecb"));
+  assert.ok(generated.every((q) => q.reference_key !== "policy:fed" && !q.id.includes(":old-election:")));
 });
 
 test("les données de marché conservent leurs dates après un passage le week-end et une panne", () => {

@@ -1,17 +1,17 @@
-import { diverseDraw } from "@/lib/drawQuestions";
+import { capitalisationDraw, diverseDraw, geopoliticsDraw } from "@/lib/drawQuestions";
 import { curriculumQuestions } from "@/lib/curriculum/catalog";
 import { questionLocation } from "@/lib/curriculum/legacyMapping";
 import { buildLiveQuestions } from "@/lib/liveQuestions";
 import { buildMacroQuestions } from "@/lib/macroQuestions";
-import { buildNewsQuestions, electionSummary, isNewsVerified, POLICY_MOVEMENT } from "@/lib/news";
-import { GROUPS } from "@/lib/program";
+import { buildNewsQuestions, electionSummary, isRecentAnnouncement, POLICY_MOVEMENT } from "@/lib/news";
+import { GROUPS, LEVELS } from "@/lib/program";
 import { PRODUCTION_SERIES, verifiedTable, type ProductionData } from "@/lib/production";
 import { fmt, shuffle, type Question } from "@/lib/quiz";
 import { buildStudyView, studyDataHref, type StudySources } from "@/lib/studyReferences";
 import { distinctObservedMarketQuestions, marketRecallVariants } from "@/lib/marketRecall";
 
 export function stableReferenceKey(id: string): string {
-  return /^(macro|live|news:(leader|election)|production|policy):/.test(id) ? id.replace(/:(\d{4}-\d{2}-\d{2}|\d{4})$/, "") : id;
+  return /^(macro|live|news:(leader|leader-pair|election)|production|policy):/.test(id) ? id.replace(/:(\d{4}-\d{2}-\d{2}|\d{4})$/, "") : id;
 }
 
 export function productionQuestions(data: ProductionData, now: number): Question[] {
@@ -71,12 +71,12 @@ export function buildStudyQuestions(sources: StudySources, now: number) {
   });
   const news = buildNewsQuestions(sources.news, now).map((q) => {
     const key = stableReferenceKey(q.id);
-    const leader = key.startsWith("news:leader:");
+    const leader = key.startsWith("news:leader:") || key.startsWith("news:leader-pair:");
     const id = key.split(":").at(-1)!;
     const scope = leader ? "institutions" : "actualite";
     return { ...q, reference_key: key, reference_href: studyDataHref(`geopolitique/${scope}`, `${leader ? "leader" : "news"}-${id}`) };
   });
-  const policy: Question[] = (sources.news.decisions ?? []).filter((row) => isNewsVerified(row, now, 130)).map((row, i) => {
+  const policy: Question[] = (sources.news.decisions ?? []).filter((row) => isRecentAnnouncement(row, now)).map((row, i) => {
     const options = Object.values(POLICY_MOVEMENT);
     const shifted = [...options.slice(i % options.length), ...options.slice(0, i % options.length)];
     const label = POLICY_MOVEMENT[row.movement];
@@ -90,7 +90,7 @@ export function buildStudyQuestions(sources: StudySources, now: number) {
       reference_href: studyDataHref("banques/decisions", `policy-${row.id}`),
     };
   });
-  const elections: Question[] = (sources.news.elections ?? []).filter((row) => isNewsVerified(row, now, Infinity) && row.seats * 2 !== row.total).map((row) => ({
+  const elections: Question[] = (sources.news.elections ?? []).filter((row) => isRecentAnnouncement(row, now) && row.seats * 2 !== row.total).map((row) => ({
     id: `news:election:${row.id}:${row.date}`, reference_key: `news:election:${row.id}`,
     reference_href: studyDataHref("geopolitique/institutions", `election-${row.id}`), category_id: "geopolitics",
     difficulty: "intermediate", type: "true_false", family: "institutions:elections",
@@ -120,8 +120,10 @@ export function memoryDraw(sources: StudySources, scope: string, now: number): Q
     return groupNo === group.no && unit === unitSlug && !q.reference_href ? [q] : [];
   });
   const unique = distinctObservedMarketQuestions(shuffle(pool));
+  const structural = curriculumQuestions().filter((q) => q.groupNo === group.no && q.unitSlug === unitSlug);
+  if (unitSlug === "capitalisations") return capitalisationDraw([...unique, ...structural], 5, LEVELS.map(({ id }) => id));
+  if (group.no === "03") return geopoliticsDraw([...unique, ...structural], 5);
   const fresh = diverseDraw(unique, 5, new Set(), (q) => q.family ?? q.category_id);
   if (fresh.length === 5) return fresh;
-  const structural = curriculumQuestions().filter((q) => q.groupNo === group.no && q.unitSlug === unitSlug);
   return [...fresh, ...diverseDraw(shuffle(structural), 5 - fresh.length)];
 }

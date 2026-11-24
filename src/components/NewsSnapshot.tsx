@@ -1,7 +1,7 @@
 "use client";
 
 import { dataTimestamp } from "@/lib/dataFreshness";
-import { electionSummary, fetchNews, isNewsVerified, POLICY_MOVEMENT } from "@/lib/news";
+import { electionSummary, fetchNews, isNewsVerified, isRecentAnnouncement, POLICY_MOVEMENT } from "@/lib/news";
 import { useDataSnapshot } from "@/lib/useDataSnapshot";
 
 export default function NewsSnapshot() {
@@ -54,7 +54,7 @@ export default function NewsSnapshot() {
               <p className="mt-2 text-sm text-muted">{row.context}</p>
               <p className="mt-3 text-xs text-muted">{row.topic} · {row.date} · Vérifié le {dataTimestamp.format(new Date(row.retrieved_at))}</p>
               {row.published_at && <p className="mt-1 text-xs text-muted">Communiqué publié le {dataTimestamp.format(new Date(row.published_at))}</p>}
-              <p className="mt-1 text-xs text-muted">{isNewsVerified(row, now, 35) ? "Utilisable en quiz" : "Archive du communiqué"} · <a href={row.url} className="underline hover:text-accent" target="_blank" rel="noreferrer">{row.source}</a></p>
+              <p className="mt-1 text-xs text-muted">{isRecentAnnouncement(row, now) ? "Utilisable en quiz" : "Archive du communiqué"} · <a href={row.url} className="underline hover:text-accent" target="_blank" rel="noreferrer">{row.source}</a></p>
             </li>
           ))}
         </ul>

@@ -51,6 +51,10 @@ export function verifiedCompanies(data: MarketCaps, nowMs: number): Company[] {
   });
 }
 
+export function isCompanyQuoteForDay(row: Company, day: string): boolean {
+  return row.price_date === day && (row.currency === "USD" || row.fx_date === day);
+}
+
 export function hasFreshMarketCaps(data: MarketCaps, nowMs: number): boolean {
   return verifiedCompanies(data, nowMs).length > 0;
 }

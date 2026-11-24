@@ -1,7 +1,8 @@
 import type { Question } from "@/lib/quiz";
 import { fmt } from "@/lib/quiz";
 import { fmtValue, isVerifiedMacro, referenceLabel, type Indicator, type MacroData } from "@/lib/macro";
-import { indicatorScope, studyDataHref, withVerifiedFxCrosses } from "@/lib/studyReferences";
+import { indicatorScope, isDailyMarketPrice, studyDataHref, withVerifiedFxCrosses } from "@/lib/studyReferences";
+import { todayParis } from "@/lib/rng";
 
 // Questions générées à partir des indicateurs du jour. Une question n'existe que si sa donnée
 // est assez récente : sinon elle disparaît toute seule.
@@ -15,6 +16,8 @@ const META: Record<string, { prompt: string; tol: number; diff: string }> = {
   eurusd: { prompt: "Quel est le taux de référence BCE EUR/USD, en dollars par euro ?", tol: 1.5, diff: "intermediate" },
   brent: { prompt: "Quel est le prix au comptant du Brent, en dollars par baril ?", tol: 6, diff: "intermediate" },
   wti: { prompt: "Quel est le prix au comptant du WTI, en dollars par baril ?", tol: 6, diff: "intermediate" },
+  brent_future: { prompt: "Quel est le prix du contrat à terme de référence sur le Brent (BZ=F), en dollars par baril ?", tol: 6, diff: "intermediate" },
+  wti_future: { prompt: "Quel est le prix du contrat à terme de référence sur le WTI (CL=F), en dollars par baril ?", tol: 6, diff: "intermediate" },
   gold: { prompt: "Quel est le prix du contrat à terme sur l’or (GC=F), en dollars par once troy ?", tol: 4, diff: "intermediate" },
   copper: { prompt: "Quel est le prix du contrat à terme sur le cuivre (HG=F), en dollars par livre ?", tol: 6, diff: "intermediate" },
   copper_imf: { prompt: "Quel est le prix mensuel moyen du cuivre selon le FMI, en dollars par tonne ?", tol: 10, diff: "advanced" },
@@ -49,10 +52,11 @@ function base(key: string, ind: Indicator, diff: string, prompt: string, explana
 
 export function buildMacroQuestions(data: MacroData, nowMs: number): Question[] {
   data = withVerifiedFxCrosses(data, nowMs);
+  const day = todayParis(nowMs);
   const out: Question[] = [];
   const get = (k: string): Indicator | null => {
     const i = data.indicators[k];
-    return i && isVerifiedMacro(data, k, nowMs) ? i : null;
+    return i && (!isDailyMarketPrice(k) || i.ref_date === day) && isVerifiedMacro(data, k, nowMs) ? i : null;
   };
 
   for (const [key, meta] of Object.entries(META)) {

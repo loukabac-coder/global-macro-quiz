@@ -1,6 +1,47 @@
 import { editorial } from "@/lib/curriculum/editorial";
 
+const maritimeReferences = editorial("03", "approvisionnement", ["", `
+repere-detroits|Situer Ormuz|Entre quels pays se situe le détroit d’Ormuz ?|L’Iran et Oman|Le Yémen et Djibouti|La Turquie et la Grèce|Le détroit se trouve à l’entrée du golfe Persique entre la côte iranienne et la péninsule omanaise de Musandam.
+repere-detroits|Situer Malacca|Entre quelle péninsule et quelle île s’étend le détroit de Malacca ?|La péninsule Malaise et Sumatra|La péninsule coréenne et Honshū|La péninsule Arabique et Madagascar|Sumatra, en Indonésie, borde le chenal face à la péninsule Malaise.
+repere-mers|Reconnaître le débouché de la mer Rouge|Quel détroit relie la mer Rouge au golfe d’Aden ?|Bab el-Mandeb|Le Bosphore|Gibraltar|Bab el-Mandeb est le débouché sud de la mer Rouge, en direction du golfe d’Aden.
+repere-caps|Situer un cap|Dans quel pays se trouve le cap de Bonne-Espérance ?|En Afrique du Sud|En Angola|Au Mozambique|Le cap de Bonne-Espérance se trouve au sud-ouest de l’Afrique du Sud, près du Cap.
+repere-mers|Identifier les détroits danois|Quel ensemble de passages commande l’accès maritime de la Baltique vers la mer du Nord ?|Les détroits danois|Les détroits turcs|Les détroits de la Sonde et de Lombok|Les passages danois donnent accès à la Baltique depuis les eaux de la mer du Nord.
+`, `
+repere-itineraires|Reconstituer les détroits turcs|En allant de la mer Noire à la mer Égée, dans quel ordre traverse-t-on les deux détroits turcs ?|Bosphore, puis Dardanelles|Dardanelles, puis Bosphore|Bosphore, puis Gibraltar|Le Bosphore donne sur la mer de Marmara, puis les Dardanelles donnent sur la mer Égée.
+repere-mers|Identifier la mer de Marmara|Quelle mer se trouve entre le Bosphore et les Dardanelles ?|La mer de Marmara|La mer Ionienne|La mer Caspienne|Les deux détroits desservent les deux extrémités de la mer de Marmara.
+repere-detroits|Comparer les deux sorties du golfe|Quel golfe se trouve immédiatement à l’est du détroit d’Ormuz ?|Le golfe d’Oman|Le golfe d’Aden|Le golfe de Guinée|En allant vers l’océan Indien, on passe du golfe Persique au golfe d’Oman par Ormuz.
+repere-itineraires|Repérer un itinéraire maritime|En venant de l’océan Indien vers la Méditerranée par la mer Rouge, quel passage franchit-on en premier ?|Bab el-Mandeb|Le canal de Suez|Le Bosphore|Bab el-Mandeb est l’entrée sud de la mer Rouge. Suez se trouve à l’extrémité nord.
+repere-caps|Reconnaître un détour maritime|Par où un navire Asie-Europe peut-il passer pour éviter la mer Rouge et Suez ?|Par le cap de Bonne-Espérance|Par le détroit du Bosphore|Par le canal de Panama|Contourner le sud de l’Afrique permet de rejoindre l’Atlantique depuis l’océan Indien.
+`], "U.S. Energy Information Administration").map((q) => ({ ...q,
+  source_url: "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/",
+}));
+
+const lakeReferences = [
+  ...editorial("03", "approvisionnement", ["", `
+repere-lacs|Situer le lac Victoria|Quel lac est partagé par le Kenya, l’Ouganda et la Tanzanie ?|Le lac Victoria|Le lac Tchad|Le lac Malawi|Le lac Victoria borde ces trois pays d’Afrique de l’Est.
+`, ""], "Communauté d’Afrique de l’Est").map((q) => ({ ...q,
+    source_url: "https://www.eac.int/index.php?Itemid=&id=169&option=com_content&view=article",
+  })),
+  ...editorial("03", "approvisionnement", ["", `
+repere-lacs|Situer le bassin des Grands Lacs|Quels pays partagent le bassin des Grands Lacs d’Amérique du Nord ?|Le Canada et les États-Unis|Le Canada et le Mexique|Les États-Unis et le Guatemala|Le bassin s’étend des deux côtés de la frontière canado-américaine.
+repere-lacs|Situer Chicago|Sur quel Grand Lac se trouve Chicago ?|Le lac Michigan|Le lac Ontario|Le lac Érié|Chicago se trouve au sud-ouest du lac Michigan.
+`, `
+repere-lacs|Distinguer un lac frontalier|Quel Grand Lac est situé entièrement sur le territoire des États-Unis ?|Le lac Michigan|Le lac Supérieur|Le lac Ontario|Le lac Michigan est le seul des cinq Grands Lacs entièrement aux États-Unis.
+repere-lacs|Reconnaître les Grands Lacs|Quel ensemble contient uniquement des Grands Lacs nord-américains ?|Supérieur, Huron et Érié|Ontario, Winnipeg et Supérieur|Michigan, Champlain et Huron|Les cinq sont Supérieur, Michigan, Huron, Érié et Ontario.
+`], "U.S. Environmental Protection Agency").map((q) => ({ ...q, source_url: "https://www.epa.gov/greatlakes/lake-michigan" })),
+];
+
+const institutionReferences = editorial("03", "institutions", ["", `
+repere-onu|Reconnaître un membre permanent|Parmi ces pays, lequel a un siège permanent au Conseil de sécurité de l’ONU ?|La France|L’Allemagne|Le Japon|Les cinq membres permanents sont la Chine, les États-Unis, la France, le Royaume-Uni et la Russie.
+repere-onu|Citer le nombre de membres permanents|Combien de membres permanents siègent au Conseil de sécurité de l’ONU ?|Cinq|Neuf|Quinze|Le Conseil compte cinq membres permanents et dix membres élus.
+`, `
+repere-onu|Identifier qui élit les membres du Conseil|Quel organe de l’ONU élit les membres non permanents du Conseil de sécurité ?|L’Assemblée générale|Le secrétariat|La Cour internationale de Justice|L’Assemblée générale élit les membres non permanents.
+repere-onu|Connaître la durée du mandat|Pour combien de temps un membre non permanent du Conseil de sécurité de l’ONU est-il élu ?|Deux ans|Un an|Cinq ans|Les dix membres élus exercent un mandat de deux ans.
+repere-onu|Identifier un pouvoir de décision|Parmi ces pays, lequel dispose d’un droit de veto au Conseil de sécurité de l’ONU ?|Le Royaume-Uni|Le Canada|Le Brésil|Le Royaume-Uni fait partie des cinq membres permanents, qui disposent du veto sur les questions de fond.
+`], "Organisation des Nations unies").map((q) => ({ ...q, source_url: "https://main.un.org/securitycouncil/en/content/current-members" }));
+
 export const geopoliticsBank = [
+  ...maritimeReferences, ...lakeReferences, ...institutionReferences,
   ...editorial("03", "institutions", [`
 mandat|definition|Que désigne le mandat d’une institution publique ?|Les missions et pouvoirs qui lui sont confiés|L’évolution de son indice boursier|La monnaie qu’elle utilise|Le mandat définit ce qu’elle doit faire et dans quel cadre.
 gouvernement|classification|Quelle institution conduit généralement la politique du gouvernement ?|Le pouvoir exécutif|La Bourse|L’institut statistique|Le pouvoir exécutif conduit les politiques publiques selon les règles du pays.

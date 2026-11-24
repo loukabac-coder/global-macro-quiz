@@ -1,3 +1,5 @@
+import { todayParis } from "@/lib/rng";
+
 const HOUR_MS = 3_600_000;
 const DAY_MS = HOUR_MS * 24;
 
@@ -19,7 +21,7 @@ export function observationAge(date: string, nowMs: number): number {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NaN;
   const observed = new Date(date + "T00:00:00Z");
   if (!Number.isFinite(observed.getTime()) || observed.toISOString().slice(0, 10) !== date) return NaN;
-  return Math.floor((nowMs - observed.getTime()) / DAY_MS);
+  return (Date.parse(`${todayParis(nowMs)}T00:00:00Z`) - observed.getTime()) / DAY_MS;
 }
 
 export function wasRecentlyChecked(timestamp: string | null | undefined, nowMs: number, hours: number, weekdaysOnly = false): boolean {

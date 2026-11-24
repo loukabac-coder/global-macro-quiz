@@ -1,5 +1,6 @@
 import { fmt, type Question } from "@/lib/quiz";
-import { fmtCap, verifiedCompanies, type Company, type MarketCaps } from "@/lib/marketcaps";
+import { fmtCap, isCompanyQuoteForDay, verifiedCompanies, type Company, type MarketCaps } from "@/lib/marketcaps";
+import { todayParis } from "@/lib/rng";
 
 export const FRENCH_ISSUERS = new Set([
   "MC.PA", "OR.PA", "AI.PA", "SU.PA", "RMS.PA", "TTE.PA", "SAN.PA", "SAF.PA", "BNP.PA", "DG.PA", "EL.PA", "DSY.PA", "CS.PA",
@@ -39,7 +40,8 @@ function base(id: string, family: string, competency: string, date: string, sour
 }
 
 export function buildLiveQuestions(data: MarketCaps, nowMs = Date.now()): Question[] {
-  const verified = verifiedCompanies(data, nowMs);
+  const day = todayParis(nowMs);
+  const verified = verifiedCompanies(data, nowMs).filter((company) => isCompanyQuoteForDay(company, day));
   const individual: Question[] = verified.map((company) => {
     const md = company.market_cap_usd / 1e9;
     const absolute = ["AAPL", "NVDA"].includes(company.ticker) && md >= 1000 ? 500 : Math.max(1, Math.round(md * 0.2));

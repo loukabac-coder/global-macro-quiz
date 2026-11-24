@@ -30,6 +30,8 @@ export function seededShuffle<T>(input: T[], rng: () => number): T[] {
 }
 
 // Date du jour à Paris, au format AAAA-MM-JJ (à appeler dans un effet ou un gestionnaire, pas pendant le rendu).
-export function todayParis(): string {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Paris" }).format(new Date());
+const parisDay = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Paris" });
+
+export function todayParis(now = Date.now()): string {
+  return parisDay.format(now);
 }

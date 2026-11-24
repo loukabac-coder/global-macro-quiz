@@ -5,7 +5,7 @@ import { mentalQuestion } from "@/lib/mental";
 import type { HistoryFilter } from "@/lib/quizSession";
 import { GROUPS, LEVELS } from "@/lib/program";
 import { questionLocation } from "@/lib/curriculum/legacyMapping";
-import { diverseDraw, marketRecallDraw } from "@/lib/drawQuestions";
+import { capitalisationDraw, diverseDraw, geopoliticsDraw, marketRecallDraw } from "@/lib/drawQuestions";
 import { stableReferenceKey } from "@/lib/studyQuestions";
 import { isPolicyRateRecall } from "@/lib/marketRecall";
 
@@ -80,8 +80,13 @@ export async function loadScopedTraining(
   const live = group !== "reperes" && levels.length === 1 && levels[0] === "beginner" ? [] : (await liveQuestions()).filter(inScope);
   const pool = curriculumQuestions({ levels }).filter(inScope);
   const onlyRates = group === "banques" && units.length === 1 && units[0] === "taux";
+  const onlyCaps = group === "reperes" && units.length === 1 && units[0] === "capitalisations";
+  const requestedLevels = LEVELS.filter(({ id }) => !levels.length || levels.includes(id)).map(({ id }) => id);
+  const currentEvents = group === "geopolitique" && requestedLevels.some((level) => level !== "beginner");
   if (history === "all") {
+    if (onlyCaps) return capitalisationDraw([...live, ...pool], SIZE, requestedLevels);
     if (group === "reperes") return marketRecallDraw([...live, ...pool], SIZE);
+    if (currentEvents) return geopoliticsDraw([...live, ...pool], SIZE);
     if (onlyRates && live.some(isPolicyRateRecall)) return marketRecallDraw([...live, ...pool], SIZE, undefined, undefined, isPolicyRateRecall);
     const dated = balanced(live, 2);
     const stable = balanced(pool, SIZE - dated.length);
@@ -98,11 +103,14 @@ export async function loadScopedTraining(
     }
     if (data.length < 500) break;
   }
-  const filtered = [...live, ...pool].filter((q) => {
+  const matchesHistory = (q: Question) => {
     const previous = latest.get(q.reference_key ?? stableReferenceKey(q.id));
     return history === "unseen" ? !previous : previous?.answer === (history === "correct");
-  });
+  };
+  const filtered = [...live, ...pool].filter(matchesHistory);
+  if (onlyCaps) return capitalisationDraw(filtered, SIZE, requestedLevels, undefined, matchesHistory);
   if (group === "reperes") return marketRecallDraw(filtered, SIZE);
+  if (currentEvents) return geopoliticsDraw(filtered, SIZE);
   if (onlyRates) return marketRecallDraw(filtered, SIZE, undefined, undefined, isPolicyRateRecall);
   return balanced(filtered, SIZE);
 }

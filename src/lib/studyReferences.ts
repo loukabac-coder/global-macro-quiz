@@ -1,9 +1,10 @@
 import { dataTimestamp, type SnapshotDates } from "@/lib/dataFreshness";
 import { comparablePanels } from "@/lib/liveQuestions";
 import { isDatedObservation, isVerifiedMacro, referenceLabel, type MacroData } from "@/lib/macro";
-import { companyCheckedAt, verifiedCompanies, type MarketCaps } from "@/lib/marketcaps";
-import { electionSummary, isNewsVerified, POLICY_BANKS, POLICY_MOVEMENT, type NewsData } from "@/lib/news";
+import { companyCheckedAt, isCompanyQuoteForDay, verifiedCompanies, type MarketCaps } from "@/lib/marketcaps";
+import { electionSummary, isNewsVerified, isRecentAnnouncement, POLICY_BANKS, POLICY_MOVEMENT, type NewsData } from "@/lib/news";
 import { PRODUCTION_SERIES, verifiedTable, type ProductionData } from "@/lib/production";
+import { todayParis } from "@/lib/rng";
 
 export type StudySources = { macro: MacroData; caps: MarketCaps; news: NewsData; production: ProductionData };
 export type StudyRow = {
@@ -18,6 +19,7 @@ export type StudyRow = {
   source?: string;
   url?: string;
   eligible?: boolean;
+  awaitingCurrentQuote?: boolean;
   pending?: boolean;
   attempted?: string;
   country?: string;
@@ -39,7 +41,7 @@ const FX_CROSSES = {
   gbpjpy: { numerator: "eurjpy", denominator: "eurgbp", label: "GBP/JPY", unit: "¥/£" },
 } as const;
 const FX_KEYS = ["eurusd", "eurgbp", "eurjpy", "eurchf", "usdjpy", ...Object.keys(FX_CROSSES)];
-const PRICES = ["gold", "copper", "brent", "wti", "copper_imf", "wheat_price", "cocoa_price"];
+const DAILY_PRICES = ["gold", "copper", "brent", "wti", "brent_future", "wti_future", "wheat_price", "cocoa_price"];
 const RATES = ["ecb_deposit_rate", "fed_target_upper", "fed_target_lower", "boe_rate", "boj_rate", "snb_rate"];
 const ECONOMIES = ["fra", "usa", "chn", "deu", "jpn", "ind", "gbr", "ita", "bra", "can", "kor", "esp"];
 const byCountry = (name: string, list: string[]) => list.map((code) => `${name}_${code}`);
@@ -51,7 +53,7 @@ const INDICATOR_SCOPES: Record<string, { title: string; keys: string[] }[]> = {
   "banques/decisions": [{ title: "Taux directeurs en vigueur", keys: RATES }],
   "reperes/indices": [{ title: "Niveaux des grands indices", keys: INDEX_KEYS }],
   "reperes/devises": [{ title: "Cours de référence", keys: FX_KEYS }],
-  "reperes/matieres": [{ title: "Prix et références", keys: PRICES }],
+  "reperes/matieres": [{ title: "Prix et références", keys: [...DAILY_PRICES, "copper_imf"] }],
   "marches/obligations": [{ title: "Rendement de référence", keys: ["us_10y"] }],
   "mental/estimations": [{ title: "Population", keys: byCountry("population", ["wld", "fra", "usa", "chn", "ind", "deu", "jpn"]) },
     { title: "PIB nominal", keys: ["gdp_fra", "gdp_usa", "gdp_chn"] }],
@@ -65,6 +67,7 @@ const LABELS: Record<string, string> = {
   gbpusd: "GBP/USD", usdchf: "USD/CHF", gbpjpy: "GBP/JPY",
   index_cac: "CAC 40", index_sp500: "S&P 500", index_nasdaq100: "Nasdaq-100", index_dax: "DAX", index_ftse: "FTSE 100", index_nikkei: "Nikkei 225", index_stoxx: "EURO STOXX 50",
   gold: "Or · terme", copper: "Cuivre · terme", brent: "Brent · comptant", wti: "WTI · comptant",
+  brent_future: "Brent · contrat à terme", wti_future: "WTI · contrat à terme",
   copper_imf: "Cuivre · moyenne mensuelle FMI", wheat_price: "Blé Chicago · terme", cocoa_price: "Cacao New York · terme", us_10y: "Treasury américain à 10 ans",
 };
 
@@ -92,6 +95,10 @@ export function hasStudyReferences(scope: string) {
 
 export function indicatorScope(key: string) {
   return Object.entries(INDICATOR_SCOPES).find(([, tables]) => tables.some((table) => table.keys.includes(key)))?.[0];
+}
+
+export function isDailyMarketPrice(key: string) {
+  return INDEX_KEYS.includes(key) || DAILY_PRICES.includes(key);
 }
 
 export function withVerifiedFxCrosses(macro: MacroData, now: number): MacroData {
@@ -126,11 +133,13 @@ function indicatorRow(macro: MacroData, key: string, now: number): StudyRow {
   return {
     id, label, value, exact: policy ? undefined : complete, detail, country,
     period: referenceLabel(key, row), checked: row.retrieved_at, published: row.published_at,
+    awaitingCurrentQuote: eligible && isDailyMarketPrice(key) && row.ref_date !== todayParis(now),
     source: row.source, url: row.source_url, eligible, pending: macro.failed?.includes(key),
   };
 }
 
 function capitalTables(data: MarketCaps, now: number): StudyTable[] {
+  const day = todayParis(now);
   const checked = verifiedCompanies(data, now);
   const verified = new Set(checked.map((company) => company.ticker));
   const panels = comparablePanels(checked);
@@ -146,6 +155,7 @@ function capitalTables(data: MarketCaps, now: number): StudyTable[] {
     return {
       id, label: row.name, ticker, country: row.country, amount, value: approx(amount, "Md$"), exact: exact(amount, "Md$"), period: row.price_date,
       checked: companyCheckedAt(data, row) ?? undefined, source, eligible: verified.has(ticker), pending: data.failed.includes(ticker),
+      awaitingCurrentQuote: verified.has(ticker) && !isCompanyQuoteForDay(row, day),
       comparable: verified.has(ticker) && (row.currency === "USD" || row.fx_date === row.price_date),
       url: `https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}/`,
       detail: row.fx_date ? `Conversion en dollars · taux du ${row.fx_date}` : undefined,
@@ -170,6 +180,7 @@ function capitalTables(data: MarketCaps, now: number): StudyTable[] {
         id: `cap-${key}-${company.ticker}`, label: `${index + 1}. ${company.name}`,
         value: approx(company.market_cap_usd / 1e9, "Md$"), exact: exact(company.market_cap_usd / 1e9, "Md$"),
         period: panel.date, checked: companyCheckedAt(data, company) ?? undefined, source, eligible: true,
+        awaitingCurrentQuote: panel.date !== day,
         url: `https://finance.yahoo.com/quote/${encodeURIComponent(company.ticker)}/`,
       })),
     };
@@ -194,7 +205,7 @@ function geopoliticsTables(data: NewsData, scope: string, now: number): StudyTab
     rows: data.events.filter((row) => !topics.length || topics.includes(row.topic)).slice(0, 16).map((row) => ({
       id: `news-${row.id}`, label: row.topic, value: row.title, detail: row.context,
       period: row.date, published: row.published_at, checked: row.retrieved_at,
-      source: row.source, url: row.url, eligible: isNewsVerified(row, now, 35),
+      source: row.source, url: row.url, eligible: isRecentAnnouncement(row, now),
     })),
   };
   const elections: StudyTable = {
@@ -203,7 +214,7 @@ function geopoliticsTables(data: NewsData, scope: string, now: number): StudyTab
     rows: (data.elections ?? []).map((row) => ({
       id: `election-${row.id}`, label: row.country, value: electionSummary(row), period: row.date,
       source: row.source, url: row.url, checked: row.retrieved_at,
-      eligible: isNewsVerified(row, now, Infinity),
+      eligible: isRecentAnnouncement(row, now),
       pending: data.failed.includes("Élections Canada · résultats officiels"),
     })),
   };
@@ -222,7 +233,7 @@ function decisionsTable(data: NewsData, now: number): StudyTable {
       return {
         id: `policy-${id}`, label, value: POLICY_MOVEMENT[row.movement], period: row.date,
         checked: row.retrieved_at, source: row.source, url: row.url, pending,
-        eligible: isNewsVerified(row, now, 130),
+        eligible: isRecentAnnouncement(row, now),
       };
     }),
   };

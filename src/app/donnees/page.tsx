@@ -7,10 +7,12 @@ import CourseReferences from "@/components/CourseReferences";
 import { dataTimestamp } from "@/lib/dataFreshness";
 import { fetchMacro, fmtValue, isDatedObservation, isVerifiedMacro, referenceLabel } from "@/lib/macro";
 import { useDataSnapshot } from "@/lib/useDataSnapshot";
-import { indicatorScope } from "@/lib/studyReferences";
+import { indicatorScope, isDailyMarketPrice } from "@/lib/studyReferences";
+import { todayParis } from "@/lib/rng";
 
 export default function Donnees() {
   const { data, loading, unreachable, now } = useDataSnapshot(fetchMacro);
+  const day = todayParis(now);
 
   const rows = data ? Object.entries(data.indicators).filter(([key]) => indicatorScope(key)) : [];
   const pending = data?.failed?.filter((series) => indicatorScope(series) && !data.indicators[series]) ?? [];
@@ -66,7 +68,9 @@ export default function Donnees() {
                         {ind.published_at && <p className="mt-1 text-muted">Publiée le {dataTimestamp.format(new Date(ind.published_at))}</p>}
                         {ind.status && <p className="mt-1 text-muted">Statut · {ind.status}</p>}
                         {data.failed?.includes(key) && <p className="mt-1 text-warn">Observation conservée après un échec de collecte</p>}
-                        {fresh ? <p className="mt-1 text-accent">Utilisable en quiz</p> : <p className="mt-1 text-warn">Fraîcheur non vérifiée · questions de cette série suspendues</p>}
+                        {!fresh ? <p className="mt-1 text-warn">Fraîcheur non vérifiée · questions de cette série suspendues</p>
+                          : isDailyMarketPrice(key) && ind.ref_date !== day ? <p className="mt-1 text-muted">Nouveaux quiz · chiffres du jour en attente</p>
+                            : <p className="mt-1 text-accent">Utilisable en quiz</p>}
                       </td>
                       <td className="hidden px-3 py-2.5 text-xs text-muted sm:table-cell">{ind.source_url?.startsWith("https://")
                         ? <a href={ind.source_url} className="underline hover:text-accent" target="_blank" rel="noreferrer">{ind.source}</a>

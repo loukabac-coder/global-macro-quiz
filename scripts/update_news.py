@@ -34,13 +34,13 @@ TOPICS = (
     (r"sanction|mesures restrictives|restrictive measures", "Sanctions et mesures restrictives"),
     (r"élections?|elections?|official results|résultats officiels", "Élections et institutions"),
     (r"méthane|methane|approvisionnement énergétique|energy supply|quotas d.émission", "Énergie et approvisionnement"),
-    (r"droits de douane|tariff|commerce|trade|gibraltar|apec|royaume-uni.*sommet|summit.*kingdom", "Commerce et coopération internationale"),
+    (r"droits de douane|tariff|commerce|trade|safeguard investigation|information technology agreement|gibraltar|apec|royaume-uni.*sommet|summit.*kingdom", "Commerce et coopération internationale"),
     (r"titrisation|securiti[sz]ation|marchés des capitaux|capital markets|produits financiers|financial product", "Réglementation financière"),
     (r"budget|finances publiques|climate finance|financement climatique", "Budget et financement public"),
 )
 
 
-def parse_feed(xml, now, base, section, source):
+def parse_feed(xml, now, base, section, source, date_from_link=True):
     events = {}
     host = urlparse(base).hostname
     for item in ET.fromstring(xml).findall(".//item"):
@@ -48,25 +48,29 @@ def parse_feed(xml, now, base, section, source):
         context = plain(item.findtext("description"))
         url = urljoin(base, item.findtext("link") or "")
         parts = urlparse(url)
-        match = re.search(rf"{section}/(\d{{4}}/\d{{2}}/\d{{2}})/", parts.path)
+        match = re.search(rf"{section}/(\d{{4}}/\d{{2}}/\d{{2}})/" if date_from_link else section, parts.path)
         topic = next((label for pattern, label in TOPICS if re.search(pattern, title, re.I)), None)
         if parts.scheme != "https" or parts.hostname not in {host, host.removeprefix("www.")} or not match or not topic or not context:
             continue
-        day = datetime.date.fromisoformat(match[1].replace("/", "-"))
+        published = None
+        pub_date = item.findtext("pubDate")
+        if pub_date:
+            try:
+                stamp = parsedate_to_datetime(pub_date)
+                if stamp.tzinfo and stamp <= now:
+                    published = stamp
+            except (TypeError, ValueError, OverflowError):
+                pass
+        if not date_from_link and not published:
+            continue
+        day = datetime.date.fromisoformat(match[1].replace("/", "-")) if date_from_link else published.astimezone(PARIS).date()
         age = (now.astimezone(PARIS).date() - day).days
         if not 0 <= age <= 35:
             continue
-        published = item.findtext("pubDate")
-        if published:
-            try:
-                stamp = parsedate_to_datetime(published)
-                published = stamp.isoformat() if stamp.tzinfo and stamp <= now else None
-            except (TypeError, ValueError, OverflowError):
-                published = None
         slug = parts.path.strip("/").split("/")[-1]
         events[slug] = {
             "id": slug, "title": title, "context": context[:850], "topic": topic,
-            "date": day.isoformat(), "published_at": published,
+            "date": day.isoformat(), "published_at": published.isoformat() if published else None,
             "source": source, "url": url, "retrieved_at": now.isoformat(timespec="seconds"),
         }
     return list(events.values())
@@ -89,6 +93,16 @@ def canada(now):
     return parse_feed(xml, now, base, r"^/(?:fr|en)/(?:news|nouvelles)/[^/]+", "Cabinet du premier ministre du Canada")
 
 
+def world_trade(now):
+    base = "https://www.wto.org"
+    xml = http_get(f"{base}/library/rss/latest_news_e.xml")
+    if not ET.fromstring(xml).findall(".//item"):
+        raise ValueError("le flux de l’OMC ne contient aucun communiqué")
+    releases = parse_feed(xml, now, base, r"^/english/news_e/news\d+_e/[^/]+\.htm$", "OMC · communiqués", date_from_link=False)
+    relevant = r"trade[- ](?:restrict|facilitat)|safeguard|information technology agreement|tariff|dispute|trade policy review|subsid|accession"
+    return [row for row in releases if re.search(relevant, row["title"], re.I)]
+
+
 LEADERS = {
     "fr": ("Présidence de la République française", "Élysée",
            "https://www.elysee.fr/la-presidence/les-presidents-de-la-republique", "fr"),
@@ -99,6 +113,8 @@ LEADERS = {
     "eu": ("Présidence du Conseil européen", "Conseil européen", f"{COUNCIL}/fr/european-council/president/", "eu"),
     "us": ("Présidence des États-Unis", "Maison-Blanche", "https://www.whitehouse.gov/administration/", "us"),
     "jp": ("Primature du Japon", "Bureau du Premier ministre du Japon", "https://japan.kantei.go.jp/index.html", "jp"),
+    "au": ("Primature de l’Australie", "Gouvernement australien", "https://www.pm.gov.au/about-prime-minister", "au"),
+    "es": ("Présidence du gouvernement espagnol", "La Moncloa", "https://www.lamoncloa.gob.es/presidente/biografia/Paginas/index.aspx", "es"),
 }
 
 
@@ -146,6 +162,17 @@ def parse_leader(code, html):
         match = re.search(r"Profile of the Prime Minister\s+The \d+(?:st|nd|rd|th) Prime Minister\s+(.{4,75}?)\s+Profile", plain(html), re.I)
         if match:
             name = match[1]
+    if code == "au":
+        headings = [plain(text) for text in re.findall(r"<h[12]\b[^>]*>(.*?)</h[12]>", html, re.I | re.S)]
+        for heading in headings:
+            match = re.fullmatch(r"The Hon\.? (.{4,75}?) MP", heading, re.I)
+            if match:
+                name = match[1]
+                break
+    if code == "es":
+        heading = re.search(r"<h1\b[^>]*>(.*?)</h1>", html, re.I | re.S)
+        if heading and re.search(r"president[ea] del Gobierno", plain(html), re.I):
+            name = plain(heading[1])
     if not 2 <= len(name.split()) <= 6 or any(char.isdigit() for char in name) or len(name) > 90:
         raise ValueError("titulaire non identifié dans la source officielle")
     return name
@@ -198,7 +225,7 @@ def main():
     now = datetime.datetime.now(datetime.timezone.utc)
     checked = now.isoformat(timespec="seconds")
     failed = []
-    feeds = {"Communiqués du Conseil de l’Union européenne": council, "Communiqués du Canada": canada}
+    feeds = {"Communiqués du Conseil de l’Union européenne": council, "Communiqués du Canada": canada, "Communiqués de l’OMC": world_trade}
     with ThreadPoolExecutor(max_workers=12) as workers:
         requests = {label: workers.submit(fetch, now) for label, fetch in feeds.items()}
         sources = {key: workers.submit(leader, key, now) for key in LEADERS}

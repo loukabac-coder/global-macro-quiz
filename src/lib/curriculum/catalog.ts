@@ -73,6 +73,7 @@ export function isCurrentFavorite(question: Question): boolean {
   if (typeof question.id !== "string") return false;
   return curriculumIds.has(question.id) ||
     question.id.startsWith(MENTAL_QUESTION_PREFIX) ||
+    question.id.startsWith("gen:capitalisations:") ||
     (question.kind === "conjunctural" && !!question.reference_date &&
       (question.difficulty !== "beginner" || isObservedMarketRecall(question)));
 }

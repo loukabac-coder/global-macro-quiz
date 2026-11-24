@@ -5,6 +5,7 @@ import { mentalQuestion, type Topic } from "@/lib/mental";
 import { fmt, isNumeric, mcqOptions, shuffle, type Question } from "@/lib/quiz";
 import { searchText } from "@/lib/searchText";
 import { distinctObservedMarketQuestions, isObservedMarketRecall } from "@/lib/marketRecall";
+import { observationAge } from "@/lib/dataFreshness";
 
 export function diverseDraw(
   pool: Question[],
@@ -75,6 +76,46 @@ export function marketRecallDraw(
   return shuffle([...selected, ...stable, ...rest]);
 }
 
+export function capitalisationDraw(
+  pool: Question[], size: number, levels: Milestone["level"][], recent = new Set<string>(), eligible: (q: Question) => boolean = () => true,
+): Question[] {
+  if (size <= 0) return [];
+  const estimates = distinctObservedMarketQuestions(shuffle(pool).filter((q) => q.reference_date && isNumeric(q)));
+  const lesson = pool.filter((q) => !q.reference_date && !q.id.startsWith("gen:capitalisations:"));
+  const calculation = (q: Question) => q.family === "capitalisations:ev" || isNumeric(q);
+  const orderedLesson = shuffle(lesson).sort((a, b) => Number(calculation(b)) - Number(calculation(a)));
+  const course = diverseDraw(orderedLesson, 1, recent);
+  const wanted = size - course.length;
+  const observed = diverseDraw(estimates, wanted, recent);
+  const variants = observed.length < wanted
+    ? levels.flatMap((level) => unitVariants("04", "capitalisations", level, 80)).filter(eligible)
+    : [];
+  const practice = diverseDraw(shuffle(variants), wanted - observed.length, recent, (q) => q.difficulty);
+  return shuffle([...observed, ...practice, ...course]);
+}
+
+export function geopoliticsDraw(pool: Question[], size: number, recent = new Set<string>()): Question[] {
+  const now = Date.now();
+  const ordered = shuffle(pool).sort((a, b) => Number(recent.has(a.id)) - Number(recent.has(b.id)));
+  const references = new Set<string>();
+  const facts = ordered.filter((q) => q.reference_date)
+    .sort((a, b) => Number(observationAge(a.reference_date!, now) > 7) - Number(observationAge(b.reference_date!, now) > 7))
+    .filter((q) => {
+      const key = q.reference_href ?? q.id;
+      if (references.has(key)) return false;
+      references.add(key);
+      return true;
+    });
+  const stable = ordered.filter((q) => !q.reference_date);
+  const quota = Math.ceil(size * 0.4);
+  const dated = diverseDraw(facts, quota, recent);
+  const landmarks = diverseDraw(stable.filter((q) => q.family?.includes(":repere-")), Math.min(quota, size - dated.length), recent);
+  const selected = [...dated, ...landmarks];
+  const ids = new Set(selected.map((q) => q.id));
+  const rest = diverseDraw([...stable, ...facts].filter((q) => !ids.has(q.id)), size - selected.length, recent);
+  return shuffle([...selected, ...rest]);
+}
+
 export function milestoneDraw(item: Milestone, live: Question[] = [], recent = new Set<string>(), size = milestoneSize(item)) {
   const units = new Set((item.unit ? [item.unit] : unitsAt(item.group, item.level)).map((unit) => unit.slug));
   const pool = [
@@ -82,6 +123,8 @@ export function milestoneDraw(item: Milestone, live: Question[] = [], recent = n
     ...live.filter((q) => q.reference_date && q.difficulty === item.level).map((q) => ({ ...q, ...questionLocation(q) })),
   ].filter((q) => q.groupNo === item.group.no && units.has(q.unitSlug));
   const bucket = (q: Question) => "unitSlug" in q ? String(q.unitSlug) : q.category_id;
+  if (item.unit?.slug === "capitalisations") return capitalisationDraw(pool, size, [item.level], recent);
+  if (item.group.no === "03" && item.level !== "beginner") return geopoliticsDraw(pool, size, recent);
   if (item.group.no === "04" && pool.some(isObservedMarketRecall)) return marketRecallDraw(pool, size, recent, bucket);
   const fresh = pool.filter((q) => !recent.has(q.id));
   const novel = diverseDraw(shuffle(fresh), size, recent, bucket);

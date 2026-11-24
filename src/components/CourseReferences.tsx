@@ -17,6 +17,7 @@ function ReferenceDetails({ row }: { row: StudyRow }) {
         ? <a className="underline underline-offset-4 hover:text-accent" href={row.url} target="_blank" rel="noreferrer">{row.source}</a>
         : row.source}</p>}
       {row.eligible === false && <p className="text-warn">Dernière valeur connue · à revérifier avant le quiz</p>}
+      {row.awaitingCurrentQuote && <p className="text-muted">Nouveaux quiz · chiffres du jour en attente</p>}
       {row.pending && row.period && <p className="text-warn">Dernière tentative de collecte en échec</p>}
       {row.attempted && <p className="text-warn">Dernière tentative · {studyDate(row.attempted)}</p>}
     </div>

@@ -3,14 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import { fetchMarketCaps, fmtCap, verifiedCompanies, type Company } from "@/lib/marketcaps";
+import { fetchMarketCaps, fmtCap, isCompanyQuoteForDay, verifiedCompanies, type Company } from "@/lib/marketcaps";
 import { comparablePanels, FRENCH_ISSUERS } from "@/lib/liveQuestions";
 import { dataTimestamp } from "@/lib/dataFreshness";
 import { useDataSnapshot } from "@/lib/useDataSnapshot";
+import { todayParis } from "@/lib/rng";
 
 type Tab = "monde" | "europe" | "pays";
 
-function Table({ rows, ranked, verified, offset = 0 }: { rows: Company[]; ranked: boolean; verified: Set<string>; offset?: number }) {
+function Table({ rows, ranked, verified, day, offset = 0 }: { rows: Company[]; ranked: boolean; verified: Set<string>; day: string; offset?: number }) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -31,7 +32,9 @@ function Table({ rows, ranked, verified, offset = 0 }: { rows: Company[]; ranked
               {fmtCap(c.market_cap_usd)}
               {c.price_date && <span className="block text-xs text-muted">Séance {c.price_date}</span>}
               {c.fx_date && <span className="block text-xs text-muted">Change {c.fx_date}{c.fx_source && ` · ${c.fx_source}`}</span>}
-              <span className={`block text-xs ${verified.has(c.ticker) ? "text-accent" : "text-warn"}`}>{verified.has(c.ticker) ? "Utilisable en quiz" : "Observation non vérifiée pour les quiz"}</span>
+              {!verified.has(c.ticker) ? <span className="block text-xs text-warn">Observation non vérifiée pour les quiz</span>
+                : isCompanyQuoteForDay(c, day) ? <span className="block text-xs text-accent">Utilisable en quiz</span>
+                  : <span className="block text-xs text-muted">Nouveaux quiz · chiffres du jour en attente</span>}
               {c.retrieved_at && <span className="block text-xs text-muted">Vérifiée le {dataTimestamp.format(new Date(c.retrieved_at))}</span>}
             </td>
           </tr>
@@ -43,6 +46,7 @@ function Table({ rows, ranked, verified, offset = 0 }: { rows: Company[]; ranked
 
 export default function Capitalisations() {
   const { data, loading, unreachable, now } = useDataSnapshot(fetchMarketCaps);
+  const day = todayParis(now);
   const [tab, setTab] = useState<Tab>("monde");
   const [country, setCountry] = useState("France");
   const verified = data ? verifiedCompanies(data, now) : [];
@@ -113,9 +117,9 @@ export default function Capitalisations() {
                   </select>
               )}
               <p className="mb-3 text-sm text-muted">{panel ? `Classement ${panel.title} · ${panel.companies.length} entreprises comparables en dollars américains le ${panel.date}.` : "Dernières observations par entreprise, triées par nom."}</p>
-              {shown.length ? <Table rows={shown} ranked={!!panel} verified={verifiedIds} /> : <p className="text-sm text-muted">Aucune entreprise pour ce périmètre.</p>}
-              {shown.length < rows.length && <details className="mt-4 border border-line px-4 py-3"><summary className="cursor-pointer text-sm">Suite du classement</summary><Table rows={rows.slice(shown.length)} ranked verified={verifiedIds} offset={shown.length} /></details>}
-              {!!remaining.length && <details className="mt-4 border border-line px-4 py-3"><summary className="cursor-pointer text-sm">Autres valeurs suivies</summary><Table rows={remaining} ranked={false} verified={verifiedIds} /></details>}
+              {shown.length ? <Table rows={shown} ranked={!!panel} verified={verifiedIds} day={day} /> : <p className="text-sm text-muted">Aucune entreprise pour ce périmètre.</p>}
+              {shown.length < rows.length && <details className="mt-4 border border-line px-4 py-3"><summary className="cursor-pointer text-sm">Suite du classement</summary><Table rows={rows.slice(shown.length)} ranked verified={verifiedIds} day={day} offset={shown.length} /></details>}
+              {!!remaining.length && <details className="mt-4 border border-line px-4 py-3"><summary className="cursor-pointer text-sm">Autres valeurs suivies</summary><Table rows={remaining} ranked={false} verified={verifiedIds} day={day} /></details>}
             </div>
             <p className="mt-6 text-xs leading-relaxed text-muted">
               Le panel suit {data.items.length} grandes valeurs. Les rangs utilisent une séance commune et des taux de conversion du même jour.
