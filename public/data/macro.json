@@ -1,8 +1,9 @@
 {
- "updated_at": "2026-11-23T18:35:20+00:00",
- "checked_at": "2026-11-23T18:35:20+00:00",
+ "updated_at": "2026-11-24T04:07:08+00:00",
+ "checked_at": "2026-11-24T04:07:08+00:00",
  "failed": [
   "copper_imf",
+  "ecb_deposit_rate",
   "us_cpi_yoy"
  ],
  "indicators": {
@@ -25,8 +26,11 @@
    "source": "Réserve fédérale via FRED (DFEDTARU)",
    "max_age_days": 120,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:34:44+00:00",
-   "status": null
+   "retrieved_at": "2026-11-24T04:06:33+00:00",
+   "status": null,
+   "source_url": "https://fred.stlouisfed.org/series/DFEDTARU",
+   "change_date": "2026-09-17",
+   "change_from": 3.75
   },
   "ez_hicp_yoy": {
    "label": "Inflation IPCH de la zone euro sur 12 mois",
@@ -54,12 +58,14 @@
    "label": "Rendement du Treasury américain à 10 ans",
    "value": 4.92,
    "unit": "%",
-   "ref_date": "2026-11-20",
+   "ref_date": "2026-11-23",
    "source": "Trésor américain (Daily Treasury Par Yield Curve, 10 ans)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": null
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "previous_date": "2026-11-20",
+   "previous_value": 4.92
   },
   "eurusd": {
    "label": "EUR/USD (taux de référence BCE)",
@@ -69,8 +75,9 @@
    "source": "BCE (EXR/D.USD.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": "A"
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": "A",
+   "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.USD.EUR.SP00.A"
   },
   "brent": {
    "label": "Brent, prix au comptant",
@@ -80,8 +87,11 @@
    "source": "EIA via FRED (DCOILBRENTEU)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": null
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
+   "previous_date": "2026-11-16",
+   "previous_value": 92.9
   },
   "wti": {
    "label": "WTI, prix au comptant",
@@ -91,19 +101,25 @@
    "source": "EIA via FRED (DCOILWTICO)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": null
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
+   "previous_date": "2026-11-16",
+   "previous_value": 89.24
   },
   "gold": {
    "label": "Or (once troy, contrat à terme)",
-   "value": 3654.3,
+   "value": 3631.10009765625,
    "unit": "$/once",
    "ref_date": "2026-11-23",
    "source": "Yahoo Finance (GC=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": null
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/GC%3DF/",
+   "previous_date": "2026-11-20",
+   "previous_value": 3515.39990234375
   },
   "us_cpi_yoy": {
    "label": "Inflation IPC-U américaine sur 12 mois, non désaisonnalisée",
@@ -118,14 +134,17 @@
   },
   "copper": {
    "label": "Cuivre (livre, contrat à terme)",
-   "value": 5.65,
+   "value": 5.502999782562256,
    "unit": "$/livre",
    "ref_date": "2026-11-23",
    "source": "Yahoo Finance (HG=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": null
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/HG%3DF/",
+   "previous_date": "2026-11-20",
+   "previous_value": 5.4770002365112305
   },
   "eurjpy": {
    "label": "EUR/JPY (taux de référence BCE)",
@@ -135,8 +154,9 @@
    "source": "BCE (EXR/D.JPY.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": "A"
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": "A",
+   "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.JPY.EUR.SP00.A"
   },
   "eurgbp": {
    "label": "EUR/GBP (taux de référence BCE)",
@@ -146,8 +166,9 @@
    "source": "BCE (EXR/D.GBP.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-23T18:35:20+00:00",
-   "status": "A"
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": "A",
+   "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.GBP.EUR.SP00.A"
   },
   "gdp_fra": {
    "label": "PIB nominal · France",
@@ -280,6 +301,312 @@
    "frequency": "annual",
    "retrieved_at": "2026-11-23T18:35:20+00:00",
    "status": null
+  },
+  "fed_target_lower": {
+   "label": "Fed funds · borne basse de la fourchette cible",
+   "value": 3.75,
+   "unit": "%",
+   "ref_date": "2026-11-23",
+   "source": "Réserve fédérale via FRED (DFEDTARL)",
+   "max_age_days": 14,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:06:33+00:00",
+   "status": null,
+   "source_url": "https://fred.stlouisfed.org/series/DFEDTARL",
+   "change_date": "2026-09-17",
+   "change_from": 3.5
+  },
+  "boe_rate": {
+   "label": "Banque d’Angleterre · Bank Rate",
+   "value": 4.0,
+   "unit": "%",
+   "ref_date": "2026-11-16",
+   "source": "BRI · taux directeur de référence (GB)",
+   "max_age_days": 14,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:06:33+00:00",
+   "status": null,
+   "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.GB",
+   "change_date": "2026-11-05",
+   "change_from": 3.75
+  },
+  "boj_rate": {
+   "label": "Banque du Japon · taux directeur de référence",
+   "value": 1.25,
+   "unit": "%",
+   "ref_date": "2026-11-17",
+   "source": "BRI · taux directeur de référence (JP)",
+   "max_age_days": 14,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:06:33+00:00",
+   "status": null,
+   "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.JP",
+   "change_date": "2026-09-24",
+   "change_from": 1.0
+  },
+  "snb_rate": {
+   "label": "Banque nationale suisse · taux directeur",
+   "value": 0.0,
+   "unit": "%",
+   "ref_date": "2026-11-17",
+   "source": "BRI · taux directeur de référence (CH)",
+   "max_age_days": 14,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:06:33+00:00",
+   "status": null,
+   "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.CH"
+  },
+  "eurchf": {
+   "label": "EUR/CHF (taux de référence BCE)",
+   "value": 0.9186,
+   "unit": "CHF/€",
+   "ref_date": "2026-11-23",
+   "source": "BCE (EXR/D.CHF.EUR.SP00.A)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": "A",
+   "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.CHF.EUR.SP00.A"
+  },
+  "usdjpy": {
+   "label": "USD/JPY (cours croisé BCE)",
+   "value": 159.07304141146355,
+   "unit": "¥/$",
+   "ref_date": "2026-11-23",
+   "source": "BCE · cours de référence croisé",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.fr.html"
+  },
+  "wheat_price": {
+   "label": "Blé Chicago · contrat à terme",
+   "value": 592.0,
+   "unit": "¢/boisseau",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (ZW=F, contrat à terme)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/ZW%3DF/",
+   "previous_date": "2026-11-20",
+   "previous_value": 574.25
+  },
+  "cocoa_price": {
+   "label": "Cacao New York · contrat à terme",
+   "value": 5281.0,
+   "unit": "$/tonne",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (CC=F, contrat à terme)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/CC%3DF/",
+   "previous_date": "2026-11-20",
+   "previous_value": 5125.0
+  },
+  "index_cac": {
+   "label": "CAC 40 · France",
+   "value": 8044.83984375,
+   "unit": "points",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (^FCHI, indice)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/%5EFCHI/",
+   "previous_date": "2026-11-20",
+   "previous_value": 7927.75
+  },
+  "index_sp500": {
+   "label": "S&P 500 · États-Unis",
+   "value": 7237.169921875,
+   "unit": "points",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (^GSPC, indice)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/%5EGSPC/",
+   "previous_date": "2026-11-20",
+   "previous_value": 6910.39013671875
+  },
+  "index_nasdaq100": {
+   "label": "Nasdaq-100 · États-Unis",
+   "value": 26746.095703125,
+   "unit": "points",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (^NDX, indice)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/%5ENDX/",
+   "previous_date": "2026-11-20",
+   "previous_value": 25028.98046875
+  },
+  "index_dax": {
+   "label": "DAX · Allemagne",
+   "value": 25337.26953125,
+   "unit": "points",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (^GDAXI, indice)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/%5EGDAXI/",
+   "previous_date": "2026-11-20",
+   "previous_value": 24802.779296875
+  },
+  "index_ftse": {
+   "label": "FTSE 100 · Royaume-Uni",
+   "value": 10480.7998046875,
+   "unit": "points",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (^FTSE, indice)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/%5EFTSE/",
+   "previous_date": "2026-11-20",
+   "previous_value": 10346.2998046875
+  },
+  "index_nikkei": {
+   "label": "Nikkei 225 · Japon",
+   "value": 58632.6796875,
+   "unit": "points",
+   "ref_date": "2026-11-24",
+   "source": "Yahoo Finance (^N225, indice)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/%5EN225/",
+   "previous_date": "2026-11-20",
+   "previous_value": 56436.6484375
+  },
+  "index_stoxx": {
+   "label": "EURO STOXX 50 · Zone euro",
+   "value": 6074.47021484375,
+   "unit": "points",
+   "ref_date": "2026-11-23",
+   "source": "Yahoo Finance (^STOXX50E, indice)",
+   "max_age_days": 7,
+   "frequency": "daily",
+   "retrieved_at": "2026-11-24T04:07:08+00:00",
+   "status": null,
+   "source_url": "https://finance.yahoo.com/quote/%5ESTOXX50E/",
+   "previous_date": "2026-11-20",
+   "previous_value": 5941.9501953125
+  }
+ },
+ "checks": {
+  "ecb_deposit_rate": {
+   "at": "2026-11-24T04:06:31+00:00",
+   "ok": false
+  },
+  "fed_target_upper": {
+   "at": "2026-11-24T04:06:33+00:00",
+   "ok": true
+  },
+  "fed_target_lower": {
+   "at": "2026-11-24T04:06:33+00:00",
+   "ok": true
+  },
+  "boe_rate": {
+   "at": "2026-11-24T04:06:33+00:00",
+   "ok": true
+  },
+  "boj_rate": {
+   "at": "2026-11-24T04:06:33+00:00",
+   "ok": true
+  },
+  "snb_rate": {
+   "at": "2026-11-24T04:06:33+00:00",
+   "ok": true
+  },
+  "us_10y": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "eurusd": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "brent": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "wti": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "gold": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "copper": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "eurjpy": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "eurgbp": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "eurchf": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "usdjpy": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "wheat_price": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "cocoa_price": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "index_cac": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "index_sp500": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "index_nasdaq100": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "index_dax": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "index_ftse": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "index_nikkei": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
+  },
+  "index_stoxx": {
+   "at": "2026-11-24T04:07:08+00:00",
+   "ok": true
   }
  }
 }
