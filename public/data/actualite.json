@@ -1,8 +1,7 @@
 {
- "updated_at": "2026-11-23T18:35:20+00:00",
- "checked_at": "2026-11-23T18:35:20+00:00",
+ "updated_at": "2026-11-24T08:50:19+00:00",
+ "checked_at": "2026-11-24T08:50:19+00:00",
  "failed": [
-  "Primature du Royaume-Uni",
   "Présidence du Conseil européen"
  ],
  "events": [
@@ -15,7 +14,7 @@
    "published_at": null,
    "source": "Consilium · service de presse",
    "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/23/eu-sanctions-against-terrorism-council-lists-the-founder-of-the-base/",
-   "retrieved_at": "2026-11-23T18:35:20+00:00"
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "eu-budget-for-2027-council-gives-final-green-light",
@@ -26,7 +25,40 @@
    "published_at": null,
    "source": "Consilium · service de presse",
    "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/23/eu-budget-for-2027-council-gives-final-green-light/",
-   "retrieved_at": "2026-11-23T18:35:20+00:00"
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  },
+  {
+   "id": "tmg20_23nov26_559_e.htm",
+   "title": "Trade-facilitating measures help offset rise in new G20 trade restrictions",
+   "context": "The number of tariff increases and other non-facilitating trade measures introduced by G20 economies rose sharply in the first half of 2026, and the stockpile of such measures reached a record level, according to the WTO's latest report on G20 trade measures. At the same time, G20 economies, representing around 80-85 per cent of global GDP and 75 per cent of international trade, introduced a significant number of trade-facilitating measures, helping to reinforce global trade flows despite heightened geopolitical tensions and economic uncertainty.",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-23",
+   "published_at": "2026-11-23T00:00:00+00:00",
+   "source": "OMC · communiqués",
+   "url": "https://www.wto.org/english/news_e/news26_e/tmg20_23nov26_559_e.htm",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  },
+  {
+   "id": "safe_eec_23nov26_561_e.htm",
+   "title": "EU launches safeguard investigation into certain composite input materials",
+   "context": "On 23 November 2026, the European Union notified the WTO’s Committee on Safeguards that it had initiated, on the same day (23 November 2026), a safeguard investigation into imports of certain composite input materials.",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-23",
+   "published_at": "2026-11-23T00:00:00+00:00",
+   "source": "OMC · communiqués",
+   "url": "https://www.wto.org/english/news_e/news26_e/safe_eec_23nov26_561_e.htm",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  },
+  {
+   "id": "2026-apec-leaders-declaration-shenzhen-outlook-building-asia-pacific",
+   "title": "2026 APEC Leaders’ Declaration - Shenzhen Outlook: Building an Asia-Pacific Community to Prosper Together",
+   "context": "We, the Economic Leaders of APEC, gathered in Shenzhen, China, on November 18 to 19, 2026. Decades after APEC’s establishment, our sustained efforts have helped make our region a key engine of global growth and a champion of regional economic cooperation. Under the theme “Building an Asia-Pacific Community to Prosper Together”, we have built on our work throughout the year with China’s APEC 2026 priorities “Openness, Innovation, Cooperation”, and advanced our shared objectives toward realizing an open, dynamic, resilient, and peaceful Asia-Pacific community, guided by the Putrajaya Vision 2040. The world today is changing rapidly, with new opportunities emerging alongside complex challenges. Technological breakthroughs are contributing to the economic growth, resilience, and dynamism of our region. We endeavor to work together to maintain",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-21",
+   "published_at": "2026-11-21T08:00:00-05:00",
+   "source": "Cabinet du premier ministre du Canada",
+   "url": "https://www.pm.gc.ca/en/news/statements/2026/11/21/2026-apec-leaders-declaration-shenzhen-outlook-building-asia-pacific",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "joint-statement-eu-united-kingdom-summit-20-november-2026",
@@ -59,7 +91,7 @@
    "published_at": null,
    "source": "Consilium · service de presse",
    "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/19/sustainability-council-and-parliament-strike-deal-on-simpler-transparency-rules-for-financial-product/",
-   "retrieved_at": "2026-11-23T18:35:20+00:00"
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "prime-minister-carney-strengthens-economic-partnerships-apec-capping",
@@ -70,7 +102,18 @@
    "published_at": "2026-11-19T01:00:00-05:00",
    "source": "Cabinet du premier ministre du Canada",
    "url": "https://www.pm.gc.ca/en/news/news-releases/2026/11/19/prime-minister-carney-strengthens-economic-partnerships-apec-capping",
-   "retrieved_at": "2026-11-23T18:35:20+00:00"
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  },
+  {
+   "id": "ita_19nov26_560_e.htm",
+   "title": "Panama submits request to join Expansion of the Information Technology Agreement",
+   "context": "Panama has submitted a request to join the 2015 Expansion of the Information Technology Agreement (ITA II), the Chair of the Committee of Participants on the Expansion of Trade in Information Technology Products, Mr Shih-Chun Weng of Chinese Taipei, informed members at a meeting on 19 November. Panama said joining ITA II will help it to advance its goal of a more knowledge-based, innovation-driven and technologically advanced economy.",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-19",
+   "published_at": "2026-11-19T00:00:00+00:00",
+   "source": "OMC · communiqués",
+   "url": "https://www.wto.org/english/news_e/news26_e/ita_19nov26_560_e.htm",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "prime-minister-carney-advances-canadas-strategic-partnership-china",
@@ -82,6 +125,17 @@
    "source": "Cabinet du premier ministre du Canada",
    "url": "https://www.pm.gc.ca/en/news/news-releases/2026/11/17/prime-minister-carney-advances-canadas-strategic-partnership-china",
    "retrieved_at": "2026-11-23T18:35:20+00:00"
+  },
+  {
+   "id": "tmwto_17nov26_552_e.htm",
+   "title": "New trade-restrictive measures surge but WTO members step up trade facilitation efforts",
+   "context": "The pace of newly-introduced tariffs and other non-facilitating measures rose sharply in the first half of 2026, while the stockpile of such measures reached a record level, according to the WTO Director-General's latest annual overview of developments in the international trading environment. At the same time, WTO members introduced a significant number of trade-facilitating measures, helping to sustain global trade flows despite heightened geopolitical tensions and economic uncertainty.",
+   "topic": "Sanctions et mesures restrictives",
+   "date": "2026-11-17",
+   "published_at": "2026-11-17T00:00:00+00:00",
+   "source": "OMC · communiqués",
+   "url": "https://www.wto.org/english/news_e/news26_e/tmwto_17nov26_552_e.htm",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   }
  ],
  "leaders": [
@@ -91,8 +145,8 @@
    "name": "Emmanuel Macron",
    "source": "Élysée",
    "url": "https://www.elysee.fr/la-presidence/les-presidents-de-la-republique",
-   "date": "2026-11-23",
-   "retrieved_at": "2026-11-23T18:35:20+00:00"
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "uk",
@@ -100,8 +154,8 @@
    "name": "Andy Burnham",
    "source": "GOV.UK",
    "url": "https://www.gov.uk/government/ministers/prime-minister",
-   "date": "2026-11-23",
-   "retrieved_at": "2026-11-23T17:46:14Z"
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "de",
@@ -109,8 +163,8 @@
    "name": "Friedrich Merz",
    "source": "Gouvernement fédéral allemand",
    "url": "https://www.bundesregierung.de/breg-en/federal-government/federal-cabinet",
-   "date": "2026-11-23",
-   "retrieved_at": "2026-11-23T18:35:20+00:00"
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "ca",
@@ -118,8 +172,8 @@
    "name": "Mark Carney",
    "source": "Gouvernement du Canada",
    "url": "https://www.pm.gc.ca/en",
-   "date": "2026-11-23",
-   "retrieved_at": "2026-11-23T18:35:20+00:00"
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   },
   {
    "id": "eu",
@@ -129,6 +183,97 @@
    "url": "https://www.consilium.europa.eu/fr/european-council/president/",
    "date": "2026-11-23",
    "retrieved_at": "2026-11-23T17:46:14Z"
+  },
+  {
+   "id": "us",
+   "office": "Présidence des États-Unis",
+   "name": "Donald J. Trump",
+   "source": "Maison-Blanche",
+   "url": "https://www.whitehouse.gov/administration/",
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  },
+  {
+   "id": "jp",
+   "office": "Primature du Japon",
+   "name": "TAKAICHI Sanae",
+   "source": "Bureau du Premier ministre du Japon",
+   "url": "https://japan.kantei.go.jp/105/meibo/index.html",
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  },
+  {
+   "id": "au",
+   "office": "Primature de l’Australie",
+   "name": "Anthony Albanese",
+   "source": "Gouvernement australien",
+   "url": "https://www.pm.gov.au/about-prime-minister",
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  },
+  {
+   "id": "es",
+   "office": "Présidence du gouvernement espagnol",
+   "name": "Pedro Sánchez Pérez-Castejón",
+   "source": "La Moncloa",
+   "url": "https://www.lamoncloa.gob.es/presidente/biografia/Paginas/index.aspx",
+   "date": "2026-11-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
+  }
+ ],
+ "decisions": [
+  {
+   "id": "ecb",
+   "date": "2026-10-29",
+   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "source": "Banque centrale européenne",
+   "url": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html",
+   "movement": "unchanged"
+  },
+  {
+   "id": "fed",
+   "date": "2026-10-28",
+   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "source": "Réserve fédérale",
+   "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+   "movement": "unchanged"
+  },
+  {
+   "id": "boe",
+   "date": "2026-11-04",
+   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "source": "Banque d’Angleterre",
+   "url": "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026",
+   "movement": "up"
+  },
+  {
+   "id": "boj",
+   "date": "2026-10-30",
+   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "source": "Banque du Japon",
+   "url": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/k261030a.pdf",
+   "movement": "unchanged"
+  },
+  {
+   "id": "snb",
+   "date": "2026-09-24",
+   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "source": "Banque nationale suisse",
+   "url": "https://www.snb.ch/en/publications/communication/press-releases-restricted/pre_20260924",
+   "movement": "unchanged"
+  }
+ ],
+ "elections": [
+  {
+   "id": "ca-general",
+   "country": "Canada",
+   "date": "2025-04-28",
+   "winner": "Liberal Party of Canada",
+   "seats": 169,
+   "total": 343,
+   "source": "Élections Canada",
+   "url": "https://www.elections.ca/res/rep/off/ovrGE45/62/table7E.html",
+   "retrieved_at": "2026-11-24T08:50:19+00:00"
   }
  ]
 }
