@@ -1,20 +1,31 @@
 {
- "updated_at": "2026-11-24T08:50:19+00:00",
- "checked_at": "2026-11-24T08:50:19+00:00",
+ "updated_at": "2026-11-24T17:33:15+00:00",
+ "checked_at": "2026-11-24T17:33:15+00:00",
  "failed": [
   "Présidence du Conseil européen"
  ],
  "events": [
   {
+   "id": "press-briefing-foreign-affairs-council-trade-of-30-november-2026",
+   "title": "Press briefing - Foreign Affairs Council (Trade) of 30 November 2026",
+   "context": "The press briefing ahead of the Foreign Affairs Councils (Trade) will take place on Wednesday, 25 November at 13.00.",
+   "topic": "Commerce et coopération internationale",
+   "date": "2026-11-24",
+   "published_at": null,
+   "source": "Consilium · service de presse",
+   "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/24/press-briefing-foreign-affairs-council-trade-of-30-november-2026/",
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
+  },
+  {
    "id": "eu-sanctions-against-terrorism-council-lists-the-founder-of-the-base",
-   "title": "EU sanctions against terrorism: Council lists the founder of 'The Base'",
-   "context": "The Council expands its sanctions list to combat terrorism by designating the founder and leader of the EU-sanctioned organisation 'The Base'.",
+   "title": "Sanctions de l'UE contre le terrorisme: le Conseil inscrit sur la liste le fondateur de \"The Base\"",
+   "context": "Le Conseil élargit sa liste de sanctions afin de lutter contre le terrorisme en désignant le fondateur et le dirigeant de l'organisation \"The Base\", sanctionnée par l'UE.",
    "topic": "Sanctions et mesures restrictives",
    "date": "2026-11-23",
    "published_at": null,
    "source": "Consilium · service de presse",
    "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/23/eu-sanctions-against-terrorism-council-lists-the-founder-of-the-base/",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "eu-budget-for-2027-council-gives-final-green-light",
@@ -25,7 +36,7 @@
    "published_at": null,
    "source": "Consilium · service de presse",
    "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/23/eu-budget-for-2027-council-gives-final-green-light/",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "tmg20_23nov26_559_e.htm",
@@ -36,7 +47,7 @@
    "published_at": "2026-11-23T00:00:00+00:00",
    "source": "OMC · communiqués",
    "url": "https://www.wto.org/english/news_e/news26_e/tmg20_23nov26_559_e.htm",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "safe_eec_23nov26_561_e.htm",
@@ -47,7 +58,7 @@
    "published_at": "2026-11-23T00:00:00+00:00",
    "source": "OMC · communiqués",
    "url": "https://www.wto.org/english/news_e/news26_e/safe_eec_23nov26_561_e.htm",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "2026-apec-leaders-declaration-shenzhen-outlook-building-asia-pacific",
@@ -58,7 +69,7 @@
    "published_at": "2026-11-21T08:00:00-05:00",
    "source": "Cabinet du premier ministre du Canada",
    "url": "https://www.pm.gc.ca/en/news/statements/2026/11/21/2026-apec-leaders-declaration-shenzhen-outlook-building-asia-pacific",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "joint-statement-eu-united-kingdom-summit-20-november-2026",
@@ -91,7 +102,7 @@
    "published_at": null,
    "source": "Consilium · service de presse",
    "url": "https://www.consilium.europa.eu/fr/press/press-releases/2026/11/19/sustainability-council-and-parliament-strike-deal-on-simpler-transparency-rules-for-financial-product/",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "prime-minister-carney-strengthens-economic-partnerships-apec-capping",
@@ -102,7 +113,7 @@
    "published_at": "2026-11-19T01:00:00-05:00",
    "source": "Cabinet du premier ministre du Canada",
    "url": "https://www.pm.gc.ca/en/news/news-releases/2026/11/19/prime-minister-carney-strengthens-economic-partnerships-apec-capping",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "ita_19nov26_560_e.htm",
@@ -113,7 +124,7 @@
    "published_at": "2026-11-19T00:00:00+00:00",
    "source": "OMC · communiqués",
    "url": "https://www.wto.org/english/news_e/news26_e/ita_19nov26_560_e.htm",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "prime-minister-carney-advances-canadas-strategic-partnership-china",
@@ -135,7 +146,7 @@
    "published_at": "2026-11-17T00:00:00+00:00",
    "source": "OMC · communiqués",
    "url": "https://www.wto.org/english/news_e/news26_e/tmwto_17nov26_552_e.htm",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   }
  ],
  "leaders": [
@@ -146,7 +157,7 @@
    "source": "Élysée",
    "url": "https://www.elysee.fr/la-presidence/les-presidents-de-la-republique",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "uk",
@@ -155,7 +166,7 @@
    "source": "GOV.UK",
    "url": "https://www.gov.uk/government/ministers/prime-minister",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "de",
@@ -164,7 +175,7 @@
    "source": "Gouvernement fédéral allemand",
    "url": "https://www.bundesregierung.de/breg-en/federal-government/federal-cabinet",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "ca",
@@ -173,7 +184,7 @@
    "source": "Gouvernement du Canada",
    "url": "https://www.pm.gc.ca/en",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "eu",
@@ -191,7 +202,7 @@
    "source": "Maison-Blanche",
    "url": "https://www.whitehouse.gov/administration/",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "jp",
@@ -200,7 +211,7 @@
    "source": "Bureau du Premier ministre du Japon",
    "url": "https://japan.kantei.go.jp/105/meibo/index.html",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "au",
@@ -209,7 +220,7 @@
    "source": "Gouvernement australien",
    "url": "https://www.pm.gov.au/about-prime-minister",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   },
   {
    "id": "es",
@@ -218,14 +229,14 @@
    "source": "La Moncloa",
    "url": "https://www.lamoncloa.gob.es/presidente/biografia/Paginas/index.aspx",
    "date": "2026-11-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   }
  ],
  "decisions": [
   {
    "id": "ecb",
    "date": "2026-10-29",
-   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "retrieved_at": "2026-11-24T17:33:15+00:00",
    "source": "Banque centrale européenne",
    "url": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html",
    "movement": "unchanged"
@@ -233,7 +244,7 @@
   {
    "id": "fed",
    "date": "2026-10-28",
-   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "retrieved_at": "2026-11-24T17:33:15+00:00",
    "source": "Réserve fédérale",
    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
    "movement": "unchanged"
@@ -241,7 +252,7 @@
   {
    "id": "boe",
    "date": "2026-11-04",
-   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "retrieved_at": "2026-11-24T17:33:15+00:00",
    "source": "Banque d’Angleterre",
    "url": "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026",
    "movement": "up"
@@ -249,7 +260,7 @@
   {
    "id": "boj",
    "date": "2026-10-30",
-   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "retrieved_at": "2026-11-24T17:33:15+00:00",
    "source": "Banque du Japon",
    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/mpr_2026/k261030a.pdf",
    "movement": "unchanged"
@@ -257,7 +268,7 @@
   {
    "id": "snb",
    "date": "2026-09-24",
-   "retrieved_at": "2026-11-24T08:50:19+00:00",
+   "retrieved_at": "2026-11-24T17:33:15+00:00",
    "source": "Banque nationale suisse",
    "url": "https://www.snb.ch/en/publications/communication/press-releases-restricted/pre_20260924",
    "movement": "unchanged"
@@ -273,7 +284,7 @@
    "total": 343,
    "source": "Élections Canada",
    "url": "https://www.elections.ca/res/rep/off/ovrGE45/62/table7E.html",
-   "retrieved_at": "2026-11-24T08:50:19+00:00"
+   "retrieved_at": "2026-11-24T17:33:15+00:00"
   }
  ]
 }
