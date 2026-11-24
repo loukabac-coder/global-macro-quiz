@@ -1,9 +1,10 @@
 {
- "updated_at": "2026-11-24T17:33:14+00:00",
- "checked_at": "2026-11-24T17:33:14+00:00",
+ "updated_at": "2026-11-24T18:54:06+00:00",
+ "checked_at": "2026-11-24T18:54:06+00:00",
  "failed": [
   "ecb_deposit_rate",
-  "index_nikkei"
+  "index_nikkei",
+  "us_10y"
  ],
  "indicators": {
   "ecb_deposit_rate": {
@@ -25,7 +26,7 @@
    "source": "Réserve fédérale via FRED (DFEDTARU)",
    "max_age_days": 120,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:32:57+00:00",
+   "retrieved_at": "2026-11-24T18:53:29+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/DFEDTARU",
    "change_date": "2026-09-17",
@@ -79,7 +80,7 @@
    "source": "BCE (EXR/D.USD.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.USD.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -93,7 +94,7 @@
    "source": "EIA via FRED (DCOILBRENTEU)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/DCOILBRENTEU",
    "previous_date": "2026-11-16",
@@ -107,7 +108,7 @@
    "source": "EIA via FRED (DCOILWTICO)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
    "previous_date": "2026-11-16",
@@ -115,13 +116,13 @@
   },
   "gold": {
    "label": "Or (once troy, contrat à terme)",
-   "value": 3563.0,
+   "value": 3557.39990234375,
    "unit": "$/once",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (GC=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/GC%3DF/",
    "previous_date": "2026-11-23",
@@ -140,13 +141,13 @@
   },
   "copper": {
    "label": "Cuivre (livre, contrat à terme)",
-   "value": 5.435999870300293,
+   "value": 5.4604997634887695,
    "unit": "$/livre",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (HG=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/HG%3DF/",
    "previous_date": "2026-11-23",
@@ -160,7 +161,7 @@
    "source": "BCE (EXR/D.JPY.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.JPY.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -174,7 +175,7 @@
    "source": "BCE (EXR/D.GBP.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.GBP.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -356,7 +357,7 @@
    "source": "Réserve fédérale via FRED (DFEDTARL)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:32:57+00:00",
+   "retrieved_at": "2026-11-24T18:53:29+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/DFEDTARL",
    "change_date": "2026-09-17",
@@ -372,7 +373,7 @@
    "source": "BRI · taux directeur de référence (GB)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:32:57+00:00",
+   "retrieved_at": "2026-11-24T18:53:31+00:00",
    "status": null,
    "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.GB",
    "change_date": "2026-11-05",
@@ -386,7 +387,7 @@
    "source": "BRI · taux directeur de référence (JP)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:32:57+00:00",
+   "retrieved_at": "2026-11-24T18:53:31+00:00",
    "status": null,
    "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.JP",
    "change_date": "2026-09-24",
@@ -400,7 +401,7 @@
    "source": "BRI · taux directeur de référence (CH)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:32:57+00:00",
+   "retrieved_at": "2026-11-24T18:53:31+00:00",
    "status": null,
    "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.CH"
   },
@@ -412,7 +413,7 @@
    "source": "BCE (EXR/D.CHF.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.CHF.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -426,7 +427,7 @@
    "source": "BCE · cours de référence croisé",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.fr.html",
    "previous_date": "2026-11-23",
@@ -434,13 +435,13 @@
   },
   "wheat_price": {
    "label": "Blé Chicago · contrat à terme",
-   "value": 592.5,
+   "value": 591.25,
    "unit": "¢/boisseau",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (ZW=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/ZW%3DF/",
    "previous_date": "2026-11-23",
@@ -448,13 +449,13 @@
   },
   "cocoa_price": {
    "label": "Cacao New York · contrat à terme",
-   "value": 5416.0,
+   "value": 5444.0,
    "unit": "$/tonne",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (CC=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/CC%3DF/",
    "previous_date": "2026-11-23",
@@ -468,7 +469,7 @@
    "source": "Yahoo Finance (^FCHI, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5EFCHI/",
    "previous_date": "2026-11-23",
@@ -476,13 +477,13 @@
   },
   "index_sp500": {
    "label": "S&P 500 · États-Unis",
-   "value": 7208.330078125,
+   "value": 7192.52001953125,
    "unit": "points",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (^GSPC, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5EGSPC/",
    "previous_date": "2026-11-23",
@@ -490,13 +491,13 @@
   },
   "index_nasdaq100": {
    "label": "Nasdaq-100 · États-Unis",
-   "value": 26270.162109375,
+   "value": 26207.724609375,
    "unit": "points",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (^NDX, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5ENDX/",
    "previous_date": "2026-11-23",
@@ -510,7 +511,7 @@
    "source": "Yahoo Finance (^GDAXI, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5EGDAXI/",
    "previous_date": "2026-11-23",
@@ -524,7 +525,7 @@
    "source": "Yahoo Finance (^FTSE, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5EFTSE/",
    "previous_date": "2026-11-23",
@@ -552,7 +553,7 @@
    "source": "Yahoo Finance (^STOXX50E, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5ESTOXX50E/",
    "previous_date": "2026-11-23",
@@ -560,13 +561,13 @@
   },
   "brent_future": {
    "label": "Brent · contrat à terme",
-   "value": 87.88999938964844,
+   "value": 88.33000183105469,
    "unit": "$/baril",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (BZ=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/BZ%3DF/",
    "previous_date": "2026-11-23",
@@ -574,13 +575,13 @@
   },
   "wti_future": {
    "label": "WTI · contrat à terme",
-   "value": 81.27999877929688,
+   "value": 81.7699966430664,
    "unit": "$/baril",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (CL=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-24T18:54:06+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/CL%3DF/",
    "previous_date": "2026-11-23",
@@ -897,103 +898,103 @@
  },
  "checks": {
   "ecb_deposit_rate": {
-   "at": "2026-11-24T17:32:56+00:00",
+   "at": "2026-11-24T18:53:28+00:00",
    "ok": false
   },
   "fed_target_upper": {
-   "at": "2026-11-24T17:32:57+00:00",
+   "at": "2026-11-24T18:53:29+00:00",
    "ok": true
   },
   "fed_target_lower": {
-   "at": "2026-11-24T17:32:57+00:00",
+   "at": "2026-11-24T18:53:29+00:00",
    "ok": true
   },
   "boe_rate": {
-   "at": "2026-11-24T17:32:57+00:00",
+   "at": "2026-11-24T18:53:31+00:00",
    "ok": true
   },
   "boj_rate": {
-   "at": "2026-11-24T17:32:57+00:00",
+   "at": "2026-11-24T18:53:31+00:00",
    "ok": true
   },
   "snb_rate": {
-   "at": "2026-11-24T17:32:57+00:00",
+   "at": "2026-11-24T18:53:31+00:00",
    "ok": true
   },
   "us_10y": {
-   "at": "2026-11-24T17:33:14+00:00",
-   "ok": true
+   "at": "2026-11-24T18:53:31+00:00",
+   "ok": false
   },
   "eurusd": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "brent": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "wti": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "gold": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "copper": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "eurjpy": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "eurgbp": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "eurchf": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "usdjpy": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "wheat_price": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "cocoa_price": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "index_cac": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "index_sp500": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "index_nasdaq100": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "index_dax": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "index_ftse": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "index_nikkei": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": false
   },
   "index_stoxx": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "us_cpi_yoy": {
@@ -1009,11 +1010,11 @@
    "ok": true
   },
   "brent_future": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "wti_future": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-24T18:54:06+00:00",
    "ok": true
   },
   "copper_imf": {
