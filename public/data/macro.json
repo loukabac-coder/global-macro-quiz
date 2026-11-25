@@ -1,10 +1,14 @@
 {
- "updated_at": "2026-11-24T18:54:06+00:00",
- "checked_at": "2026-11-24T18:54:06+00:00",
+ "updated_at": "2026-11-25T01:37:07+00:00",
+ "checked_at": "2026-11-25T01:37:07+00:00",
  "failed": [
+  "brent",
   "ecb_deposit_rate",
-  "index_nikkei",
-  "us_10y"
+  "index_cac",
+  "index_dax",
+  "index_ftse",
+  "index_stoxx",
+  "wti"
  ],
  "indicators": {
   "ecb_deposit_rate": {
@@ -26,7 +30,7 @@
    "source": "Réserve fédérale via FRED (DFEDTARU)",
    "max_age_days": 120,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:53:29+00:00",
+   "retrieved_at": "2026-11-25T01:36:50+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/DFEDTARU",
    "change_date": "2026-09-17",
@@ -42,7 +46,7 @@
    "source": "Eurostat (prc_hicp_minr, EA)",
    "max_age_days": 65,
    "frequency": "monthly",
-   "retrieved_at": "2026-11-24T17:33:04+00:00",
+   "retrieved_at": "2026-11-25T01:36:56+00:00",
    "status": null
   },
   "us_unrate": {
@@ -53,7 +57,7 @@
    "source": "BLS via FRED (UNRATE)",
    "max_age_days": 65,
    "frequency": "monthly",
-   "retrieved_at": "2026-11-24T17:33:04+00:00",
+   "retrieved_at": "2026-11-25T01:36:56+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/UNRATE",
    "previous_date": "2026-09-01",
@@ -61,15 +65,15 @@
   },
   "us_10y": {
    "label": "Rendement du Treasury américain à 10 ans",
-   "value": 4.92,
+   "value": 4.91,
    "unit": "%",
-   "ref_date": "2026-11-23",
+   "ref_date": "2026-11-24",
    "source": "Trésor américain (Daily Treasury Par Yield Curve, 10 ans)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
-   "previous_date": "2026-11-20",
+   "previous_date": "2026-11-23",
    "previous_value": 4.92
   },
   "eurusd": {
@@ -80,7 +84,7 @@
    "source": "BCE (EXR/D.USD.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.USD.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -116,13 +120,13 @@
   },
   "gold": {
    "label": "Or (once troy, contrat à terme)",
-   "value": 3557.39990234375,
+   "value": 3537.0,
    "unit": "$/once",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (GC=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/GC%3DF/",
    "previous_date": "2026-11-23",
@@ -136,18 +140,18 @@
    "source": "BLS via FRED (CPIAUCNS, non désaisonnalisé)",
    "max_age_days": 65,
    "frequency": "monthly",
-   "retrieved_at": "2026-11-24T17:32:57+00:00",
+   "retrieved_at": "2026-11-25T01:36:52+00:00",
    "status": null
   },
   "copper": {
    "label": "Cuivre (livre, contrat à terme)",
-   "value": 5.4604997634887695,
+   "value": 5.46999979019165,
    "unit": "$/livre",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (HG=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/HG%3DF/",
    "previous_date": "2026-11-23",
@@ -161,7 +165,7 @@
    "source": "BCE (EXR/D.JPY.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.JPY.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -175,7 +179,7 @@
    "source": "BCE (EXR/D.GBP.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.GBP.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -189,7 +193,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=FRA",
    "previous_date": "2024-01-01",
@@ -203,7 +207,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=USA",
    "previous_date": "2024-01-01",
@@ -217,7 +221,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=CHN",
    "previous_date": "2024-01-01",
@@ -231,7 +235,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=DEU",
    "previous_date": "2024-01-01",
@@ -245,7 +249,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=JPN",
    "previous_date": "2024-01-01",
@@ -259,7 +263,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=IND",
    "previous_date": "2024-01-01",
@@ -273,7 +277,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=GBR",
    "previous_date": "2024-01-01",
@@ -287,7 +291,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=ITA",
    "previous_date": "2024-01-01",
@@ -301,7 +305,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=BRA",
    "previous_date": "2024-01-01",
@@ -315,7 +319,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=CAN",
    "previous_date": "2024-01-01",
@@ -329,7 +333,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=KOR",
    "previous_date": "2024-01-01",
@@ -343,7 +347,7 @@
    "source": "Banque mondiale · PIB en dollars courants (NY.GDP.MKTP.CD)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=ESP",
    "previous_date": "2024-01-01",
@@ -357,7 +361,7 @@
    "source": "Réserve fédérale via FRED (DFEDTARL)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:53:29+00:00",
+   "retrieved_at": "2026-11-25T01:36:50+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/DFEDTARL",
    "change_date": "2026-09-17",
@@ -373,7 +377,7 @@
    "source": "BRI · taux directeur de référence (GB)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:53:31+00:00",
+   "retrieved_at": "2026-11-25T01:36:50+00:00",
    "status": null,
    "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.GB",
    "change_date": "2026-11-05",
@@ -387,7 +391,7 @@
    "source": "BRI · taux directeur de référence (JP)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:53:31+00:00",
+   "retrieved_at": "2026-11-25T01:36:50+00:00",
    "status": null,
    "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.JP",
    "change_date": "2026-09-24",
@@ -401,7 +405,7 @@
    "source": "BRI · taux directeur de référence (CH)",
    "max_age_days": 14,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:53:31+00:00",
+   "retrieved_at": "2026-11-25T01:36:52+00:00",
    "status": null,
    "source_url": "https://data.bis.org/topics/CBPOL/BIS%2CWS_CBPOL%2C1.0/D.CH"
   },
@@ -413,7 +417,7 @@
    "source": "BCE (EXR/D.CHF.EUR.SP00.A)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "A",
    "source_url": "https://data.ecb.europa.eu/data/datasets/EXR/EXR.D.CHF.EUR.SP00.A",
    "previous_date": "2026-11-23",
@@ -427,7 +431,7 @@
    "source": "BCE · cours de référence croisé",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.fr.html",
    "previous_date": "2026-11-23",
@@ -435,13 +439,13 @@
   },
   "wheat_price": {
    "label": "Blé Chicago · contrat à terme",
-   "value": 591.25,
+   "value": 586.75,
    "unit": "¢/boisseau",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (ZW=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/ZW%3DF/",
    "previous_date": "2026-11-23",
@@ -455,7 +459,7 @@
    "source": "Yahoo Finance (CC=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/CC%3DF/",
    "previous_date": "2026-11-23",
@@ -477,13 +481,13 @@
   },
   "index_sp500": {
    "label": "S&P 500 · États-Unis",
-   "value": 7192.52001953125,
+   "value": 7201.08984375,
    "unit": "points",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (^GSPC, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5EGSPC/",
    "previous_date": "2026-11-23",
@@ -491,13 +495,13 @@
   },
   "index_nasdaq100": {
    "label": "Nasdaq-100 · États-Unis",
-   "value": 26207.724609375,
+   "value": 26214.16796875,
    "unit": "points",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (^NDX, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5ENDX/",
    "previous_date": "2026-11-23",
@@ -533,13 +537,13 @@
   },
   "index_nikkei": {
    "label": "Nikkei 225 · Japon",
-   "value": 58644.62890625,
+   "value": 57265.55078125,
    "unit": "points",
-   "ref_date": "2026-11-24",
+   "ref_date": "2026-11-25",
    "source": "Yahoo Finance (^N225, indice)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T08:50:18+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/%5EN225/",
    "previous_date": "2026-11-20",
@@ -561,13 +565,13 @@
   },
   "brent_future": {
    "label": "Brent · contrat à terme",
-   "value": 88.33000183105469,
+   "value": 88.16999816894531,
    "unit": "$/baril",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (BZ=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/BZ%3DF/",
    "previous_date": "2026-11-23",
@@ -575,13 +579,13 @@
   },
   "wti_future": {
    "label": "WTI · contrat à terme",
-   "value": 81.7699966430664,
+   "value": 81.41000366210938,
    "unit": "$/baril",
    "ref_date": "2026-11-24",
    "source": "Yahoo Finance (CL=F, contrat à terme)",
    "max_age_days": 7,
    "frequency": "daily",
-   "retrieved_at": "2026-11-24T18:54:06+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://finance.yahoo.com/quote/CL%3DF/",
    "previous_date": "2026-11-23",
@@ -595,7 +599,7 @@
    "source": "FMI via FRED (PCOPPUSDM)",
    "max_age_days": 80,
    "frequency": "monthly",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://fred.stlouisfed.org/series/PCOPPUSDM",
    "previous_date": "2026-08-01",
@@ -609,7 +613,7 @@
    "source": "Banque mondiale · Croissance réelle du PIB (NY.GDP.MKTP.KD.ZG)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG?locations=FRA",
    "previous_date": "2024-01-01",
@@ -623,7 +627,7 @@
    "source": "Banque mondiale · Croissance réelle du PIB (NY.GDP.MKTP.KD.ZG)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG?locations=USA",
    "previous_date": "2024-01-01",
@@ -637,7 +641,7 @@
    "source": "Banque mondiale · Croissance réelle du PIB (NY.GDP.MKTP.KD.ZG)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG?locations=DEU",
    "previous_date": "2024-01-01",
@@ -651,7 +655,7 @@
    "source": "Banque mondiale · Chômage · estimation OIT (SL.UEM.TOTL.ZS)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SL.UEM.TOTL.ZS?locations=FRA",
    "previous_date": "2024-01-01",
@@ -665,7 +669,7 @@
    "source": "Banque mondiale · Chômage · estimation OIT (SL.UEM.TOTL.ZS)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SL.UEM.TOTL.ZS?locations=USA",
    "previous_date": "2024-01-01",
@@ -679,7 +683,7 @@
    "source": "Banque mondiale · Chômage · estimation OIT (SL.UEM.TOTL.ZS)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SL.UEM.TOTL.ZS?locations=DEU",
    "previous_date": "2024-01-01",
@@ -693,7 +697,7 @@
    "source": "Banque mondiale · Solde courant / PIB (BN.CAB.XOKA.GD.ZS)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/BN.CAB.XOKA.GD.ZS?locations=FRA",
    "previous_date": "2024-01-01",
@@ -707,7 +711,7 @@
    "source": "Banque mondiale · Solde courant / PIB (BN.CAB.XOKA.GD.ZS)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/BN.CAB.XOKA.GD.ZS?locations=USA",
    "previous_date": "2024-01-01",
@@ -721,7 +725,7 @@
    "source": "Banque mondiale · Population (SP.POP.TOTL)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=WLD",
    "previous_date": "2024-01-01",
@@ -735,7 +739,7 @@
    "source": "Banque mondiale · Population (SP.POP.TOTL)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=FRA",
    "previous_date": "2024-01-01",
@@ -749,7 +753,7 @@
    "source": "Banque mondiale · Population (SP.POP.TOTL)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=USA",
    "previous_date": "2024-01-01",
@@ -763,7 +767,7 @@
    "source": "Banque mondiale · Population (SP.POP.TOTL)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=CHN",
    "previous_date": "2024-01-01",
@@ -777,7 +781,7 @@
    "source": "Banque mondiale · Population (SP.POP.TOTL)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=IND",
    "previous_date": "2024-01-01",
@@ -791,7 +795,7 @@
    "source": "Banque mondiale · Population (SP.POP.TOTL)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=DEU",
    "previous_date": "2024-01-01",
@@ -805,7 +809,7 @@
    "source": "Banque mondiale · Population (SP.POP.TOTL)",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": null,
    "source_url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=JPN",
    "previous_date": "2024-01-01",
@@ -819,7 +823,7 @@
    "source": "FMI · World Economic Outlook",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "Estimation ou donnée historique révisable du FMI",
    "source_url": "https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/FRA",
    "previous_date": "2024-01-01",
@@ -833,7 +837,7 @@
    "source": "FMI · World Economic Outlook",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "Estimation ou donnée historique révisable du FMI",
    "source_url": "https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/USA",
    "previous_date": "2024-01-01",
@@ -847,7 +851,7 @@
    "source": "FMI · World Economic Outlook",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "Estimation ou donnée historique révisable du FMI",
    "source_url": "https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/DEU",
    "previous_date": "2024-01-01",
@@ -861,7 +865,7 @@
    "source": "FMI · World Economic Outlook",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "Estimation ou donnée historique révisable du FMI",
    "source_url": "https://www.imf.org/external/datamapper/GGXCNL_NGDP@WEO/FRA",
    "previous_date": "2024-01-01",
@@ -875,7 +879,7 @@
    "source": "FMI · World Economic Outlook",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "Estimation ou donnée historique révisable du FMI",
    "source_url": "https://www.imf.org/external/datamapper/GGXCNL_NGDP@WEO/USA",
    "previous_date": "2024-01-01",
@@ -889,7 +893,7 @@
    "source": "FMI · World Economic Outlook",
    "max_age_days": 1100,
    "frequency": "annual",
-   "retrieved_at": "2026-11-24T17:33:14+00:00",
+   "retrieved_at": "2026-11-25T01:37:07+00:00",
    "status": "Estimation ou donnée historique révisable du FMI",
    "source_url": "https://www.imf.org/external/datamapper/GGXCNL_NGDP@WEO/DEU",
    "previous_date": "2024-01-01",
@@ -898,259 +902,259 @@
  },
  "checks": {
   "ecb_deposit_rate": {
-   "at": "2026-11-24T18:53:28+00:00",
+   "at": "2026-11-25T01:36:48+00:00",
    "ok": false
   },
   "fed_target_upper": {
-   "at": "2026-11-24T18:53:29+00:00",
+   "at": "2026-11-25T01:36:50+00:00",
    "ok": true
   },
   "fed_target_lower": {
-   "at": "2026-11-24T18:53:29+00:00",
+   "at": "2026-11-25T01:36:50+00:00",
    "ok": true
   },
   "boe_rate": {
-   "at": "2026-11-24T18:53:31+00:00",
+   "at": "2026-11-25T01:36:50+00:00",
    "ok": true
   },
   "boj_rate": {
-   "at": "2026-11-24T18:53:31+00:00",
+   "at": "2026-11-25T01:36:50+00:00",
    "ok": true
   },
   "snb_rate": {
-   "at": "2026-11-24T18:53:31+00:00",
+   "at": "2026-11-25T01:36:52+00:00",
    "ok": true
   },
   "us_10y": {
-   "at": "2026-11-24T18:53:31+00:00",
-   "ok": false
+   "at": "2026-11-25T01:37:07+00:00",
+   "ok": true
   },
   "eurusd": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "brent": {
-   "at": "2026-11-24T18:54:06+00:00",
-   "ok": true
+   "at": "2026-11-25T01:37:07+00:00",
+   "ok": false
   },
   "wti": {
-   "at": "2026-11-24T18:54:06+00:00",
-   "ok": true
+   "at": "2026-11-25T01:37:07+00:00",
+   "ok": false
   },
   "gold": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "copper": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "eurjpy": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "eurgbp": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "eurchf": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "usdjpy": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "wheat_price": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "cocoa_price": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "index_cac": {
-   "at": "2026-11-24T18:54:06+00:00",
-   "ok": true
+   "at": "2026-11-25T01:37:07+00:00",
+   "ok": false
   },
   "index_sp500": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "index_nasdaq100": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "index_dax": {
-   "at": "2026-11-24T18:54:06+00:00",
-   "ok": true
-  },
-  "index_ftse": {
-   "at": "2026-11-24T18:54:06+00:00",
-   "ok": true
-  },
-  "index_nikkei": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": false
   },
-  "index_stoxx": {
-   "at": "2026-11-24T18:54:06+00:00",
+  "index_ftse": {
+   "at": "2026-11-25T01:37:07+00:00",
+   "ok": false
+  },
+  "index_nikkei": {
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
+  "index_stoxx": {
+   "at": "2026-11-25T01:37:07+00:00",
+   "ok": false
+  },
   "us_cpi_yoy": {
-   "at": "2026-11-24T17:32:57+00:00",
+   "at": "2026-11-25T01:36:52+00:00",
    "ok": true
   },
   "ez_hicp_yoy": {
-   "at": "2026-11-24T17:33:04+00:00",
+   "at": "2026-11-25T01:36:56+00:00",
    "ok": true
   },
   "us_unrate": {
-   "at": "2026-11-24T17:33:04+00:00",
+   "at": "2026-11-25T01:36:56+00:00",
    "ok": true
   },
   "brent_future": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "wti_future": {
-   "at": "2026-11-24T18:54:06+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "copper_imf": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_fra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_usa": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_chn": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_deu": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_jpn": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_ind": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_gbr": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_ita": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_bra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_can": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_kor": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "gdp_esp": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "growth_fra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "growth_usa": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "growth_deu": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "unemployment_fra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "unemployment_usa": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "unemployment_deu": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "current_account_fra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "current_account_usa": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "population_wld": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "population_fra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "population_usa": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "population_chn": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "population_ind": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "population_deu": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "population_jpn": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "debt_fra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "debt_usa": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "debt_deu": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "budget_fra": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "budget_usa": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   },
   "budget_deu": {
-   "at": "2026-11-24T17:33:14+00:00",
+   "at": "2026-11-25T01:37:07+00:00",
    "ok": true
   }
  }
