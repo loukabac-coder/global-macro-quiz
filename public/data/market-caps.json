@@ -1,40 +1,14 @@
 {
- "updated_at": "2026-11-25T01:36:48+00:00",
- "checked_at": "2026-11-25T01:36:48+00:00",
+ "updated_at": "2026-11-25T03:42:56+00:00",
+ "checked_at": "2026-11-25T03:42:56+00:00",
  "refresh_failed": true,
  "source": "Estimations Yahoo Finance, taux de conversion Yahoo Finance ou BCE",
  "failed": [
-  "NVDA",
-  "AAPL",
-  "MSFT",
-  "GOOGL",
-  "AMZN",
-  "META",
-  "AVGO",
-  "TSLA",
-  "BRK-B",
-  "LLY",
-  "JPM",
-  "WMT",
-  "V",
-  "ORCL",
-  "XOM",
-  "MA",
-  "NFLX",
-  "COST",
-  "JNJ",
-  "PLTR",
-  "BAC",
-  "AMD",
-  "GS",
-  "MS",
   "2222.SR",
   "ASML.AS",
   "SAP.DE",
-  "NESN.SW",
   "NOVO-B.CO",
   "ROG.SW",
-  "NOVN.SW",
   "MC.PA",
   "OR.PA",
   "RMS.PA",
@@ -60,12 +34,12 @@
   "ISP.MI",
   "ENEL.MI",
   "UBSG.SW",
-  "ABBN.SW",
-  "CFR.SW",
   "DG.PA",
   "EL.PA",
   "DSY.PA",
-  "CS.PA"
+  "CS.PA",
+  "VALE3.SA",
+  "PETR4.SA"
  ],
  "items": [
   {
@@ -73,60 +47,60 @@
    "name": "Apple",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 5124483409618,
+   "market_cap_usd": 5145409787177,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:38+00:00"
+   "retrieved_at": "2026-11-25T03:42:31+00:00"
   },
   {
    "ticker": "NVDA",
    "name": "Nvidia",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 3676984277618,
+   "market_cap_usd": 3751960977905,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:37+00:00"
+   "retrieved_at": "2026-11-25T03:42:31+00:00"
   },
   {
    "ticker": "MSFT",
    "name": "Microsoft",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 3663787235393,
+   "market_cap_usd": 3684357939344,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:38+00:00"
+   "retrieved_at": "2026-11-25T03:42:32+00:00"
   },
   {
    "ticker": "GOOGL",
    "name": "Alphabet (Google)",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 3414874980652,
+   "market_cap_usd": 3430640549927,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:38+00:00"
+   "retrieved_at": "2026-11-25T03:42:32+00:00"
   },
   {
    "ticker": "AMZN",
    "name": "Amazon",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 2724802781127,
+   "market_cap_usd": 2728046590623,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:38+00:00"
+   "retrieved_at": "2026-11-25T03:42:32+00:00"
   },
   {
    "ticker": "2222.SR",
@@ -145,168 +119,168 @@
    "name": "TSMC",
    "country": "Taïwan",
    "region": "Asie",
-   "market_cap_usd": 1677237273417,
+   "market_cap_usd": 1646761309383,
    "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "TWD",
-   "retrieved_at": "2026-11-25T01:36:17+00:00"
+   "retrieved_at": "2026-11-25T03:42:38+00:00"
   },
   {
    "ticker": "TSLA",
    "name": "Tesla",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 1515003169173,
+   "market_cap_usd": 1520546897716,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:39+00:00"
+   "retrieved_at": "2026-11-25T03:42:33+00:00"
   },
   {
    "ticker": "META",
    "name": "Meta",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 1512553567980,
+   "market_cap_usd": 1507722234567,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:38+00:00"
+   "retrieved_at": "2026-11-25T03:42:32+00:00"
   },
   {
    "ticker": "AVGO",
    "name": "Broadcom",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 1446767929607,
+   "market_cap_usd": 1437244415655,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:39+00:00"
+   "retrieved_at": "2026-11-25T03:42:33+00:00"
   },
   {
    "ticker": "LLY",
    "name": "Eli Lilly",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 1258622728803,
+   "market_cap_usd": 1253803767740,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:39+00:00"
+   "retrieved_at": "2026-11-25T03:42:34+00:00"
   },
   {
    "ticker": "BRK-B",
    "name": "Berkshire Hathaway",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 1224445471802,
+   "market_cap_usd": 1226293793161,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:39+00:00"
+   "retrieved_at": "2026-11-25T03:42:33+00:00"
   },
   {
    "ticker": "WMT",
    "name": "Walmart",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 1046857792288,
+   "market_cap_usd": 1049713945777,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:40+00:00"
-  },
-  {
-   "ticker": "005930.KS",
-   "name": "Samsung Electronics",
-   "country": "Corée du Sud",
-   "region": "Asie",
-   "market_cap_usd": 845962660477,
-   "price_date": "2026-11-25",
-   "fx_date": "2026-11-25",
-   "fx_source": "Yahoo Finance",
-   "currency": "KRW",
-   "retrieved_at": "2026-11-25T01:36:19+00:00"
+   "retrieved_at": "2026-11-25T03:42:34+00:00"
   },
   {
    "ticker": "JPM",
    "name": "JPMorgan Chase",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 840523749916,
+   "market_cap_usd": 842093791512,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:40+00:00"
+   "retrieved_at": "2026-11-25T03:42:34+00:00"
+  },
+  {
+   "ticker": "005930.KS",
+   "name": "Samsung Electronics",
+   "country": "Corée du Sud",
+   "region": "Asie",
+   "market_cap_usd": 828591727388,
+   "price_date": "2026-11-25",
+   "fx_date": "2026-11-25",
+   "fx_source": "Yahoo Finance",
+   "currency": "KRW",
+   "retrieved_at": "2026-11-25T03:42:39+00:00"
   },
   {
    "ticker": "V",
    "name": "Visa",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 775389160557,
+   "market_cap_usd": 777628143395,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:40+00:00"
+   "retrieved_at": "2026-11-25T03:42:35+00:00"
   },
   {
    "ticker": "AMD",
    "name": "AMD",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 687208045832,
+   "market_cap_usd": 683988931171,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:42+00:00"
+   "retrieved_at": "2026-11-25T03:42:37+00:00"
   },
   {
    "ticker": "JNJ",
    "name": "Johnson & Johnson",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 664706498893,
+   "market_cap_usd": 665524975568,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:42+00:00"
+   "retrieved_at": "2026-11-25T03:42:36+00:00"
   },
   {
    "ticker": "XOM",
    "name": "ExxonMobil",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 647984510127,
+   "market_cap_usd": 645455349886,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:41+00:00"
+   "retrieved_at": "2026-11-25T03:42:35+00:00"
   },
   {
    "ticker": "MA",
    "name": "Mastercard",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 563049832112,
+   "market_cap_usd": 564034265375,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:41+00:00"
+   "retrieved_at": "2026-11-25T03:42:35+00:00"
   },
   {
    "ticker": "ASML.AS",
@@ -325,84 +299,84 @@
    "name": "Costco",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 482824856610,
+   "market_cap_usd": 483768724287,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:41+00:00"
+   "retrieved_at": "2026-11-25T03:42:36+00:00"
   },
   {
    "ticker": "0700.HK",
    "name": "Tencent",
    "country": "Chine",
    "region": "Asie",
-   "market_cap_usd": 390174189271,
-   "price_date": "2026-11-24",
+   "market_cap_usd": 392982614932,
+   "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "HKD",
-   "retrieved_at": "2026-11-25T01:36:19+00:00"
+   "retrieved_at": "2026-11-25T03:42:39+00:00"
   },
   {
    "ticker": "PLTR",
    "name": "Palantir",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 388025457036,
+   "market_cap_usd": 388362785212,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:42+00:00"
+   "retrieved_at": "2026-11-25T03:42:37+00:00"
   },
   {
    "ticker": "1398.HK",
    "name": "ICBC",
    "country": "Chine",
    "region": "Asie",
-   "market_cap_usd": 350404817211,
-   "price_date": "2026-11-24",
+   "market_cap_usd": 347497219538,
+   "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "HKD",
-   "retrieved_at": "2026-11-25T01:36:24+00:00"
+   "retrieved_at": "2026-11-25T03:42:42+00:00"
   },
   {
    "ticker": "ORCL",
    "name": "Oracle",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 339689885861,
+   "market_cap_usd": 341389031037,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:40+00:00"
+   "retrieved_at": "2026-11-25T03:42:35+00:00"
   },
   {
    "ticker": "BAC",
    "name": "Bank of America",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 334422078738,
+   "market_cap_usd": 335074158807,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:42+00:00"
+   "retrieved_at": "2026-11-25T03:42:37+00:00"
   },
   {
    "ticker": "NOVN.SW",
    "name": "Novartis",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 290755743268,
+   "market_cap_usd": 290394204722,
    "price_date": "2026-11-24",
-   "fx_date": "2026-11-24",
+   "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-24T19:40:48+00:00"
+   "retrieved_at": "2026-11-25T03:42:44+00:00"
   },
   {
    "ticker": "AZN.L",
@@ -433,36 +407,36 @@
    "name": "Kweichow Moutai",
    "country": "Chine",
    "region": "Asie",
-   "market_cap_usd": 274503543968,
-   "price_date": "2026-11-24",
+   "market_cap_usd": 274565954552,
+   "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "CNY",
-   "retrieved_at": "2026-11-25T01:36:20+00:00"
+   "retrieved_at": "2026-11-25T03:42:40+00:00"
   },
   {
    "ticker": "NESN.SW",
    "name": "Nestlé",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 265680786367,
+   "market_cap_usd": 265350427131,
    "price_date": "2026-11-24",
-   "fx_date": "2026-11-24",
+   "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-24T19:40:47+00:00"
+   "retrieved_at": "2026-11-25T03:42:43+00:00"
   },
   {
    "ticker": "MS",
    "name": "Morgan Stanley",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 263818364478,
+   "market_cap_usd": 263826163479,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:43+00:00"
+   "retrieved_at": "2026-11-25T03:42:38+00:00"
   },
   {
    "ticker": "SHEL.L",
@@ -481,12 +455,12 @@
    "name": "Banque Royale du Canada",
    "country": "Canada",
    "region": "Amérique",
-   "market_cap_usd": 261614462482,
+   "market_cap_usd": 261575969506,
    "price_date": "2026-11-24",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "CAD",
-   "retrieved_at": "2026-11-25T01:36:45+00:00"
+   "retrieved_at": "2026-11-25T03:42:55+00:00"
   },
   {
    "ticker": "OR.PA",
@@ -505,24 +479,24 @@
    "name": "Toyota",
    "country": "Japon",
    "region": "Asie",
-   "market_cap_usd": 251044755637,
+   "market_cap_usd": 250084137477,
    "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "JPY",
-   "retrieved_at": "2026-11-25T01:36:21+00:00"
+   "retrieved_at": "2026-11-25T03:42:40+00:00"
   },
   {
    "ticker": "NFLX",
    "name": "Netflix",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 242765982999,
+   "market_cap_usd": 241739401524,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:41+00:00"
+   "retrieved_at": "2026-11-25T03:42:36+00:00"
   },
   {
    "ticker": "SAP.DE",
@@ -541,24 +515,24 @@
    "name": "Goldman Sachs",
    "country": "États-Unis",
    "region": "Amérique",
-   "market_cap_usd": 232132148877,
+   "market_cap_usd": 232484048223,
    "price_date": "2026-11-24",
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-24T19:40:42+00:00"
+   "retrieved_at": "2026-11-25T03:42:37+00:00"
   },
   {
    "ticker": "8306.T",
    "name": "Mitsubishi UFJ",
    "country": "Japon",
    "region": "Asie",
-   "market_cap_usd": 222739960111,
+   "market_cap_usd": 219480668283,
    "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "JPY",
-   "retrieved_at": "2026-11-25T01:36:22+00:00"
+   "retrieved_at": "2026-11-25T03:42:41+00:00"
   },
   {
    "ticker": "SIE.DE",
@@ -589,12 +563,12 @@
    "name": "Alibaba",
    "country": "Chine",
    "region": "Asie",
-   "market_cap_usd": 209753427589,
-   "price_date": "2026-11-24",
+   "market_cap_usd": 210796801347,
+   "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "HKD",
-   "retrieved_at": "2026-11-25T01:36:20+00:00"
+   "retrieved_at": "2026-11-25T03:42:40+00:00"
   },
   {
    "ticker": "ITX.MC",
@@ -613,24 +587,24 @@
    "name": "Reliance Industries",
    "country": "Inde",
    "region": "Asie",
-   "market_cap_usd": 196796238047,
-   "price_date": "2026-11-23",
+   "market_cap_usd": 197226147326,
+   "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "INR",
-   "retrieved_at": "2026-11-25T01:36:23+00:00"
+   "retrieved_at": "2026-11-25T03:42:41+00:00"
   },
   {
    "ticker": "CBA.AX",
    "name": "Commonwealth Bank",
    "country": "Australie",
    "region": "Océanie",
-   "market_cap_usd": 187553085997,
+   "market_cap_usd": 187463099497,
    "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "AUD",
-   "retrieved_at": "2026-11-25T01:36:47+00:00"
+   "retrieved_at": "2026-11-25T03:42:56+00:00"
   },
   {
    "ticker": "ALV.DE",
@@ -673,24 +647,24 @@
    "name": "BHP",
    "country": "Australie",
    "region": "Océanie",
-   "market_cap_usd": 174849018132,
+   "market_cap_usd": 175595405047,
    "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "AUD",
-   "retrieved_at": "2026-11-25T01:36:46+00:00"
+   "retrieved_at": "2026-11-25T03:42:55+00:00"
   },
   {
    "ticker": "SHOP.TO",
    "name": "Shopify",
    "country": "Canada",
    "region": "Amérique",
-   "market_cap_usd": 170271002330,
+   "market_cap_usd": 170245949290,
    "price_date": "2026-11-24",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "CAD",
-   "retrieved_at": "2026-11-25T01:36:45+00:00"
+   "retrieved_at": "2026-11-25T03:42:55+00:00"
   },
   {
    "ticker": "AIR.PA",
@@ -757,12 +731,12 @@
    "name": "ABB",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 141360200599,
+   "market_cap_usd": 141184427076,
    "price_date": "2026-11-24",
-   "fx_date": "2026-11-24",
+   "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-24T19:40:55+00:00"
+   "retrieved_at": "2026-11-25T03:42:53+00:00"
   },
   {
    "ticker": "DTE.DE",
@@ -793,12 +767,12 @@
    "name": "HDFC Bank",
    "country": "Inde",
    "region": "Asie",
-   "market_cap_usd": 135863125706,
-   "price_date": "2026-11-23",
+   "market_cap_usd": 136159924156,
+   "price_date": "2026-11-25",
    "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "INR",
-   "retrieved_at": "2026-11-25T01:36:23+00:00"
+   "retrieved_at": "2026-11-25T03:42:41+00:00"
   },
   {
    "ticker": "SAF.PA",
@@ -865,12 +839,12 @@
    "name": "Richemont",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 121131200156,
+   "market_cap_usd": 120980580267,
    "price_date": "2026-11-24",
-   "fx_date": "2026-11-24",
+   "fx_date": "2026-11-25",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-24T19:40:55+00:00"
+   "retrieved_at": "2026-11-25T03:42:53+00:00"
   },
   {
    "ticker": "BP.L",
