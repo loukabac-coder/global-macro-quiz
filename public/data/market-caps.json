@@ -1,6 +1,6 @@
 {
- "updated_at": "2026-11-26T16:47:19+00:00",
- "checked_at": "2026-11-26T16:47:19+00:00",
+ "updated_at": "2026-11-26T18:36:58+00:00",
+ "checked_at": "2026-11-26T18:36:58+00:00",
  "refresh_failed": false,
  "source": "Estimations Yahoo Finance, taux de conversion Yahoo Finance ou BCE",
  "failed": [
@@ -11,6 +11,8 @@
   "600519.SS",
   "7203.T",
   "8306.T",
+  "RELIANCE.NS",
+  "HDFCBANK.NS",
   "1398.HK",
   "ROG.SW"
  ],
@@ -25,7 +27,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:00+00:00"
+   "retrieved_at": "2026-11-26T18:36:40+00:00"
   },
   {
    "ticker": "MSFT",
@@ -37,7 +39,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:00+00:00"
+   "retrieved_at": "2026-11-26T18:36:40+00:00"
   },
   {
    "ticker": "NVDA",
@@ -49,7 +51,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:00+00:00"
+   "retrieved_at": "2026-11-26T18:36:39+00:00"
   },
   {
    "ticker": "GOOGL",
@@ -61,7 +63,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:00+00:00"
+   "retrieved_at": "2026-11-26T18:36:40+00:00"
   },
   {
    "ticker": "AMZN",
@@ -73,7 +75,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:00+00:00"
+   "retrieved_at": "2026-11-26T18:36:40+00:00"
   },
   {
    "ticker": "2222.SR",
@@ -85,7 +87,7 @@
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "SAR",
-   "retrieved_at": "2026-11-26T16:47:05+00:00"
+   "retrieved_at": "2026-11-26T18:36:45+00:00"
   },
   {
    "ticker": "2330.TW",
@@ -109,7 +111,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:01+00:00"
+   "retrieved_at": "2026-11-26T18:36:40+00:00"
   },
   {
    "ticker": "TSLA",
@@ -121,7 +123,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:01+00:00"
+   "retrieved_at": "2026-11-26T18:36:41+00:00"
   },
   {
    "ticker": "AVGO",
@@ -133,7 +135,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:01+00:00"
+   "retrieved_at": "2026-11-26T18:36:41+00:00"
   },
   {
    "ticker": "LLY",
@@ -145,7 +147,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:02+00:00"
+   "retrieved_at": "2026-11-26T18:36:41+00:00"
   },
   {
    "ticker": "BRK-B",
@@ -157,7 +159,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:01+00:00"
+   "retrieved_at": "2026-11-26T18:36:41+00:00"
   },
   {
    "ticker": "WMT",
@@ -169,7 +171,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:02+00:00"
+   "retrieved_at": "2026-11-26T18:36:42+00:00"
   },
   {
    "ticker": "JPM",
@@ -181,7 +183,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:02+00:00"
+   "retrieved_at": "2026-11-26T18:36:41+00:00"
   },
   {
    "ticker": "005930.KS",
@@ -205,7 +207,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:02+00:00"
+   "retrieved_at": "2026-11-26T18:36:42+00:00"
   },
   {
    "ticker": "AMD",
@@ -217,7 +219,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:04+00:00"
+   "retrieved_at": "2026-11-26T18:36:44+00:00"
   },
   {
    "ticker": "JNJ",
@@ -229,7 +231,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:04+00:00"
+   "retrieved_at": "2026-11-26T18:36:43+00:00"
   },
   {
    "ticker": "XOM",
@@ -241,7 +243,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:03+00:00"
+   "retrieved_at": "2026-11-26T18:36:42+00:00"
   },
   {
    "ticker": "MA",
@@ -253,19 +255,19 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:03+00:00"
+   "retrieved_at": "2026-11-26T18:36:43+00:00"
   },
   {
    "ticker": "ASML.AS",
    "name": "ASML",
    "country": "Pays-Bas",
    "region": "Europe",
-   "market_cap_usd": 495537095413,
+   "market_cap_usd": 494014666789,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:08+00:00"
+   "retrieved_at": "2026-11-26T18:36:47+00:00"
   },
   {
    "ticker": "COST",
@@ -277,7 +279,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:03+00:00"
+   "retrieved_at": "2026-11-26T18:36:43+00:00"
   },
   {
    "ticker": "PLTR",
@@ -289,7 +291,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:04+00:00"
+   "retrieved_at": "2026-11-26T18:36:43+00:00"
   },
   {
    "ticker": "0700.HK",
@@ -325,7 +327,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:04+00:00"
+   "retrieved_at": "2026-11-26T18:36:44+00:00"
   },
   {
    "ticker": "ORCL",
@@ -337,43 +339,43 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:02+00:00"
+   "retrieved_at": "2026-11-26T18:36:42+00:00"
   },
   {
    "ticker": "NOVN.SW",
    "name": "Novartis",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 290306721747,
+   "market_cap_usd": 290355457925,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-26T16:47:10+00:00"
+   "retrieved_at": "2026-11-26T18:36:49+00:00"
   },
   {
    "ticker": "AZN.L",
    "name": "AstraZeneca",
    "country": "Royaume-Uni",
    "region": "Europe",
-   "market_cap_usd": 285342470844,
+   "market_cap_usd": 284805265160,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "GBP",
-   "retrieved_at": "2026-11-26T16:47:13+00:00"
+   "retrieved_at": "2026-11-26T18:36:52+00:00"
   },
   {
    "ticker": "HSBA.L",
    "name": "HSBC",
    "country": "Royaume-Uni",
    "region": "Europe",
-   "market_cap_usd": 278358891119,
+   "market_cap_usd": 278857757816,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "GBP",
-   "retrieved_at": "2026-11-26T16:47:13+00:00"
+   "retrieved_at": "2026-11-26T18:36:52+00:00"
   },
   {
    "ticker": "600519.SS",
@@ -392,24 +394,24 @@
    "name": "Nestlé",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 270239106620,
+   "market_cap_usd": 270284473883,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-26T16:47:09+00:00"
+   "retrieved_at": "2026-11-26T18:36:48+00:00"
   },
   {
    "ticker": "SHEL.L",
    "name": "Shell",
    "country": "Royaume-Uni",
    "region": "Europe",
-   "market_cap_usd": 267223196275,
+   "market_cap_usd": 267715499234,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "GBP",
-   "retrieved_at": "2026-11-26T16:47:13+00:00"
+   "retrieved_at": "2026-11-26T18:36:52+00:00"
   },
   {
    "ticker": "MS",
@@ -421,31 +423,31 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:05+00:00"
+   "retrieved_at": "2026-11-26T18:36:44+00:00"
   },
   {
    "ticker": "RY.TO",
    "name": "Banque Royale du Canada",
    "country": "Canada",
    "region": "Amérique",
-   "market_cap_usd": 261167526680,
+   "market_cap_usd": 261201808003,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "CAD",
-   "retrieved_at": "2026-11-26T16:47:18+00:00"
+   "retrieved_at": "2026-11-26T18:36:57+00:00"
   },
   {
    "ticker": "OR.PA",
    "name": "L'Oréal",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 260162197243,
+   "market_cap_usd": 260484028171,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:10+00:00"
+   "retrieved_at": "2026-11-26T18:36:50+00:00"
   },
   {
    "ticker": "7203.T",
@@ -464,12 +466,12 @@
    "name": "SAP",
    "country": "Allemagne",
    "region": "Europe",
-   "market_cap_usd": 245125914382,
+   "market_cap_usd": 245860433296,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:08+00:00"
+   "retrieved_at": "2026-11-26T18:36:48+00:00"
   },
   {
    "ticker": "NFLX",
@@ -481,7 +483,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:03+00:00"
+   "retrieved_at": "2026-11-26T18:36:43+00:00"
   },
   {
    "ticker": "GS",
@@ -493,7 +495,7 @@
    "fx_date": null,
    "fx_source": null,
    "currency": "USD",
-   "retrieved_at": "2026-11-26T16:47:04+00:00"
+   "retrieved_at": "2026-11-26T18:36:44+00:00"
   },
   {
    "ticker": "8306.T",
@@ -512,12 +514,12 @@
    "name": "LVMH",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 216272398087,
+   "market_cap_usd": 215895563442,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:10+00:00"
+   "retrieved_at": "2026-11-26T18:36:49+00:00"
   },
   {
    "ticker": "9988.HK",
@@ -536,12 +538,12 @@
    "name": "Siemens",
    "country": "Allemagne",
    "region": "Europe",
-   "market_cap_usd": 209836238123,
+   "market_cap_usd": 209878166005,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:14+00:00"
+   "retrieved_at": "2026-11-26T18:36:53+00:00"
   },
   {
    "ticker": "RELIANCE.NS",
@@ -560,36 +562,36 @@
    "name": "Inditex",
    "country": "Espagne",
    "region": "Europe",
-   "market_cap_usd": 200216411115,
+   "market_cap_usd": 200353114354,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:15+00:00"
-  },
-  {
-   "ticker": "ALV.DE",
-   "name": "Allianz",
-   "country": "Allemagne",
-   "region": "Europe",
-   "market_cap_usd": 188761620968,
-   "price_date": "2026-11-26",
-   "fx_date": "2026-11-26",
-   "fx_source": "Yahoo Finance",
-   "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:14+00:00"
+   "retrieved_at": "2026-11-26T18:36:54+00:00"
   },
   {
    "ticker": "CBA.AX",
    "name": "Commonwealth Bank",
    "country": "Australie",
    "region": "Océanie",
-   "market_cap_usd": 188495394319,
+   "market_cap_usd": 188520379804,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "AUD",
-   "retrieved_at": "2026-11-26T16:47:19+00:00"
+   "retrieved_at": "2026-11-26T18:36:58+00:00"
+  },
+  {
+   "ticker": "ALV.DE",
+   "name": "Allianz",
+   "country": "Allemagne",
+   "region": "Europe",
+   "market_cap_usd": 188515407653,
+   "price_date": "2026-11-26",
+   "fx_date": "2026-11-26",
+   "fx_source": "Yahoo Finance",
+   "currency": "EUR",
+   "retrieved_at": "2026-11-26T18:36:53+00:00"
   },
   {
    "ticker": "TTE.PA",
@@ -601,91 +603,91 @@
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:11+00:00"
+   "retrieved_at": "2026-11-26T18:36:50+00:00"
   },
   {
    "ticker": "BHP.AX",
    "name": "BHP",
    "country": "Australie",
    "region": "Océanie",
-   "market_cap_usd": 182018104290,
+   "market_cap_usd": 182042231196,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "AUD",
-   "retrieved_at": "2026-11-26T16:47:18+00:00"
+   "retrieved_at": "2026-11-26T18:36:57+00:00"
   },
   {
    "ticker": "NOVO-B.CO",
    "name": "Novo Nordisk",
    "country": "Danemark",
    "region": "Europe",
-   "market_cap_usd": 179304410000,
+   "market_cap_usd": 179324670747,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "DKK",
-   "retrieved_at": "2026-11-26T16:47:09+00:00"
+   "retrieved_at": "2026-11-26T18:36:48+00:00"
   },
   {
    "ticker": "SHOP.TO",
    "name": "Shopify",
    "country": "Canada",
    "region": "Amérique",
-   "market_cap_usd": 173149027986,
+   "market_cap_usd": 173548478870,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "CAD",
-   "retrieved_at": "2026-11-26T16:47:18+00:00"
+   "retrieved_at": "2026-11-26T18:36:57+00:00"
   },
   {
    "ticker": "AIR.PA",
    "name": "Airbus",
    "country": "Pays-Bas",
    "region": "Europe",
-   "market_cap_usd": 168530212468,
+   "market_cap_usd": 167837525021,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:11+00:00"
+   "retrieved_at": "2026-11-26T18:36:51+00:00"
   },
   {
    "ticker": "IBE.MC",
    "name": "Iberdrola",
    "country": "Espagne",
    "region": "Europe",
-   "market_cap_usd": 167373868335,
+   "market_cap_usd": 167738049585,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:15+00:00"
+   "retrieved_at": "2026-11-26T18:36:54+00:00"
   },
   {
    "ticker": "SAN.MC",
    "name": "Banco Santander",
    "country": "Espagne",
    "region": "Europe",
-   "market_cap_usd": 165239357172,
+   "market_cap_usd": 165018054475,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:15+00:00"
+   "retrieved_at": "2026-11-26T18:36:54+00:00"
   },
   {
    "ticker": "RMS.PA",
    "name": "Hermès",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 146161829754,
+   "market_cap_usd": 146047057999,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:10+00:00"
+   "retrieved_at": "2026-11-26T18:36:50+00:00"
   },
   {
    "ticker": "HDFCBANK.NS",
@@ -704,180 +706,168 @@
    "name": "Unilever",
    "country": "Royaume-Uni",
    "region": "Europe",
-   "market_cap_usd": 142890298857,
+   "market_cap_usd": 142876617705,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "GBP",
-   "retrieved_at": "2026-11-26T16:47:13+00:00"
+   "retrieved_at": "2026-11-26T18:36:53+00:00"
   },
   {
    "ticker": "DTE.DE",
    "name": "Deutsche Telekom",
    "country": "Allemagne",
    "region": "Europe",
-   "market_cap_usd": 142785621135,
+   "market_cap_usd": 142470771400,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:14+00:00"
+   "retrieved_at": "2026-11-26T18:36:53+00:00"
   },
   {
    "ticker": "SU.PA",
    "name": "Schneider Electric",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 141492303324,
+   "market_cap_usd": 141234403764,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:11+00:00"
+   "retrieved_at": "2026-11-26T18:36:51+00:00"
   },
   {
    "ticker": "ABBN.SW",
    "name": "ABB",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 141105530171,
+   "market_cap_usd": 141129218718,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-26T16:47:16+00:00"
+   "retrieved_at": "2026-11-26T18:36:55+00:00"
   },
   {
    "ticker": "UBSG.SW",
    "name": "UBS",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 136315741541,
+   "market_cap_usd": 136338625987,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-26T16:47:16+00:00"
+   "retrieved_at": "2026-11-26T18:36:55+00:00"
   },
   {
    "ticker": "SAF.PA",
    "name": "Safran",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 135905140198,
+   "market_cap_usd": 135633159646,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:12+00:00"
+   "retrieved_at": "2026-11-26T18:36:51+00:00"
   },
   {
    "ticker": "AI.PA",
    "name": "Air Liquide",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 132941272647,
+   "market_cap_usd": 133263372498,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:12+00:00"
+   "retrieved_at": "2026-11-26T18:36:51+00:00"
   },
   {
    "ticker": "SAN.PA",
    "name": "Sanofi",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 130612370247,
+   "market_cap_usd": 130190827958,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:11+00:00"
+   "retrieved_at": "2026-11-26T18:36:50+00:00"
   },
   {
    "ticker": "UCG.MI",
    "name": "UniCredit",
    "country": "Italie",
    "region": "Europe",
-   "market_cap_usd": 121617906836,
+   "market_cap_usd": 121404187979,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:15+00:00"
+   "retrieved_at": "2026-11-26T18:36:54+00:00"
   },
   {
    "ticker": "CFR.SW",
    "name": "Richemont",
    "country": "Suisse",
    "region": "Europe",
-   "market_cap_usd": 121177937873,
+   "market_cap_usd": 121198281011,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "CHF",
-   "retrieved_at": "2026-11-26T16:47:16+00:00"
+   "retrieved_at": "2026-11-26T18:36:56+00:00"
   },
   {
    "ticker": "BP.L",
    "name": "BP",
    "country": "Royaume-Uni",
    "region": "Europe",
-   "market_cap_usd": 111548331607,
+   "market_cap_usd": 111753831361,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "GBP",
-   "retrieved_at": "2026-11-26T16:47:14+00:00"
+   "retrieved_at": "2026-11-26T18:36:53+00:00"
   },
   {
    "ticker": "BNP.PA",
    "name": "BNP Paribas",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 109034796536,
+   "market_cap_usd": 108998721639,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:12+00:00"
+   "retrieved_at": "2026-11-26T18:36:51+00:00"
   },
   {
    "ticker": "ISP.MI",
    "name": "Intesa Sanpaolo",
    "country": "Italie",
    "region": "Europe",
-   "market_cap_usd": 107007548867,
+   "market_cap_usd": 106893649670,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:16+00:00"
+   "retrieved_at": "2026-11-26T18:36:55+00:00"
   },
   {
    "ticker": "ENEL.MI",
    "name": "Enel",
    "country": "Italie",
    "region": "Europe",
-   "market_cap_usd": 104235542061,
+   "market_cap_usd": 104551202114,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:16+00:00"
-  },
-  {
-   "ticker": "PETR4.SA",
-   "name": "Petrobras",
-   "country": "Brésil",
-   "region": "Amérique",
-   "market_cap_usd": 101814207832,
-   "price_date": "2026-11-26",
-   "fx_date": "2026-11-26",
-   "fx_source": "Yahoo Finance",
-   "currency": "BRL",
-   "retrieved_at": "2026-11-26T16:47:19+00:00"
+   "retrieved_at": "2026-11-26T18:36:55+00:00"
   },
   {
    "ticker": "CS.PA",
@@ -889,55 +879,67 @@
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:17+00:00"
+   "retrieved_at": "2026-11-26T18:36:57+00:00"
+  },
+  {
+   "ticker": "PETR4.SA",
+   "name": "Petrobras",
+   "country": "Brésil",
+   "region": "Amérique",
+   "market_cap_usd": 100799718066,
+   "price_date": "2026-11-26",
+   "fx_date": "2026-11-26",
+   "fx_source": "Yahoo Finance",
+   "currency": "BRL",
+   "retrieved_at": "2026-11-26T18:36:58+00:00"
   },
   {
    "ticker": "EL.PA",
    "name": "EssilorLuxottica",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 86806801394,
+   "market_cap_usd": 86831942068,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:17+00:00"
+   "retrieved_at": "2026-11-26T18:36:56+00:00"
   },
   {
    "ticker": "DG.PA",
    "name": "Vinci",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 69260129327,
+   "market_cap_usd": 69109235799,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:17+00:00"
+   "retrieved_at": "2026-11-26T18:36:56+00:00"
   },
   {
    "ticker": "VALE3.SA",
    "name": "Vale",
    "country": "Brésil",
    "region": "Amérique",
-   "market_cap_usd": 43311135023,
+   "market_cap_usd": 43061279447,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "BRL",
-   "retrieved_at": "2026-11-26T16:47:19+00:00"
+   "retrieved_at": "2026-11-26T18:36:58+00:00"
   },
   {
    "ticker": "DSY.PA",
    "name": "Dassault Systèmes",
    "country": "France",
    "region": "Europe",
-   "market_cap_usd": 32200068989,
+   "market_cap_usd": 32156807718,
    "price_date": "2026-11-26",
    "fx_date": "2026-11-26",
    "fx_source": "Yahoo Finance",
    "currency": "EUR",
-   "retrieved_at": "2026-11-26T16:47:17+00:00"
+   "retrieved_at": "2026-11-26T18:36:56+00:00"
   }
  ],
  "previous_items": [
