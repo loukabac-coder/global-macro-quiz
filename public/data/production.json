@@ -1,50 +1,50 @@
 {
-  "updated_at": "2026-11-28T00:42:33+00:00",
-  "checked_at": "2026-11-28T00:42:33+00:00",
+  "updated_at": "2026-11-28T15:27:01+00:00",
+  "checked_at": "2026-11-28T15:27:01+00:00",
   "failed": [],
   "checks": {
     "oil_production": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "oil_reserves": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "oil_exports": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "wheat_production": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "cocoa_production": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "wheat_exports": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "cocoa_exports": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "copper_production": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "copper_reserves": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "gold_production": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     },
     "gold_reserves": {
-      "at": "2026-11-28T00:42:33+00:00",
+      "at": "2026-11-28T15:27:01+00:00",
       "ok": true
     }
   },
@@ -107,7 +107,7 @@
         "year": 2024,
         "leader": "États-Unis"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "wheat_production": {
       "year": 2024,
@@ -167,7 +167,7 @@
         "year": 2023,
         "leader": "Chine"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "cocoa_production": {
       "year": 2024,
@@ -227,7 +227,7 @@
         "year": 2023,
         "leader": "Côte d'Ivoire"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "wheat_exports": {
       "year": 2024,
@@ -287,7 +287,7 @@
         "year": 2023,
         "leader": "Russian Federation"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "cocoa_exports": {
       "year": 2024,
@@ -347,7 +347,7 @@
         "year": 2023,
         "leader": "Côte d'Ivoire"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "copper_production": {
       "year": 2025,
@@ -407,7 +407,7 @@
         "year": 2024,
         "leader": "Chile"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "copper_reserves": {
       "year": 2025,
@@ -463,7 +463,7 @@
           "value": 20000.0
         }
       ],
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "gold_production": {
       "year": 2025,
@@ -523,7 +523,7 @@
         "year": 2024,
         "leader": "Chine"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "gold_reserves": {
       "year": 2025,
@@ -579,7 +579,7 @@
           "value": 1400.0
         }
       ],
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "oil_reserves": {
       "year": 2025,
@@ -639,7 +639,7 @@
         "year": 2024,
         "leader": "Venezuela"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     },
     "oil_exports": {
       "year": 2025,
@@ -699,7 +699,7 @@
         "year": 2024,
         "leader": "Arabie saoudite"
       },
-      "retrieved_at": "2026-11-28T00:42:33+00:00"
+      "retrieved_at": "2026-11-28T15:27:01+00:00"
     }
   },
   "providers": {
