@@ -1,9 +1,33 @@
 {
- "updated_at": "2026-11-28T00:41:51+00:00",
- "checked_at": "2026-11-28T00:41:51+00:00",
+ "updated_at": "2026-11-28T01:37:58+00:00",
+ "checked_at": "2026-11-28T01:37:58+00:00",
  "refresh_failed": true,
  "source": "Estimations Yahoo Finance, taux de conversion Yahoo Finance ou BCE",
  "failed": [
+  "NVDA",
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "AMZN",
+  "META",
+  "AVGO",
+  "TSLA",
+  "BRK-B",
+  "LLY",
+  "JPM",
+  "WMT",
+  "V",
+  "ORCL",
+  "XOM",
+  "MA",
+  "NFLX",
+  "COST",
+  "JNJ",
+  "PLTR",
+  "BAC",
+  "AMD",
+  "GS",
+  "MS",
   "RELIANCE.NS",
   "HDFCBANK.NS",
   "ASML.AS",
@@ -115,7 +139,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "SAR",
-   "retrieved_at": "2026-11-28T00:41:28+00:00"
+   "retrieved_at": "2026-11-28T01:37:35+00:00"
   },
   {
    "ticker": "2330.TW",
@@ -127,7 +151,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "TWD",
-   "retrieved_at": "2026-11-28T00:41:27+00:00"
+   "retrieved_at": "2026-11-28T01:37:35+00:00"
   },
   {
    "ticker": "META",
@@ -211,7 +235,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "KRW",
-   "retrieved_at": "2026-11-28T00:41:28+00:00"
+   "retrieved_at": "2026-11-28T01:37:36+00:00"
   },
   {
    "ticker": "JPM",
@@ -331,7 +355,7 @@
    "fx_date": "2026-11-28",
    "fx_source": "Yahoo Finance",
    "currency": "HKD",
-   "retrieved_at": "2026-11-28T00:41:29+00:00"
+   "retrieved_at": "2026-11-28T01:37:36+00:00"
   },
   {
    "ticker": "1398.HK",
@@ -343,7 +367,7 @@
    "fx_date": "2026-11-28",
    "fx_source": "Yahoo Finance",
    "currency": "HKD",
-   "retrieved_at": "2026-11-28T00:41:32+00:00"
+   "retrieved_at": "2026-11-28T01:37:40+00:00"
   },
   {
    "ticker": "BAC",
@@ -415,7 +439,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "CNY",
-   "retrieved_at": "2026-11-28T00:41:30+00:00"
+   "retrieved_at": "2026-11-28T01:37:37+00:00"
   },
   {
    "ticker": "SHEL.L",
@@ -463,7 +487,7 @@
    "fx_date": "2026-11-28",
    "fx_source": "Yahoo Finance",
    "currency": "CAD",
-   "retrieved_at": "2026-11-28T00:41:48+00:00"
+   "retrieved_at": "2026-11-28T01:37:56+00:00"
   },
   {
    "ticker": "OR.PA",
@@ -499,7 +523,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "JPY",
-   "retrieved_at": "2026-11-28T00:41:30+00:00"
+   "retrieved_at": "2026-11-28T01:37:38+00:00"
   },
   {
    "ticker": "SAP.DE",
@@ -535,7 +559,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "JPY",
-   "retrieved_at": "2026-11-28T00:41:30+00:00"
+   "retrieved_at": "2026-11-28T01:37:38+00:00"
   },
   {
    "ticker": "9988.HK",
@@ -547,7 +571,7 @@
    "fx_date": "2026-11-28",
    "fx_source": "Yahoo Finance",
    "currency": "HKD",
-   "retrieved_at": "2026-11-28T00:41:29+00:00"
+   "retrieved_at": "2026-11-28T01:37:37+00:00"
   },
   {
    "ticker": "MC.PA",
@@ -631,7 +655,7 @@
    "fx_date": "2026-11-28",
    "fx_source": "Yahoo Finance",
    "currency": "AUD",
-   "retrieved_at": "2026-11-28T00:41:50+00:00"
+   "retrieved_at": "2026-11-28T01:37:57+00:00"
   },
   {
    "ticker": "BHP.AX",
@@ -643,7 +667,7 @@
    "fx_date": "2026-11-28",
    "fx_source": "Yahoo Finance",
    "currency": "AUD",
-   "retrieved_at": "2026-11-28T00:41:49+00:00"
+   "retrieved_at": "2026-11-28T01:37:56+00:00"
   },
   {
    "ticker": "SHOP.TO",
@@ -655,7 +679,7 @@
    "fx_date": "2026-11-28",
    "fx_source": "Yahoo Finance",
    "currency": "CAD",
-   "retrieved_at": "2026-11-28T00:41:49+00:00"
+   "retrieved_at": "2026-11-28T01:37:56+00:00"
   },
   {
    "ticker": "NOVO-B.CO",
@@ -907,7 +931,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "BRL",
-   "retrieved_at": "2026-11-28T00:41:51+00:00"
+   "retrieved_at": "2026-11-28T01:37:58+00:00"
   },
   {
    "ticker": "CS.PA",
@@ -955,7 +979,7 @@
    "fx_date": "2026-11-27",
    "fx_source": "Yahoo Finance",
    "currency": "BRL",
-   "retrieved_at": "2026-11-28T00:41:50+00:00"
+   "retrieved_at": "2026-11-28T01:37:57+00:00"
   },
   {
    "ticker": "DSY.PA",
